@@ -1,18 +1,21 @@
-env:
-  global:
-  - secure: MCW+sREBTJjwsr6C6MqKPpd0xFFVeNCbkPtycQmVCNpdZsrV2zxlSICDmx4PzQP31/wcrJpu3iaXX0u2pFL462kDBbpRT3c5tQ0GmkGmC4iLowH7j6VbiQA4p7Z5sN/lsDjjFXaKj1nhiSHEQtCSgoPm3X+8bwhwNs926aQw06IIbqzkni+SL6BIFsRX9CMoUqRh6fBMt4DhZ3cFm8jCyuPBnP8DQc6IBl4fjVYznwfHVldvggBPtvqS/rWj4VSS/OfmBRhFahQ8cWAjHucRlSLsbXa1hAwLPMe21Jx8SYsoLZ74HCIk74DvzTlvddDZog9gYwL6Fo9MAeEAtZLP1LFCYMLO4lB5D0+wxF0YqosGJhQbmey4hFkrLRWRv/c5wvy9oIXmyFBEpoLreiBU/IgJB9qc7/yOt0ifa7jp98anM8UdJZUoKPw+Ww6fWd6hMjWa7IBr0rPDVh5RWBg8Xs0e1g6PagUMvQj9tpU4JFXBTihfotD9BxuARvSCh8qmUjDtkj9GPtUbvn0sryyBuIDGEEX7ZV0RoEIEFbgusT+Hgn66Dkyvah0Ue/jgCRWoUiYvU8hVkbjlxGLiH9bbiSv5ZySSg1vXi9iTIK04e7wREESef1X64o++0S25i+Z1+tLRc9Ktf/9FBQOJhM5SjMpHhDxnFOsORywT5ezobnE=
-
 language: node_js
 node_js:
 - 8.0.0
 branches:
   only:
   - source
-install: npm install
-before_script:
-- git config --global user.name "zhumengzhu"
-- git config --global user.email "mengzhu.loveyou@gmail.com"
+
+install: 
+- npm install
+- npm install hexo-deployer-git --save
+
 script:
 - hexo clean
 - hexo generate
+
+after_script:
+- git config --global user.name "zhumengzhu"
+- git config --global user.email "mengzhu.loveyou@gmail.com"
+- sed -i "s/__GITHUB_TOKEN__/${__GITHUB_TOKEN__}/g" _config.yml
 - hexo deploy
+
