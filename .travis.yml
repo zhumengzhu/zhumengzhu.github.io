@@ -10,3 +10,7 @@ before_script:
 - git config --global user.email "mengzhu.loveyou@gmail.com"
 # - sed -i "s/__GITHUB_TOKEN__/${__GITHUB_TOKEN__}/" _config.yml
 script: npm run build
+
+env:
+  global:
+    secure: 4EOxVg9dI/4z/MmpyUtXYa0lrVIDzQa09nPega2WPrCORxcJ8e01vxO0csJp/eSbvM6gABWO73sJQNYBwSat5qdBhLYRIxBAYtpx1UCok2hPV01Hfv1d640eo9v4dkIx0DzkLaGiXMY5KIXcpjcOO0m8zucLoRwgqSjay43JVm6SDVil04ote8scPVQTAMsCUr9e/LrB4fOD7oeBBwCFZi5wqwpJJPNm3jgw1mOPg+YR+MuIrYYKnul+FRZ8BjCQeAqmhSHqTSw+Jr1fltHjvrBLXIDTFiox3yABiI+67A95BvJiCchSuHvnDRWahfx9CqxsKjfpJ0U9wTigYFaki1Vx8nmBEwX59+gSddIQWLMTrmWewWlihH/hOSyyEr34+YDbMaBT9q7J2V7D7z+pMSPKdjTAveC3c/M23Iea7BcbwFDU72XcF75vHbV9/xqDoNdkVS5iXx9LhzP69ASpu8lCJuxMNnxvfBVcvwqbRPhwIQ5GgZOaydTQe81hQa/q097ilOR53atbrd9rv7RJMxIjRzCueaXpmDahBTwBgBrxb5i11HePFcIHuwhaYnNxqPBLN5yRy/hgCBPkubcvezGxSydmrmn8xg7Z9v1BesIzwl9B4NiFzHHicZQAotpI2NA/gM1H3st3bLiIVVP0/0Fp2EqMF0dzL/lDo8tHFos=
