@@ -5,6 +5,10 @@ branches:
   only:
   - source
 
+before_install:
+- export TZ=Asia/Shanghai
+-date
+
 install: 
 - npm install
 - npm install hexo-deployer-git --save
