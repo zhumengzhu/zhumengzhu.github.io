@@ -22,11 +22,11 @@
       
       <item>
         <title>Hugo 入门</title>
-        <link>https://zhumengzhu.github.io/post/hugo-quick-start/</link>
+        <link>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</link>
         <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
         <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
-        <atom:modified>Mon, 31 Oct 2022 01:17:04 +0800</atom:modified>
-        <guid>https://zhumengzhu.github.io/post/hugo-quick-start/</guid>
+        <atom:modified>Mon, 31 Oct 2022 01:48:34 +0800</atom:modified>
+        <guid>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</guid>
         <description>&lt;h2 id=&#34;常用命令&#34;&gt;常用命令&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;hugo new site&lt;/code&gt; SITE_NAME 生成静态博客项目&lt;/li&gt;
@@ -39,6 +39,7 @@
 &lt;ul&gt;
 &lt;li&gt;使用主题 Event 时, 文章必须放在 &lt;code&gt;content/**post**/&lt;/code&gt; 目录下, 否则 Home 页不会展示文章链接, 文章内也不会展示目录&lt;/li&gt;
 &lt;li&gt;使用主题 Zoo 时, 创建 Archive 页要生成 &lt;code&gt;content/archive/_index.md&lt;/code&gt; 这样一个文件(参考 &lt;a href=&#34;https://github.com/zzossig/hugo-theme-zzo/issues/47&#34;&gt;How to automatically generate archive page content #47&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;使用主题 Zoo 时, GigHub Actions 必须启用 Hugo extended 模式(参考&lt;a href=&#34;https://github.com/marketplace/actions/hugo-setup&#34;&gt;Hugo setup&lt;/a&gt;)&lt;/li&gt;
 &lt;/ul&gt;</description>
         
         <dc:creator>zhumengzhu</dc:creator>
