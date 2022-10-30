@@ -11,6 +11,8 @@
 
 <!--more-->
 
-## 参考
+## 参考链接
 - [Hugo 从入门到会用](https://olowolo.com/post/hugo-quick-start)
+- [Hugo 搭建博客实践](https://creaink.github.io/post/Devtools/Hugo/Hugo-intro.html)
+- [Hugo 官方文档](https://gohugo.io/documentation/)
 

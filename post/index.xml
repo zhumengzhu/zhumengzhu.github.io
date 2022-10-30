@@ -9,10 +9,10 @@
     <lastBuildDate>Sun, 30 Oct 2022 22:22:52 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Hugo 入门</title>
-      <link>https://zhumengzhu.github.io/2022/10/hugo-%E5%85%A5%E9%97%A8/</link>
+      <link>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</link>
       <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
       
-      <guid>https://zhumengzhu.github.io/2022/10/hugo-%E5%85%A5%E9%97%A8/</guid>
+      <guid>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</guid>
       <description>&lt;h2 id=&#34;常用命令&#34;&gt;常用命令&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;hugo new site&lt;/code&gt; SITE_NAME 生成静态博客项目&lt;/li&gt;
@@ -29,10 +29,10 @@
     
     <item>
       <title>网络代理设置</title>
-      <link>https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/</link>
+      <link>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</link>
       <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
       
-      <guid>https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/</guid>
+      <guid>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</guid>
       <description>&lt;h2 id=&#34;mac-客户端&#34;&gt;Mac 客户端&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;推荐 &lt;a href=&#34;https://github.com/yanue/V2rayU/releases&#34;&gt;V2rayU&lt;/a&gt;&lt;/li&gt;
