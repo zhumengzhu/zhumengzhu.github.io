@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Git on Somnus</title>
-    <link>https://zhumengzhu.github.io/tags/git/</link>
-    <description>Recent content in Git on Somnus</description>
+    <title>Posts on Somnus</title>
+    <link>https://zhumengzhu.github.io/post/</link>
+    <description>Recent content in Posts on Somnus</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 30 Oct 2022 22:22:52 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Hugo 入门</title>
+      <link>https://zhumengzhu.github.io/2022/10/hugo-%E5%85%A5%E9%97%A8/</link>
+      <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
+      
+      <guid>https://zhumengzhu.github.io/2022/10/hugo-%E5%85%A5%E9%97%A8/</guid>
+      <description>&lt;h1 id=&#34;hugo-特性&#34;&gt;Hugo 特性&lt;/h1&gt;
+&lt;h2 id=&#34;踩坑记&#34;&gt;踩坑记&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;最开始文章是放在 content/&lt;strong&gt;posts&lt;/strong&gt;/ 目录下, 结果 Home 页不展示文章链接, 文章内也不能生成目录, 改为 content/&lt;strong&gt;post&lt;/strong&gt;/ 就可以了&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
     <item>
       <title>网络代理设置</title>
       <link>https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/</link>

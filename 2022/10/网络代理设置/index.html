@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <title>我的网络代理设置 - Somnus</title>
+  <title>网络代理设置 - Somnus</title>
   <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 
@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
 
 
-<meta name="author" content="zhumengzhu" /><meta name="description" content="Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&amp;#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&amp;#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p" /><meta name="keywords" content="架构, 笔记, 分享, Hugo, even" />
+<meta name="author" content="zhumengzhu" /><meta name="description" content="Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&amp;#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&amp;#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p " /><meta name="keywords" content="架构, 笔记, 分享, Hugo, even" />
 
 
 
@@ -26,7 +26,7 @@
 <meta name="generator" content="Hugo 0.105.0 with theme even" />
 
 
-<link rel="canonical" href="https://zhumengzhu.github.io/posts/how-to-set-network-proxy/" />
+<link rel="canonical" href="https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -35,24 +35,114 @@
 
 <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
-<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link href="/sass/main.min.b5a744db6de49a86cadafb3b70f555ab443f83c307a483402259e94726b045ff.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
 
 
-<meta property="og:title" content="我的网络代理设置" />
-<meta property="og:description" content="Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://zhumengzhu.github.io/posts/how-to-set-network-proxy/" /><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2022-10-16T19:09:32+08:00" />
-<meta property="article:modified_time" content="2022-10-30T00:00:00+00:00" />
+<meta property="og:title" content="网络代理设置" />
+<meta property="og:description" content="Mac 客户端
 
-<meta itemprop="name" content="我的网络代理设置">
-<meta itemprop="description" content="Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p"><meta itemprop="datePublished" content="2022-10-16T19:09:32+08:00" />
-<meta itemprop="dateModified" content="2022-10-30T00:00:00+00:00" />
+推荐 V2rayU
+
+Terminal 代理
+
+
+1
+2
+
+
+# .config/fish/config.fish
+alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39;
+
+
+git ssh 代理
+
+
+1
+2
+3
+4
+
+
+# .ssh/config
+Host github.com
+    User git
+    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
+
+
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-10-16T19:09:32+08:00" />
+<meta property="article:modified_time" content="2022-10-30T22:35:54+08:00" />
+
+<meta itemprop="name" content="网络代理设置">
+<meta itemprop="description" content="Mac 客户端
+
+推荐 V2rayU
+
+Terminal 代理
+
+
+1
+2
+
+
+# .config/fish/config.fish
+alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39;
+
+
+git ssh 代理
+
+
+1
+2
+3
+4
+
+
+# .ssh/config
+Host github.com
+    User git
+    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
+
+
+"><meta itemprop="datePublished" content="2022-10-16T19:09:32+08:00" />
+<meta itemprop="dateModified" content="2022-10-30T22:35:54+08:00" />
 <meta itemprop="wordCount" content="40">
 <meta itemprop="keywords" content="Network,Git,Proxy," /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="我的网络代理设置"/>
-<meta name="twitter:description" content="Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p"/>
+<meta name="twitter:title" content="网络代理设置"/>
+<meta name="twitter:description" content="Mac 客户端
+
+推荐 V2rayU
+
+Terminal 代理
+
+
+1
+2
+
+
+# .config/fish/config.fish
+alias all_proxy=&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39;
+
+
+git ssh 代理
+
+
+1
+2
+3
+4
+
+
+# .ssh/config
+Host github.com
+    User git
+    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
+
+
+"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -79,7 +169,7 @@
   <ul class="mobile-menu-list">
     <a href="/">
         <li class="mobile-menu-item">Home</li>
-      </a><a href="/posts/">
+      </a><a href="/post/">
         <li class="mobile-menu-item">Archives</li>
       </a><a href="/tags/">
         <li class="mobile-menu-item">Tags</li>
@@ -108,7 +198,7 @@
     <li class="menu-item">
         <a class="menu-item-link" href="/">Home</a>
       </li><li class="menu-item">
-        <a class="menu-item-link" href="/posts/">Archives</a>
+        <a class="menu-item-link" href="/post/">Archives</a>
       </li><li class="menu-item">
         <a class="menu-item-link" href="/tags/">Tags</a>
       </li><li class="menu-item">
@@ -123,8 +213,39 @@
       <div class="content-wrapper">
         <div id="content" class="content">
           <article class="post">
-  <div class="post-content">
-    <h2 id="mac-客户端">Mac 客户端</h2>
+    
+    <header class="post-header">
+      <h1 class="post-title">网络代理设置</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-10-16 </span>
+        <div class="post-category">
+            <a href="/categories/proxy/"> Proxy </a>
+            </div>
+          <span class="more-meta"> 约 40 字 </span>
+          <span class="more-meta"> 预计阅读 1 分钟 </span>
+        <span id="busuanzi_container_page_pv" class="more-meta"> <span id="busuanzi_value_page_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次阅读 </span>
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#mac-客户端">Mac 客户端</a></li>
+        <li><a href="#terminal-代理">Terminal 代理</a></li>
+        <li><a href="#git-ssh-代理">git ssh 代理</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h2 id="mac-客户端">Mac 客户端</h2>
 <ul>
 <li>推荐 <a href="https://github.com/yanue/V2rayU/releases">V2rayU</a></li>
 </ul>
@@ -155,29 +276,44 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div>
-  </div>
-</article>
-        </div>
-        <div id="lv-container" data-id="city" data-uid="MTAyMC81NzUzOC8zNDAwMg==">
-    <script type="text/javascript">
-      (function(d, s) {
-        var j, e = d.getElementsByTagName(s)[0];
-
-        if (typeof LivereTower === 'function') { return; }
-
-        j = d.createElement(s);
-        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-        j.async = true;
-
-        e.parentNode.insertBefore(j, e);
-      })(document, 'script');
-    </script>
-    <noscript>Please enable JavaScript to view the comments powered by <a href="https://livere.com/">LiveRe.</a></noscript>
     </div>
 
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a href="https://zhumengzhu.github.io/" class="theme-link">zhumengzhu</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2022-10-30
+        <a href="https://github.com/zhumengzhu/blog-source/commit/6ce05ce223eebcc62dd981c4631c75bebdd76909" title="rm public/ and resources/">(6ce05ce)</a>
+    </span>
+  </p>
+  <p class="copyright-item">
+      <span class="item-title">原始文档</span>
+      <span class="item-content"><a class="link-to-markdown" href="https://zhumengzhu.github.io/2022/10/%E7%BD%91%E7%BB%9C%E4%BB%A3%E7%90%86%E8%AE%BE%E7%BD%AE/index.md" target="_blank">查看本文 Markdown 版本 »</a></span>
+    </p>
   
-
-  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/network/">Network</a>
+          <a href="/tags/git/">Git</a>
+          <a href="/tags/proxy/">Proxy</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/2022/10/hugo-%E5%85%A5%E9%97%A8/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Hugo 入门</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
 
       </div>
     </main>
@@ -186,7 +322,6 @@
       <div class="social-links">
       <a href="https://stackoverflow.com/users/3496176/zhumengzhu" class="iconfont icon-stack-overflow" title="stack-overflow"></a>
       <a href="https://github.com/zhumengzhu" class="iconfont icon-github" title="github"></a>
-      <a href="https://www.zhihu.com/people/zhu-meng-zhu" class="iconfont icon-zhihu" title="zhihu"></a>
   <a href="https://zhumengzhu.github.io/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
 </div>
 
@@ -222,6 +357,13 @@
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.min.js" integrity="sha256-jwCP0NAdCBloaIWTWHmW4i3snUNMHUNO+jr9rYd2iOI=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.locales.min.js" integrity="sha256-ZwofwC1Lf/faQCzN7nZtfijVV6hSwxjQMwXL4gn9qU8=" crossorigin="anonymous"></script>
+  <script><!-- NOTE: timeago.js uses the language code format like "zh_CN" (underscore and case sensitive) -->
+    var languageCode = "zh-cn".replace(/-/g, '_').replace(/_(.*)/, function ($0, $1) {return $0.replace($1, $1.toUpperCase());});
+    timeago().render(document.querySelectorAll('.timeago'), languageCode);
+    timeago.cancel();  
+  </script>
 
 
 
