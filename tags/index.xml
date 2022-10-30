@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" 
+  xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+  xmlns:dc="http://purl.org/dc/elements/1.1/" 
+  xmlns:atom="http://www.w3.org/2005/Atom" 
+  xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
+  xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Tags on Somnus&#39;s Blog</title>
+    <link>https://zhumengzhu.github.io/tags/</link>
+    <description>Recent content in Tags on Somnus&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <managingEditor>mengzhu.loveyou@gmail.com (zhumengzhu)</managingEditor>
+    <webMaster>mengzhu.loveyou@gmail.com (zhumengzhu)</webMaster>
+    <copyright>©2022, All Rights Reserved</copyright>
+    <lastBuildDate>Sun, 30 Oct 2022 22:22:52 +0800</lastBuildDate>
+    
+        <atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    
+
+      
+      <item>
+        <title>blog</title>
+        <link>https://zhumengzhu.github.io/tags/blog/</link>
+        <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/blog/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>hugo</title>
+        <link>https://zhumengzhu.github.io/tags/hugo/</link>
+        <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/hugo/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>quickstart</title>
+        <link>https://zhumengzhu.github.io/tags/quickstart/</link>
+        <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/quickstart/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>Git</title>
+        <link>https://zhumengzhu.github.io/tags/git/</link>
+        <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/git/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>Network</title>
+        <link>https://zhumengzhu.github.io/tags/network/</link>
+        <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/network/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>Proxy</title>
+        <link>https://zhumengzhu.github.io/tags/proxy/</link>
+        <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        
+        <guid>https://zhumengzhu.github.io/tags/proxy/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+
+    
+  </channel>
+</rss>

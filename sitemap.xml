@@ -1,102 +1,55 @@
-<?xml-stylesheet type="text/xsl" href="https://zhumengzhu.github.io/sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://zhumengzhu.github.io/tags/blog/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/categories/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/tags/hugo/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/categories/hugo/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/post/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/tags/quickstart/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+    <loc>https://zhumengzhu.github.io/about/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/archive/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
     <loc>https://zhumengzhu.github.io/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/blog/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/categories/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/hugo/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/categories/hugo/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/post/hugo-quick-start/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/post/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/quickstart/</loc>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
     <loc>https://zhumengzhu.github.io/tags/</loc>
-    <lastmod>2022-10-30T23:10:12+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+    <lastmod>2022-10-31T01:17:04+08:00</lastmod>
+  </url><url>
     <loc>https://zhumengzhu.github.io/tags/git/</loc>
     <lastmod>2022-10-30T22:35:54+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://zhumengzhu.github.io/tags/network/</loc>
     <lastmod>2022-10-30T22:35:54+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://zhumengzhu.github.io/tags/proxy/</loc>
     <lastmod>2022-10-30T22:35:54+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://zhumengzhu.github.io/categories/proxy/</loc>
     <lastmod>2022-10-30T22:35:54+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</loc>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/post/how-to-set-network-proxy/</loc>
     <lastmod>2022-10-30T22:35:54+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/series/</loc>
   </url>
-  
 </urlset>

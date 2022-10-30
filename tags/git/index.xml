@@ -1,19 +1,33 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" 
+  xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+  xmlns:dc="http://purl.org/dc/elements/1.1/" 
+  xmlns:atom="http://www.w3.org/2005/Atom" 
+  xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
+  xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
-    <title>Git on Somnus</title>
+    <title>Git on Somnus&#39;s Blog</title>
     <link>https://zhumengzhu.github.io/tags/git/</link>
-    <description>Recent content in Git on Somnus</description>
+    <description>Recent content in Git on Somnus&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh-cn</language>
-    <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/git/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>网络代理设置</title>
-      <link>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</link>
-      <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+    <language>zh</language>
+    <managingEditor>mengzhu.loveyou@gmail.com (zhumengzhu)</managingEditor>
+    <webMaster>mengzhu.loveyou@gmail.com (zhumengzhu)</webMaster>
+    <copyright>©2022, All Rights Reserved</copyright>
+    <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate>
+    
+        <atom:link href="https://zhumengzhu.github.io/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    
+
       
-      <guid>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</guid>
-      <description>&lt;h2 id=&#34;mac-客户端&#34;&gt;Mac 客户端&lt;/h2&gt;
+      <item>
+        <title>网络代理设置</title>
+        <link>https://zhumengzhu.github.io/post/how-to-set-network-proxy/</link>
+        <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
+        <atom:modified>Sun, 30 Oct 2022 22:35:54 +0800</atom:modified>
+        <guid>https://zhumengzhu.github.io/post/how-to-set-network-proxy/</guid>
+        <description>&lt;h2 id=&#34;mac-客户端&#34;&gt;Mac 客户端&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;推荐 &lt;a href=&#34;https://github.com/yanue/V2rayU/releases&#34;&gt;V2rayU&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -29,22 +43,42 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;git-ssh-代理&#34;&gt;git ssh 代理&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# .ssh/config
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Host github.com
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    User git
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;</description>
-    </item>
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# .ssh/config
+Host github.com
+    User git
+    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
+&lt;/code&gt;&lt;/pre&gt;</description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+          
+            
+              <category>Network</category>
+            
+          
+            
+              <category>Git</category>
+            
+          
+            
+              <category>Proxy</category>
+            
+          
+        
+        
+          
+            
+              <category>Proxy</category>
+            
+          
+        
+        
+      </item>
+      
+
     
   </channel>
 </rss>
