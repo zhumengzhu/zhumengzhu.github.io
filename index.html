@@ -126,17 +126,24 @@
     <div class="post-meta">
       <span class="post-time"> 2022-10-30 </span>
       
-        <span class="more-meta"> 约 123 字 </span>
+        <span class="more-meta"> 约 126 字 </span>
         <span class="more-meta"> 预计阅读 1 分钟 </span>
     </div>
   </header>
   
   <div class="post-content">
     <div class="post-summary">
-      <h1 id="hugo-特性">Hugo 特性</h1>
+      <h2 id="常用命令">常用命令</h2>
+<ul>
+<li><code>hugo new site</code> SITE_NAME 生成静态博客项目</li>
+<li><code>hugo server</code> 启动本地服务器，加上 -D 可以渲染 draft=true 的文章</li>
+<li><code>hugo new post/new-content.md</code> 在 <strong>post</strong> 下新建一篇文章</li>
+<li><code>hugo</code> 生成站点静态文件(public 和 resources 目录)</li>
+<li><code>hugo list drafts/expired/future</code> 列出特点的文件</li>
+</ul>
 <h2 id="踩坑记">踩坑记</h2>
 <ul>
-<li>最开始文章是放在 content/<strong>posts</strong>/ 目录下, 结果 Home 页不展示文章链接, 文章内也不能生成目录, 改为 content/<strong>post</strong>/ 就可以了</li>
+<li>文章必须放在 content/<strong>post</strong>/ 目录下, 否则 Home 页不会展示文章链接, 文章内也不会展示目录</li>
 </ul>
     </div>
     <div class="read-more">
