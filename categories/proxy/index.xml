@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Proxy on Somnus</title>
+    <link>https://zhumengzhu.github.io/categories/proxy/</link>
+    <description>Recent content in Proxy on Somnus</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/categories/proxy/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>我的网络代理设置</title>
+      <link>https://zhumengzhu.github.io/posts/how-to-set-network-proxy/</link>
+      <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+      
+      <guid>https://zhumengzhu.github.io/posts/how-to-set-network-proxy/</guid>
+      <description>Mac 客户端 推荐 V2rayU Terminal 代理 1 2 # .config/fish/config.fish alias all_proxy=&amp;#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&amp;#39; git ssh 代理 1 2 3 4 # .ssh/config Host github.com User git ProxyCommand nc -v -x 127.0.0.1:1080 %h %p</description>
+    </item>
+    
+  </channel>
+</rss>

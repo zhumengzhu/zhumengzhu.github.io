@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Categories on 贝加尔湖畔小屋</title>
+    <title>Categories on Somnus</title>
     <link>https://zhumengzhu.github.io/categories/</link>
-    <description>Recent content in Categories on 贝加尔湖畔小屋</description>
+    <description>Recent content in Categories on Somnus</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh-CN</language><atom:link href="https://zhumengzhu.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Proxy</title>
+      <link>https://zhumengzhu.github.io/categories/proxy/</link>
+      <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
+      
+      <guid>https://zhumengzhu.github.io/categories/proxy/</guid>
+      <description></description>
+    </item>
+    
   </channel>
 </rss>
