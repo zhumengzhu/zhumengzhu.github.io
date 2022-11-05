@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Hugo 入门 – Somnus&#39;s Blog</title>
+    <title>我的 Hugo 配置笔记 – Somnus&#39;s Blog</title>
     
 
 
@@ -1331,23 +1331,25 @@
 
 
     
-<meta name="description" content="" />
+<meta name="description" content="记录我在用 Hugo 搭建博客时常用的一些命令，踩到的坑，解决方法等" />
+
+<meta name="keywords" content="Hugo,Zzo">
 
 
-<meta name="keywords" content="hugo,quickstart,blog">
+<meta name="keywords" content="Notes,Hugo">
 
 <meta name="created" content="2022-10-30T22:22:52&#43;0800">
-<meta name="modified" content="2022-10-31T01:48:34&#43;0800">
+<meta name="modified" content="2022-11-06T03:07:33&#43;0800">
 <meta property="article:published_time" content="2022-10-30T22:22:52&#43;0800">
 
 <meta name="author" content="zhumengzhu">
 
 
 <meta property="og:site_name" content="Somnus&#39;s Blog">
-<meta property="og:title" content="Hugo 入门">
+<meta property="og:title" content="我的 Hugo 配置笔记">
 <meta property="og:url" content="https://zhumengzhu.github.io/2022/10/hugo-quick-start/">
 <meta property="og:type" content="article">
-<meta property="og:description" content="">
+<meta property="og:description" content="记录我在用 Hugo 搭建博客时常用的一些命令，踩到的坑，解决方法等">
 
 <meta name="generator" content="Hugo 0.105.0">
 <meta name="msapplication-TileColor" content="#fff">
@@ -1372,12 +1374,12 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "Hugo 入门",
+    "headline": "我的 Hugo 配置笔记",
     "datePublished": "2022-10-30T22:22:52+08:00",
-    "dateModified": "2022-10-31T01:48:34+08:00",
+    "dateModified": "2022-11-06T03:07:33+08:00",
     "url" : "https://zhumengzhu.github.io/2022/10/hugo-quick-start/",
-    "description": "\u003ch2 id=\"常用命令\"\u003e常用命令\u003c/h2\u003e \u003cul\u003e \u003cli\u003e\u003ccode\u003ehugo new site\u003c/code\u003e SITE_NAME 生成静态博客项目\u003c/li\u003e \u003cli\u003e\u003ccode\u003ehugo server\u003c/code\u003e 启动本地服务器，加上 -D 可以渲染 draft=true 的文章\u003c/li\u003e \u003cli\u003e\u003ccode\u003ehugo new post/new-content.md\u003c/code\u003e 在 \u003cstrong\u003epost\u003c/strong\u003e 下新建一篇文章\u003c/li\u003e \u003cli\u003e\u003ccode\u003ehugo\u003c/code\u003e 生成站点静态文件(public 和 resources 目录)\u003c/li\u003e \u003cli\u003e\u003ccode\u003ehugo …\u003c/code\u003e\u003c/li\u003e\u003c/ul\u003e",
-    "keywords": ["hugo","quickstart","blog"],
+    "description": "记录我在用 Hugo 搭建博客时常用的一些命令，踩到的坑，解决方法等",
+    "keywords": ["Notes","Hugo"],
     "mainEntityOfPage": {
       "@type": "WebPage",
       "@id": "https://zhumengzhu.github.io/"
@@ -1649,7 +1651,7 @@
   
   <li  class="is-active" >
     
-      <span>Hugo 入门</span>
+      <span>我的 Hugo 配置笔记</span>
     
   </li>
   
@@ -1661,14 +1663,14 @@
   <div class="single ">
     <div class="single__nojs">Please enable Javascript to view the contents</div>
     <script>document.querySelector('.single').classList.remove('hide'); document.querySelector('.single__nojs').classList.add('hide');</script>
-    <h2 class="single__title" data-ani="true">Hugo 入门</h2>
+    <h2 class="single__title" data-ani="true">我的 Hugo 配置笔记</h2>
     <h3 class="single__subtitle"></h3>
     <div class="single__meta">
       
 <div class="single__infos">
   <time class="single__info" title="创建日期">📅&nbsp;2022年10月30日 </time>
   
-  &nbsp;&middot;&nbsp; <time class="single__info" title="更新日期"> 📝&nbsp;2022年10月31日 </time>
+  &nbsp;&middot;&nbsp; <time class="single__info" title="更新日期"> 📝&nbsp;2022年11月06日 </time>
   
   &nbsp;&middot;&nbsp; <span class="single__info" title="阅读时长"> ☕&nbsp;1&nbsp;分钟 </span>
   
@@ -1683,11 +1685,9 @@
   🏷️
   
 
-  <li><a href="https://zhumengzhu.github.io/tags/hugo/" class="single__tag" title="hugo">#hugo</a></li>
+  <li><a href="https://zhumengzhu.github.io/tags/notes/" class="single__tag" title="Notes">#Notes</a></li>
 
-  <li><a href="https://zhumengzhu.github.io/tags/quickstart/" class="single__tag" title="quickstart">#quickstart</a></li>
-
-  <li><a href="https://zhumengzhu.github.io/tags/blog/" class="single__tag" title="blog">#blog</a></li>
+  <li><a href="https://zhumengzhu.github.io/tags/hugo/" class="single__tag" title="Hugo">#Hugo</a></li>
 
 </ul>
 
@@ -1696,17 +1696,17 @@
       
       <h2 id="常用命令">常用命令</h2>
 <ul>
-<li><code>hugo new site</code> SITE_NAME 生成静态博客项目</li>
+<li><code>hugo new site SITE_NAME</code> 生成静态博客项目</li>
 <li><code>hugo server</code> 启动本地服务器，加上 -D 可以渲染 draft=true 的文章</li>
 <li><code>hugo new post/new-content.md</code> 在 <strong>post</strong> 下新建一篇文章</li>
 <li><code>hugo</code> 生成站点静态文件(public 和 resources 目录)</li>
-<li><code>hugo list drafts/expired/future</code> 列出特点的文件</li>
+<li><code>hugo list drafts/expired/future</code> 列出草稿/过期/未来的文件</li>
 </ul>
 <h2 id="踩坑记">踩坑记</h2>
 <ul>
 <li>使用主题 Event 时, 文章必须放在 <code>content/**post**/</code> 目录下, 否则 Home 页不会展示文章链接, 文章内也不会展示目录</li>
-<li>使用主题 Zoo 时, 创建 Archive 页要生成 <code>content/archive/_index.md</code> 这样一个文件(参考 <a href="https://github.com/zzossig/hugo-theme-zzo/issues/47">How to automatically generate archive page content #47</a>)</li>
-<li>使用主题 Zoo 时, GigHub Actions 必须启用 Hugo extended 模式(参考<a href="https://github.com/marketplace/actions/hugo-setup">Hugo setup</a>)</li>
+<li>使用主题 Zzo 时, 要创建 Archive 页(类似 Event 中的 Home 页), 需要创建文件 <code>content/archive/_index.md</code>(参考 <a href="https://github.com/zzossig/hugo-theme-zzo/issues/47">How to automatically generate archive page content #47</a>)</li>
+<li>使用主题 Zzo 时, 在 GigHub Actions 配置中必须启用 Hugo extended 模式, 否则构建会失败(参考<a href="https://github.com/marketplace/actions/hugo-setup">Hugo setup</a>)</li>
 </ul>
 <h2 id="参考链接">参考链接</h2>
 <ul>
@@ -1912,7 +1912,7 @@
     
     
       
-        <a href="https://twitter.com/intent/tweet?text=Hugo%20%e5%85%a5%e9%97%a8&url=https%3a%2f%2fzhumengzhu.github.io%2f2022%2f10%2fhugo-quick-start%2f&hashtags=hugo%2cquickstart%2cblog&via=" title="Twitter" aria-label="Twitter Share Button" class="donation__item" target="_blank" rel="noreferrer" data-type="share">
+        <a href="https://twitter.com/intent/tweet?text=%e6%88%91%e7%9a%84%20Hugo%20%e9%85%8d%e7%bd%ae%e7%ac%94%e8%ae%b0&url=https%3a%2f%2fzhumengzhu.github.io%2f2022%2f10%2fhugo-quick-start%2f&hashtags=Notes%2cHugo&via=" title="Twitter" aria-label="Twitter Share Button" class="donation__item" target="_blank" rel="noreferrer" data-type="share">
           <svg data-name="twitter" enable-background="new 0 0 24 24" viewBox="0 0 24 24" width="35" height="35" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m21.534 7.113c.976-.693 1.797-1.558 2.466-2.554v-.001c-.893.391-1.843.651-2.835.777 1.02-.609 1.799-1.566 2.165-2.719-.951.567-2.001.967-3.12 1.191-.903-.962-2.19-1.557-3.594-1.557-2.724 0-4.917 2.211-4.917 4.921 0 .39.033.765.114 1.122-4.09-.2-7.71-2.16-10.142-5.147-.424.737-.674 1.58-.674 2.487 0 1.704.877 3.214 2.186 4.089-.791-.015-1.566-.245-2.223-.606v.054c0 2.391 1.705 4.377 3.942 4.835-.401.11-.837.162-1.29.162-.315 0-.633-.018-.931-.084.637 1.948 2.447 3.381 4.597 3.428-1.674 1.309-3.8 2.098-6.101 2.098-.403 0-.79-.018-1.177-.067 2.18 1.405 4.762 2.208 7.548 2.208 8.683 0 14.342-7.244 13.986-14.637z"/></svg>
         </a>
       
@@ -2036,6 +2036,21 @@
     <section class="related">
     
     
+    <h1 class="related__title">
+      <hr class="hr-dots"/>
+      <div>
+        相关内容
+      </div>
+      <hr class="hr-dots"/>
+    </h1>
+    <ul class="related-ul">
+        
+        <li>
+          <a href="/2022/10/how-to-set-network-proxy/" class="related__link">网络代理设置</a>
+        </li>
+        
+    </ul>
+    
   </section>
     <div class="grow"></div>
 <nav class="pagination-single">
@@ -2054,22 +2069,59 @@
 </nav>
     
   
-    <div id="lv-container" data-id="city" data-uid="MTAyMC81NzUzOC8zNDAwMg==">
-  <script>
-    (function (d, s) {
-      var j, e = d.getElementsByTagName(s)[0];
+    <div id="utterances"></div>
+<noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function checkTheme(local, base) {
+      var currentTheme = local || base;
 
-      if (typeof LivereTower === 'function') { return; }
+      if (currentTheme === "dark") {
+        return "photon-dark";
+      } else if (currentTheme === "hacker") {
+        return "photon-dark";
+      } else if (currentTheme === "kimbie") {
+        return "github-dark-orange";
+      } else {
+        return "github-light";
+      }
+    }
 
-      j = d.createElement(s);
-      j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-      j.async = true;
+    try {
+      
+      var owner = JSON.parse("\"zhumengzhu\"");
+      
+      var repo = JSON.parse("\"zhumengzhu.github.io\"");
+      
+      var baseTheme = JSON.parse("\"solarized\"");
+      var localTheme = localStorage.getItem('theme');
+      var utterTheme = checkTheme(localTheme, baseTheme);
+      var myScript = document.createElement('script');
+      myScript.setAttribute('src', 'https://utteranc.es/client.js');
+      myScript.setAttribute('repo', `${owner}/${repo}`);
+      myScript.setAttribute('issue-term', 'pathname');
+      myScript.setAttribute('theme', utterTheme);
+      myScript.setAttribute('crossorigin', 'anonymous');
+      myScript.setAttribute('async', '');
+      myScript.onload = function() {
+      }
 
-      e.parentNode.insertBefore(j, e);
-    })(document, 'script');
-  </script>
-  <noscript>Please enable JavaScript to view the comments powered by <a href="https://livere.com/">LiveRe.</a></noscript>
+      
+
+      document.getElementById('utterances').appendChild(myScript);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+</script>
+
+<div id="comments-fallback" class="viaemail">
+    <div class="utterances__message">
+        
+        <a href="https://github.com/zhumengzhu/zhumengzhu.github.io/issues/" target="_blank" rel="noreferrer">&nbsp;</a>
+    </div>
 </div>
+
   
 
     <div class="modal micromodal-slide" id="modal" aria-hidden="true">
@@ -3155,7 +3207,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 
             <p class="caption">
                 
-                    ©2022, All Rights Reserved
+                    
+                    
+
+                    
+                        ©2022, All Rights Reserved<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC BY-NC-ND 4.0</a>
+                    
                 
             </p>
         

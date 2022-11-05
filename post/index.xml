@@ -11,8 +11,6 @@
     <description>Recent content in Posts on Somnus&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <managingEditor>mengzhu.loveyou@gmail.com (zhumengzhu)</managingEditor>
-    <webMaster>mengzhu.loveyou@gmail.com (zhumengzhu)</webMaster>
     <copyright>©2022, All Rights Reserved</copyright>
     <lastBuildDate>Sun, 30 Oct 2022 22:22:52 +0800</lastBuildDate>
     
@@ -21,25 +19,25 @@
 
       
       <item>
-        <title>Hugo 入门</title>
+        <title>我的 Hugo 配置笔记</title>
         <link>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</link>
         <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
-        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
-        <atom:modified>Mon, 31 Oct 2022 01:48:34 +0800</atom:modified>
+        
+        <atom:modified>Sun, 06 Nov 2022 03:07:33 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</guid>
         <description>&lt;h2 id=&#34;常用命令&#34;&gt;常用命令&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;code&gt;hugo new site&lt;/code&gt; SITE_NAME 生成静态博客项目&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hugo new site SITE_NAME&lt;/code&gt; 生成静态博客项目&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;hugo server&lt;/code&gt; 启动本地服务器，加上 -D 可以渲染 draft=true 的文章&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;hugo new post/new-content.md&lt;/code&gt; 在 &lt;strong&gt;post&lt;/strong&gt; 下新建一篇文章&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;hugo&lt;/code&gt; 生成站点静态文件(public 和 resources 目录)&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;hugo list drafts/expired/future&lt;/code&gt; 列出特点的文件&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hugo list drafts/expired/future&lt;/code&gt; 列出草稿/过期/未来的文件&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;踩坑记&#34;&gt;踩坑记&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;使用主题 Event 时, 文章必须放在 &lt;code&gt;content/**post**/&lt;/code&gt; 目录下, 否则 Home 页不会展示文章链接, 文章内也不会展示目录&lt;/li&gt;
-&lt;li&gt;使用主题 Zoo 时, 创建 Archive 页要生成 &lt;code&gt;content/archive/_index.md&lt;/code&gt; 这样一个文件(参考 &lt;a href=&#34;https://github.com/zzossig/hugo-theme-zzo/issues/47&#34;&gt;How to automatically generate archive page content #47&lt;/a&gt;)&lt;/li&gt;
-&lt;li&gt;使用主题 Zoo 时, GigHub Actions 必须启用 Hugo extended 模式(参考&lt;a href=&#34;https://github.com/marketplace/actions/hugo-setup&#34;&gt;Hugo setup&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;使用主题 Zzo 时, 要创建 Archive 页(类似 Event 中的 Home 页), 需要创建文件 &lt;code&gt;content/archive/_index.md&lt;/code&gt;(参考 &lt;a href=&#34;https://github.com/zzossig/hugo-theme-zzo/issues/47&#34;&gt;How to automatically generate archive page content #47&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;使用主题 Zzo 时, 在 GigHub Actions 配置中必须启用 Hugo extended 模式, 否则构建会失败(参考&lt;a href=&#34;https://github.com/marketplace/actions/hugo-setup&#34;&gt;Hugo setup&lt;/a&gt;)&lt;/li&gt;
 &lt;/ul&gt;</description>
         
         <dc:creator>zhumengzhu</dc:creator>
@@ -49,15 +47,11 @@
         
           
             
-              <category>hugo</category>
+              <category>Notes</category>
             
           
             
-              <category>quickstart</category>
-            
-          
-            
-              <category>blog</category>
+              <category>Hugo</category>
             
           
         
@@ -75,8 +69,8 @@
         <title>网络代理设置</title>
         <link>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</link>
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
-        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
-        <atom:modified>Sun, 30 Oct 2022 22:35:54 +0800</atom:modified>
+        
+        <atom:modified>Sun, 06 Nov 2022 03:07:33 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</guid>
         <description>&lt;h2 id=&#34;mac-客户端&#34;&gt;Mac 客户端&lt;/h2&gt;
 &lt;ul&gt;
@@ -105,6 +99,10 @@ Host github.com
         
         
         
+          
+            
+              <category>Notes</category>
+            
           
             
               <category>Network</category>

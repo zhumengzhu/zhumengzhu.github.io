@@ -11,8 +11,6 @@
     <description>Recent content in Git on Somnus&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <managingEditor>mengzhu.loveyou@gmail.com (zhumengzhu)</managingEditor>
-    <webMaster>mengzhu.loveyou@gmail.com (zhumengzhu)</webMaster>
     <copyright>©2022, All Rights Reserved</copyright>
     <lastBuildDate>Sun, 16 Oct 2022 19:09:32 +0800</lastBuildDate>
     
@@ -24,8 +22,8 @@
         <title>网络代理设置</title>
         <link>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</link>
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
-        <author>mengzhu.loveyou@gmail.com (zhumengzhu)</author>
-        <atom:modified>Sun, 30 Oct 2022 22:35:54 +0800</atom:modified>
+        
+        <atom:modified>Sun, 06 Nov 2022 03:07:33 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/</guid>
         <description>&lt;h2 id=&#34;mac-客户端&#34;&gt;Mac 客户端&lt;/h2&gt;
 &lt;ul&gt;
@@ -54,6 +52,10 @@ Host github.com
         
         
         
+          
+            
+              <category>Notes</category>
+            
           
             
               <category>Network</category>
