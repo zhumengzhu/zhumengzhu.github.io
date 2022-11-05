@@ -12,11 +12,47 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>©2022, All Rights Reserved</copyright>
-    <lastBuildDate>Sun, 30 Oct 2022 22:22:52 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 05 Nov 2022 12:36:01 +0800</lastBuildDate>
     
         <atom:link href="https://zhumengzhu.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
     
 
+      
+      <item>
+        <title>MySQL</title>
+        <link>https://zhumengzhu.github.io/categories/mysql/</link>
+        <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/categories/mysql/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>Optimization</title>
+        <link>https://zhumengzhu.github.io/categories/optimization/</link>
+        <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/categories/optimization/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
       
       <item>
         <title>Hugo</title>
