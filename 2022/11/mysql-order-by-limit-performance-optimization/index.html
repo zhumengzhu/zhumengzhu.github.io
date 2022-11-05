@@ -1339,7 +1339,7 @@
 <meta name="keywords" content="Notes,MySQL,Performance,Optimization,High offset,Pagination">
 
 <meta name="created" content="2022-11-05T12:36:01&#43;0800">
-<meta name="modified" content="2022-11-06T03:25:08&#43;0800">
+<meta name="modified" content="2022-11-06T03:40:42&#43;0800">
 <meta property="article:published_time" content="2022-11-05T12:36:01&#43;0800">
 
 <meta name="author" content="zhumengzhu">
@@ -1376,7 +1376,7 @@
     "@type": "BlogPosting",
     "headline": "Mysql 的深分页问题及优化方法",
     "datePublished": "2022-11-05T12:36:01+08:00",
-    "dateModified": "2022-11-06T03:25:08+08:00",
+    "dateModified": "2022-11-06T03:40:42+08:00",
     "url" : "https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/",
     "description": "讨论 MySQL 深分页查询为什么慢，及如何优化",
     "keywords": ["Notes","MySQL","Performance","Optimization","High offset","Pagination"],
@@ -1672,7 +1672,7 @@
   
   &nbsp;&middot;&nbsp; <time class="single__info" title="更新日期"> 📝&nbsp;2022年11月06日 </time>
   
-  &nbsp;&middot;&nbsp; <span class="single__info" title="阅读时长"> ☕&nbsp;4&nbsp;分钟 </span>
+  &nbsp;&middot;&nbsp; <span class="single__info" title="阅读时长"> ☕&nbsp;5&nbsp;分钟 </span>
   
   <span class="single__info">
      &middot; 👀<span id="busuanzi_value_page_pv">...</span> 阅读
@@ -1794,9 +1794,9 @@
 </span><span class="lnt">10
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-SQL" data-lang="SQL"><span class="line"><span class="cl"><span class="c1">-- 原 SQL
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">rows</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">.</span><span class="mi">465</span><span class="w"> </span><span class="n">sec</span><span class="p">)</span><span class="w">
+<pre tabindex="0" class="chroma"><code class="language-SQL" data-lang="SQL"><span class="line"><span class="cl"><span class="c1">-- 原 SQL(强制走二级索引)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">force</span><span class="w"> </span><span class="k">index</span><span class="p">(</span><span class="n">idx_name</span><span class="p">)</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">rows</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">.</span><span class="mi">833</span><span class="w"> </span><span class="n">sec</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">-- 优化方案一
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="n">t1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="n">t2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t2</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">name</span><span class="p">;</span><span class="w">
@@ -1806,7 +1806,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">rows</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">741</span><span class="w"> </span><span class="n">sec</span><span class="p">)</span><span class="w">
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><p>通过使用子查询，性能提升约 90%：</p>
+</div><p>通过使用利用了覆盖索引的子查询，性能提升约 80%~90%：</p>
 <h2 id="cursor-pagination">Cursor pagination</h2>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -1826,7 +1826,7 @@
 <h2 id="优化前">优化前</h2>
 <p>考虑原始 SQL <code>select * from page force index(idx_name) order by name limit 6000000, 10</code> 的执行过程：</p>
 <ol>
-<li>首先 Sever 层向 InnoDB 请求第一条数据；InnoDB 从 <code>idx_name</code> 上获取第一条二级索引记录，然后查询聚簇索引获取完整记录(这一操作叫回表)，返回给 Server 层;</li>
+<li>首先 Sever 层向 InnoDB 请求第一条数据；InnoDB 从 <code>idx_name</code> 上获取第一条二级索引记录，然后查询聚簇索引获取完整记录(即回表操作)，返回给 Server 层;</li>
 <li>由于存在 <code>limit 6000000</code> 的限制, Server 层会将该数据丢弃并计数，然后向 InnoDB 请求下一条数据；</li>
 <li>上述操作重复 <code>600 万次</code>；</li>
 <li>之后的第 <code>6000001</code>~<code>6000010</code> 10 条数据则会被放入本地网络缓冲区，发给客户端；</li>
@@ -1837,7 +1837,7 @@
 <li>其次，回表操作可能需要一次磁盘<strong>随机读</strong>；</li>
 </ul>
 <h2 id="优化后">优化后</h2>
-<p>在考虑优化后的 SQL <code>select t1.* from page t1 join (select id from page order by name limit 6000000, 10) t2 on t1.id = t2.id order by t1.name</code> 的执行过程：</p>
+<p>再考虑优化后的 SQL <code>select t1.* from page t1 join (select id from page order by name limit 6000000, 10) t2 on t1.id = t2.id order by t1.name</code> 的执行过程：</p>
 <ol>
 <li>首先 Sever 层向 InnoDB 请求第一条数据；InnoDB 从 <code>idx_name</code> 上获取第一条二级索引记录，<del>然后查询聚簇索引获取完整记录(这一操作叫回表)</del>，然后将主键 ID 返回给 Server 层;</li>
 <li>由于存在 <code>limit 6000000</code> 的限制, Server 层会将该数据丢弃并计数，然后向 InnoDB 请求下一条数据；</li>
@@ -1905,7 +1905,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">WHILE</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">6000010</span><span class="p">)</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">DO</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">page2</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">name</span><span class="o">`</span><span class="p">,</span><span class="w"> </span><span class="o">`</span><span class="n">content</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">CONCAT</span><span class="p">(</span><span class="s1">&#39;小瓦&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">CONCAT</span><span class="p">(</span><span class="s1">&#39;xx&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">name</span><span class="o">`</span><span class="p">,</span><span class="w"> </span><span class="o">`</span><span class="n">content</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">CONCAT</span><span class="p">(</span><span class="s1">&#39;小瓦&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">CONCAT</span><span class="p">(</span><span class="s1">&#39;xx&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">SET</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">END</span><span class="w"> </span><span class="n">WHILE</span><span class="p">;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">END</span><span class="p">;;</span><span class="w">
@@ -1963,11 +1963,11 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="n">t1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="n">t2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t2</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">id</span><span class="p">;</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">-- 探索二级索引
-</span></span></span><span class="line"><span class="cl"><span class="c1">--- 下面的 SQL 实际会是全表扫描，最慢
+</span></span></span><span class="line"><span class="cl"><span class="c1">--- 基础 SQL，会是全表扫描，最慢
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">--- 下面的 SQL 强制走二级索引，稍快
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">--- 强制走二级索引，稍快
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">force</span><span class="w"> </span><span class="k">index</span><span class="p">(</span><span class="n">idx_name</span><span class="p">)</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">--- 下面的 SQL 利用覆盖索引减少回表
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">--- 利用使用了覆盖索引的子查询，减少回表，最快
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">select</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="n">t1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">6000000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="n">t2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t2</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">t1</span><span class="p">.</span><span class="n">name</span><span class="p">;</span><span class="w">
 </span></span></span></code></pre></td></tr></table>
 </div>
@@ -1982,11 +1982,11 @@
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 通过查看 mysql 进程信息获取</span>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 查看 mysql 进程参数</span>
 </span></span><span class="line"><span class="cl">ps aux <span class="p">|</span> grep mysql
 </span></span><span class="line"><span class="cl"><span class="c1"># /opt/homebrew/opt/mariadb/bin/mariadbd --basedir=/opt/homebrew/opt/mariadb --datadir=/opt/homebrew/var/mysql --plugin-dir=/opt/homebrew/opt/mariadb/lib/plugin --log-error=/opt/homebrew/var/mysql/zmz.local.err --pid-file=zmz.local.pid</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># --basedir=/opt/homebrew/opt/mariadb 目录下包含了慢查询日志和数据文件</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># --basedir=/opt/homebrew/opt/mariadb 即慢查询日志和数据文件所在目录</span>
 </span></span><span class="line"><span class="cl"><span class="c1"># ps. 执行前面的存储计划，创建 100 万条数据，占用磁盘空间大约 100MB；创建 600 万条数据，占用空间大约 600MB；</span>
 </span></span></code></pre></td></tr></table>
 </div>
