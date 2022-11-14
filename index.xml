@@ -44,7 +44,7 @@
         <link>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</link>
         <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
         
-        <atom:modified>Sun, 06 Nov 2022 03:40:42 +0800</atom:modified>
+        <atom:modified>Mon, 14 Nov 2022 19:32:12 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</guid>
         <description>&lt;h1 id=&#34;一深分页为什么慢&#34;&gt;一、深分页为什么慢&lt;/h1&gt;
 &lt;p&gt;深分页指的是形如 &lt;code&gt;select ... from ... where ... order by ... limit offset, size&lt;/code&gt; 的查询语句中 &lt;code&gt;offset&lt;/code&gt; 特别大的情况。高性能 MySQL(第三版) 的第 6.7.5 节专门讲了此问题，但比较简略。&lt;/p&gt;
@@ -341,6 +341,7 @@
 &lt;li&gt;&lt;a href=&#34;https://shashwat-creator.medium.com/mysqls-logical-architecture-1-eaaa1f63ec2f&#34;&gt;MySQL Logical Architecture&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://stackoverflow.com/a/1613021/3496176&#34;&gt;Mysql index configuration&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;&gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;&gt;Late Row Lookups: InnoDB&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://www.percona.com/blog/2006/09/01/mysql-order-by-limit-performance-optimization/&#34;&gt;MySQL ORDER BY LIMIT Performance Optimization&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://github.com/zhangyachen/zhangyachen.github.io/issues/117&#34;&gt;mysql 证明为什么用limit时，offset很大会影响性能 &lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/5.7/en/limit-optimization.html&#34;&gt;MySQL 5.7 Reference Manual/LIMIT Query Optimization&lt;/a&gt;&lt;/li&gt;
@@ -383,10 +384,6 @@
           
             
               <category>MySQL</category>
-            
-          
-            
-              <category>Optimization</category>
             
           
         
