@@ -6,15 +6,15 @@
   xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
   xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
-    <title>Pagination on Somnus&#39;s Blog</title>
-    <link>https://zhumengzhu.github.io/tags/pagination/</link>
-    <description>Recent content in Pagination on Somnus&#39;s Blog</description>
+    <title>Keyset Pagination on Somnus&#39;s Blog</title>
+    <link>https://zhumengzhu.github.io/tags/keyset-pagination/</link>
+    <description>Recent content in Keyset Pagination on Somnus&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>©2022, All Rights Reserved</copyright>
     <lastBuildDate>Sat, 05 Nov 2022 12:36:01 +0800</lastBuildDate>
     
-        <atom:link href="https://zhumengzhu.github.io/tags/pagination/index.xml" rel="self" type="application/rss+xml" />
+        <atom:link href="https://zhumengzhu.github.io/tags/keyset-pagination/index.xml" rel="self" type="application/rss+xml" />
     
 
       
@@ -23,7 +23,7 @@
         <link>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</link>
         <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
         
-        <atom:modified>Mon, 14 Nov 2022 19:32:12 +0800</atom:modified>
+        <atom:modified>Sun, 20 Nov 2022 17:16:16 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</guid>
         <description>&lt;h1 id=&#34;一深分页为什么慢&#34;&gt;一、深分页为什么慢&lt;/h1&gt;
 &lt;p&gt;深分页指的是形如 &lt;code&gt;select ... from ... where ... order by ... limit offset, size&lt;/code&gt; 的查询语句中 &lt;code&gt;offset&lt;/code&gt; 特别大的情况。高性能 MySQL(第三版) 的第 6.7.5 节专门讲了此问题，但比较简略。&lt;/p&gt;
@@ -130,7 +130,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;通过使用利用了覆盖索引的子查询，性能提升约 80%~90%：&lt;/p&gt;
-&lt;h2 id=&#34;cursor-pagination&#34;&gt;Cursor pagination&lt;/h2&gt;
+&lt;h2 id=&#34;keyset-pagination&#34;&gt;Keyset pagination&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -355,7 +355,7 @@
             
           
             
-              <category>Pagination</category>
+              <category>Keyset Pagination</category>
             
           
         
