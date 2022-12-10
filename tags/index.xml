@@ -12,7 +12,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>©2022, All Rights Reserved</copyright>
-    <lastBuildDate>Mon, 14 Nov 2022 19:12:47 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 20 Nov 2022 17:21:39 +0800</lastBuildDate>
     
         <atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -21,10 +21,100 @@
       <item>
         <title>InnoDB</title>
         <link>https://zhumengzhu.github.io/tags/innodb/</link>
-        <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
         
         <guid>https://zhumengzhu.github.io/tags/innodb/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>LAST_INSERT_ID</title>
+        <link>https://zhumengzhu.github.io/tags/last_insert_id/</link>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/tags/last_insert_id/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>MySQL</title>
+        <link>https://zhumengzhu.github.io/tags/mysql/</link>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/tags/mysql/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>NOWAIT</title>
+        <link>https://zhumengzhu.github.io/tags/nowait/</link>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/tags/nowait/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>Select for update</title>
+        <link>https://zhumengzhu.github.io/tags/select-for-update/</link>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/tags/select-for-update/</guid>
+        <description></description>
+        
+        <dc:creator>zhumengzhu</dc:creator>
+        
+        
+        
+        
+        
+        
+      </item>
+      
+      <item>
+        <title>SKIP LOCKED</title>
+        <link>https://zhumengzhu.github.io/tags/skip-locked/</link>
+        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
+        
+        
+        <guid>https://zhumengzhu.github.io/tags/skip-locked/</guid>
         <description></description>
         
         <dc:creator>zhumengzhu</dc:creator>
@@ -43,24 +133,6 @@
         
         
         <guid>https://zhumengzhu.github.io/tags/late-row-lookups/</guid>
-        <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
-        <title>MySQL</title>
-        <link>https://zhumengzhu.github.io/tags/mysql/</link>
-        <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
-        
-        
-        <guid>https://zhumengzhu.github.io/tags/mysql/</guid>
         <description></description>
         
         <dc:creator>zhumengzhu</dc:creator>

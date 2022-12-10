@@ -19,11 +19,11 @@
 
       
       <item>
-        <title>【笔记】Late Row Lookups: InnoDB</title>
+        <title>Late Row Lookups: InnoDB</title>
         <link>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        <atom:modified>Sun, 20 Nov 2022 17:16:16 +0800</atom:modified>
+        <atom:modified>Sun, 11 Dec 2022 03:09:04 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</guid>
         <description>&lt;h1 id=&#34;背景&#34;&gt;背景&lt;/h1&gt;
 &lt;p&gt;这是一篇博客阅读笔记，原博客&lt;a href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;&gt;Late row lookups: InnoDB&lt;/a&gt;写于 2011 年，作者是一个叫 Quassnoi 的俄罗斯人。&lt;/p&gt;
