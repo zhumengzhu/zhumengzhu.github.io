@@ -11,7 +11,7 @@
     <description>Recent content in MySQL on Somnus&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <copyright>©2022, All Rights Reserved</copyright>
+    <copyright>©2023, All Rights Reserved</copyright>
     <lastBuildDate>Sun, 20 Nov 2022 17:21:39 +0800</lastBuildDate>
     
         <atom:link href="https://zhumengzhu.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
@@ -23,20 +23,18 @@
         <link>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        <atom:modified>Sun, 11 Dec 2022 03:09:04 +0800</atom:modified>
+        <atom:modified>Sun, 11 Dec 2022 03:21:01 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</guid>
         <description>&lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
-&lt;p&gt;本文从『优惠券发放问题』的讨论出发，先介绍它的几种解决方法并讨论其优缺点，然后讨论一下&lt;code&gt;Update just one unused row&lt;/code&gt;&lt;br /&gt;
-模式，最后聊一下 MySQL 8.0.1 的 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 特性。&lt;/p&gt;
+&lt;p&gt;本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的&lt;code&gt;update just one unused row&lt;/code&gt;模式，最后聊一下 MySQL 8.0.1 的 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 特性。&lt;/p&gt;
 &lt;h1 id=&#34;券发放问题&#34;&gt;『券发放』问题&lt;/h1&gt;
-&lt;p&gt;实现优惠券发放，一般是使用『预生成』模式，即在发放前，先将优惠券全部生成好，存在一张全表，这张表至少包含三个字段：&lt;/p&gt;
+&lt;p&gt;券发放，一般使用『预生成』模式。在发放前，先将券全部生成好，存在一张全表，这张表一般至少包含三个字段：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;一个字段记录全局唯一的券码；&lt;/li&gt;
+&lt;li&gt;一个全局唯一的券码字段；&lt;/li&gt;
 &lt;li&gt;一个状态字段表示是否发放；&lt;/li&gt;
-&lt;li&gt;一个用户 ID 字段表示发放给谁；&lt;/li&gt;
+&lt;li&gt;一个用户 ID 字段记录券发给了谁；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;当用户请求领券时，会从表中&lt;strong&gt;选择&lt;/strong&gt;一条状态为『未领取』的记录，将其状态置为『已领取』，用户 ID置为『领券者的 ID』，最后并&lt;strong&gt;将券码&lt;/strong&gt;&lt;br /&gt;
-返给用户。&lt;/p&gt;
+&lt;p&gt;当用户请求领券时，会从表中&lt;strong&gt;选择&lt;/strong&gt;一条状态为『未领取』的记录，将其状态置为『已领取』，用户 ID置为『领券者的 ID』，最后将&lt;strong&gt;券码&lt;/strong&gt;返给用户。&lt;/p&gt;
 &lt;p&gt;假设券表结构如下：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -114,7 +112,7 @@
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;假设领券的用户 ID 为 1000。&lt;/p&gt;
-&lt;h2 id=&#34;方法一乐观锁-cas&#34;&gt;方法一：乐观锁 &lt;code&gt;CAS&lt;/code&gt;&lt;/h2&gt;
+&lt;h2 id=&#34;方法一乐观锁-cas&#34;&gt;方法一：乐观锁-CAS&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -183,7 +181,7 @@
 &lt;/table&gt;
 &lt;p&gt;由于线程一执行完第三步后，已将&lt;code&gt;c1&lt;/code&gt;这条记录的&lt;code&gt;status&lt;/code&gt;的值改为 1，因此线程二执行第四步会失败。所以需要重试。&lt;/p&gt;
 &lt;p&gt;这可以看做一种『乐观锁』模式，『乐观锁』不适合高并发场景。&lt;/p&gt;
-&lt;h2 id=&#34;方法二悲观锁-select-for-update&#34;&gt;方法二：悲观锁 &lt;code&gt;SELECT FOR UPDATE&lt;/code&gt;&lt;/h2&gt;
+&lt;h2 id=&#34;方法二悲观锁-select-for-update&#34;&gt;方法二：悲观锁-SELECT FOR UPDATE&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -295,7 +293,7 @@
 &lt;p&gt;线程二在执行第 4 步时，由于线程一已经抢到记录&lt;code&gt;c1&lt;/code&gt;的锁，线程二会被阻塞，直到线程一提交事务（ 根据2PL，提交事务时才会释放锁）；线程二在&lt;br /&gt;
 7 步获取锁后，由于记录&lt;code&gt;c1&lt;/code&gt;的&lt;code&gt;status&lt;/code&gt;的值已被线程一改为 1，所以此时查询到的记录是&lt;code&gt;c2&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;方法二虽然可以保证券发放不会失败，但在高并发下，会有大量线程阻塞。&lt;/p&gt;
-&lt;h2 id=&#34;方法三使用last_insert_id优化锁的持有时间&#34;&gt;方法三：使用&lt;code&gt;LAST_INSERT_ID&lt;/code&gt;优化锁的持有时间&lt;/h2&gt;
+&lt;h2 id=&#34;方法三使用-last_insert_id-优化锁的持有时间&#34;&gt;方法三：使用 LAST_INSERT_ID 优化锁的持有时间&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -386,7 +384,7 @@ own sequence values.&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;、返回券码&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;方法四使用-skip-locked-避免锁争抢&#34;&gt;方法四：使用 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 避免锁争抢&lt;/h2&gt;
+&lt;/div&gt;&lt;h2 id=&#34;方法四使用-skip-locked-避免锁争抢&#34;&gt;方法四：使用 SKIP LOCKED 避免锁争抢&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -492,7 +490,7 @@ own sequence values.&lt;/p&gt;
 &lt;p&gt;不同于方法二，线程二在执行第 4 步时，不会阻塞在记录&lt;code&gt;c1&lt;/code&gt;上，而是会跳过这条记录，直接对下一条记录&lt;code&gt;c2&lt;/code&gt;进行加锁。&lt;/p&gt;
 &lt;p&gt;这个方法，锁的持有时间与方法二相同，但避免了争抢锁，也能达到一个很好的性能。&lt;/p&gt;
 &lt;p&gt;注意，&lt;code&gt;SKIP LOCKED&lt;/code&gt; 是 MySQL 8.0.1 引入的新特性。&lt;/p&gt;
-&lt;h2 id=&#34;方法五使用-redis-降低-sql-的执行次数&#34;&gt;方法五：使用 Redis 降低 SQL 的执行次数&lt;/h2&gt;
+&lt;h2 id=&#34;方法五使用-redis-减少-sql-的执行次数&#34;&gt;方法五：使用 Redis 减少 SQL 的执行次数&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -527,20 +525,20 @@ own sequence values.&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;、返回券码&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;通过引入 Redis，既能保证正确性，也有更好的性能，因为：&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;使用 Redis，既能保证正确性，也有更好的性能，因为：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Redis 是单线程执行命令的，因此从 Redis 返回的券码是唯一的，执行第 2 步不会争抢锁也不会失败；&lt;/li&gt;
 &lt;li&gt;LPOP 命令是从队列头移除一个元素，时间复杂度仅为 O(1)；&lt;/li&gt;
 &lt;li&gt;仅需要执行一条 UPDATE 语句；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;初次之外，还可以通过引入 MQ 将 UPDATE 语句改为异步执行，进一步提高并发度。&lt;/p&gt;
-&lt;p&gt;但是，引入 Redis 使得系统变得更复杂，因为：&lt;/p&gt;
+&lt;p&gt;除此之外，还可以通过引入 MQ 将 UPDATE 语句改为异步执行，进一步提高并发度。&lt;/p&gt;
+&lt;p&gt;不过，引入 Redis 会使得系统变得更复杂，因为：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;需要额外编写一个模块用来初始化 Redis；&lt;/li&gt;
 &lt;li&gt;在初始化 Redis 要特别小心，不能将『已发放』的券放入 Redis；&lt;/li&gt;
-&lt;li&gt;从 Redis 出队成功，但写数据库失败，会导致券码被浪费，需要回滚 Redis；&lt;/li&gt;
+&lt;li&gt;从 Redis 出队成功，但写数据库失败，会导致券码被浪费，需要&lt;strong&gt;回滚&lt;/strong&gt; Redis；&lt;/li&gt;
 &lt;li&gt;回滚 Redis 可能实现起来比较复杂，因为将券码放回 Redis 时可能失败，需要重试机；&lt;/li&gt;
-&lt;li&gt;Redis 主从同步可能存在延迟，此时主从切换可能导致 Redis 弹出重复的券码，导致方法失败，需要重试机制；&lt;/li&gt;
+&lt;li&gt;Redis 主从同步可能存在延迟，此时&lt;strong&gt;主从切换&lt;/strong&gt;可能导致 Redis 返回重复的券码，导致方法失败，需要重试机制；&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;小节&#34;&gt;小节&lt;/h2&gt;
 &lt;ul&gt;
@@ -579,9 +577,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;p&gt;详情见：&lt;a href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;&gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
 &lt;p&gt;这种方法在需要&lt;strong&gt;一次更新多条记录&lt;/strong&gt;时特别有用。&lt;/p&gt;
 &lt;h1 id=&#34;mysql-801-skip-locked-and-nowait&#34;&gt;MySQL 8.0.1 SKIP LOCKED and NOWAIT&lt;/h1&gt;
-&lt;p&gt;暂时先推荐一篇介绍这个特性的文章：&lt;a href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;&gt;MySQL 8.0.1: Using SKIP LOCKED and NOWAIT to handle hot rows&lt;/a&gt;&lt;br /&gt;
-这篇文章发布是 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; Martin Hansson 发布在 MySQL 的官方博客上的。&lt;br /&gt;
-它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 如何使用。&lt;/p&gt;
+&lt;p&gt;推荐一篇文章：&lt;a href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;&gt;MySQL 8.0.1: Using SKIP LOCKED and NOWAIT to handle hot rows&lt;/a&gt;&lt;br /&gt;
+这篇文章是在 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 的使用方法。&lt;/p&gt;
 &lt;p&gt;另外，需要特别注意：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;
