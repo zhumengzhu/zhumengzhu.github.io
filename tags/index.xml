@@ -1,330 +1,164 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<rss version="2.0" 
-  xmlns:content="http://purl.org/rss/1.0/modules/content/" 
-  xmlns:dc="http://purl.org/dc/elements/1.1/" 
-  xmlns:atom="http://www.w3.org/2005/Atom" 
-  xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
-  xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <title>Tags on Somnus&#39;s Blog</title>
-    <link>https://zhumengzhu.github.io/tags/</link>
-    <description>Recent content in Tags on Somnus&#39;s Blog</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>©2023, All Rights Reserved</copyright>
-    <lastBuildDate>Sun, 20 Nov 2022 17:21:39 +0800</lastBuildDate>
-    
-        <atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
-    
-
-      
-      <item>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Tags on Somnus</title>
+        <link>https://zhumengzhu.github.io/tags/</link>
+        <description>Recent content in Tags on Somnus</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>All Rights Reserved</copyright>
+        <lastBuildDate>Sat, 07 Dec 2024 21:48:40 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Java</title>
+        <link>https://zhumengzhu.github.io/tags/java/</link>
+        <pubDate>Mon, 30 Jan 2023 10:33:47 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/java/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Random</title>
+        <link>https://zhumengzhu.github.io/tags/random/</link>
+        <pubDate>Mon, 30 Jan 2023 10:33:47 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/random/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>InnoDB</title>
         <link>https://zhumengzhu.github.io/tags/innodb/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/innodb/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>LAST_INSERT_ID</title>
         <link>https://zhumengzhu.github.io/tags/last_insert_id/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/last_insert_id/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>MySQL</title>
         <link>https://zhumengzhu.github.io/tags/mysql/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/mysql/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>NOWAIT</title>
         <link>https://zhumengzhu.github.io/tags/nowait/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/nowait/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
-        <title>Select for update</title>
+        </item>
+        <item>
+        <title>Select for Update</title>
         <link>https://zhumengzhu.github.io/tags/select-for-update/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/select-for-update/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>SKIP LOCKED</title>
         <link>https://zhumengzhu.github.io/tags/skip-locked/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/skip-locked/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Late Row Lookups</title>
         <link>https://zhumengzhu.github.io/tags/late-row-lookups/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/late-row-lookups/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Notes</title>
         <link>https://zhumengzhu.github.io/tags/notes/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/notes/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Optimization</title>
         <link>https://zhumengzhu.github.io/tags/optimization/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/optimization/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Performance</title>
         <link>https://zhumengzhu.github.io/tags/performance/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/performance/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>PostgreSQL</title>
         <link>https://zhumengzhu.github.io/tags/postgresql/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/postgresql/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
-        <title>High offset</title>
+        </item>
+        <item>
+        <title>High Offset</title>
         <link>https://zhumengzhu.github.io/tags/high-offset/</link>
         <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/high-offset/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Keyset Pagination</title>
         <link>https://zhumengzhu.github.io/tags/keyset-pagination/</link>
         <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/keyset-pagination/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Hugo</title>
         <link>https://zhumengzhu.github.io/tags/hugo/</link>
         <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/hugo/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Git</title>
         <link>https://zhumengzhu.github.io/tags/git/</link>
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/git/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Network</title>
         <link>https://zhumengzhu.github.io/tags/network/</link>
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/network/</guid>
         <description></description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Proxy</title>
         <link>https://zhumengzhu.github.io/tags/proxy/</link>
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
         
-        
         <guid>https://zhumengzhu.github.io/tags/proxy/</guid>
         <description></description>
+        </item>
         
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-        
-        
-      </item>
-      
-
-    
-  </channel>
+    </channel>
 </rss>

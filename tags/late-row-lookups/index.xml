@@ -1,33 +1,23 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<rss version="2.0" 
-  xmlns:content="http://purl.org/rss/1.0/modules/content/" 
-  xmlns:dc="http://purl.org/dc/elements/1.1/" 
-  xmlns:atom="http://www.w3.org/2005/Atom" 
-  xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
-  xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <title>Late Row Lookups on Somnus&#39;s Blog</title>
-    <link>https://zhumengzhu.github.io/tags/late-row-lookups/</link>
-    <description>Recent content in Late Row Lookups on Somnus&#39;s Blog</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>©2023, All Rights Reserved</copyright>
-    <lastBuildDate>Mon, 14 Nov 2022 19:12:47 +0800</lastBuildDate>
-    
-        <atom:link href="https://zhumengzhu.github.io/tags/late-row-lookups/index.xml" rel="self" type="application/rss+xml" />
-    
-
-      
-      <item>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Late Row Lookups on Somnus</title>
+        <link>https://zhumengzhu.github.io/tags/late-row-lookups/</link>
+        <description>Recent content in Late Row Lookups on Somnus</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>All Rights Reserved</copyright>
+        <lastBuildDate>Sun, 11 Dec 2022 03:09:04 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/late-row-lookups/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>Late Row Lookups: InnoDB</title>
         <link>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        <atom:modified>Sun, 11 Dec 2022 03:09:04 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</guid>
-        <description>&lt;h1 id=&#34;背景&#34;&gt;背景&lt;/h1&gt;
-&lt;p&gt;这是一篇博客阅读笔记，原博客&lt;a href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;&gt;Late row lookups: InnoDB&lt;/a&gt;写于 2011 年，作者是一个叫 Quassnoi 的俄罗斯人。&lt;/p&gt;
-&lt;p&gt;Quassnoi 在 2009 年时写了一篇文章讲 &lt;code&gt;MySQL Limit&lt;/code&gt; 的性能优化(&lt;a href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;&gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;)，后来有读者提了两个问题：&lt;/p&gt;
+        <description>&lt;h1 id=&#34;背景&#34;&gt;背景
+&lt;/h1&gt;&lt;p&gt;这是一篇博客阅读笔记，原博客&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Late row lookups: InnoDB&lt;/a&gt;写于 2011 年，作者是一个叫 Quassnoi 的俄罗斯人。&lt;/p&gt;
+&lt;p&gt;Quassnoi 在 2009 年时写了一篇文章讲 &lt;code&gt;MySQL Limit&lt;/code&gt; 的性能优化(&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;)，后来有读者提了两个问题：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;ul&gt;
 &lt;li&gt;Is this workaround specific to &lt;strong&gt;MyISAM&lt;/strong&gt; engine?&lt;/li&gt;
@@ -35,8 +25,8 @@
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Quassnoi 写下这篇新博客，即为了回答上述两个问题。&lt;/p&gt;
-&lt;h1 id=&#34;正文&#34;&gt;正文&lt;/h1&gt;
-&lt;blockquote&gt;
+&lt;h1 id=&#34;正文&#34;&gt;正文
+&lt;/h1&gt;&lt;blockquote&gt;
 &lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -79,16 +69,16 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;注意：作者之前的文章讨论的是这个方法对 &lt;strong&gt;MyISAM&lt;/strong&gt; 是有效的；问题是，对于 &lt;strong&gt;InnoDB&lt;/strong&gt; 和 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 呢？&lt;/p&gt;
-&lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;&lt;/h2&gt;
-&lt;h3 id=&#34;the-answer&#34;&gt;The Answer&lt;/h3&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;
+&lt;/h2&gt;&lt;h3 id=&#34;the-answer&#34;&gt;The Answer
+&lt;/h3&gt;&lt;blockquote&gt;
 &lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;这句话是说，&lt;strong&gt;PostgreSQL&lt;/strong&gt; 只会在需要的时候才&lt;strong&gt;回表查询&lt;/strong&gt;。如果一个查询涉及 &lt;code&gt;ORDER BY&lt;/code&gt;、&lt;code&gt;LIMIT&lt;/code&gt; 和 &lt;code&gt;OFFSET&lt;/code&gt;，那么可以先利用索引跳过不需要的记录，只对需要的记录进行进行回表。&lt;/p&gt;
 &lt;p&gt;这其实就是『&lt;strong&gt;Late Row Lookups&lt;/strong&gt;』；与之相对的，MySQL 执行的是『&lt;strong&gt;Early Row Lookups&lt;/strong&gt;』。&lt;/p&gt;
 &lt;p&gt;作者后面说虽然 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 的查询计划不会输出&lt;strong&gt;回表信息&lt;/strong&gt;，但可以通过一个简单的测试进行验证。但具体怎么进行这个实验，作者没讲，下面试着做个补充。&lt;/p&gt;
-&lt;h3 id=&#34;验证存疑&#34;&gt;验证(存疑)&lt;/h3&gt;
-&lt;details&gt;
+&lt;h3 id=&#34;验证存疑&#34;&gt;验证(存疑)
+&lt;/h3&gt;&lt;details&gt;
 &lt;summary&gt;建表详情&lt;/summary&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -214,12 +204,12 @@
 &lt;/div&gt;&lt;/details&gt;
 三个查询的耗时为：`540.022 ms` vs `369.004 ms` vs `362.707 ms`。
 &gt; Tips: 使用 `EXPLAIN ANALYZE` 既可以获得查询计划，又能执行语句。
-&lt;h3 id=&#34;结论&#34;&gt;结论&lt;/h3&gt;
-&lt;p&gt;上述实验可以证明该优化对于 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 同样可以有效。&lt;/p&gt;
-&lt;h2 id=&#34;innodb&#34;&gt;&lt;strong&gt;InnoDB&lt;/strong&gt;&lt;/h2&gt;
-&lt;p&gt;为了回答这个问题，作者首先创建了一张表。&lt;/p&gt;
-&lt;h3 id=&#34;建表&#34;&gt;建表&lt;/h3&gt;
-&lt;details&gt;
+&lt;h3 id=&#34;结论&#34;&gt;结论
+&lt;/h3&gt;&lt;p&gt;上述实验可以证明该优化对于 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 同样可以有效。&lt;/p&gt;
+&lt;h2 id=&#34;innodb&#34;&gt;&lt;strong&gt;InnoDB&lt;/strong&gt;
+&lt;/h2&gt;&lt;p&gt;为了回答这个问题，作者首先创建了一张表。&lt;/p&gt;
+&lt;h3 id=&#34;建表&#34;&gt;建表
+&lt;/h3&gt;&lt;details&gt;
 &lt;summary&gt;建表详情&lt;/summary&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -332,8 +322,8 @@
 &lt;/div&gt;&lt;/details&gt;
 上面利用一张内存表和存储计划创建了一张 InnoDB 表 `lookup`：这张表包含一个加了索引的 `INT` 列，以及两个 `TEXT` 列，其中 shorttxt 存储短字符串(包含 1~100 个字符)，longtxt 存储长字符串(包含 8193~8293 个字符)。
 &lt;p&gt;通过&lt;strong&gt;主键索引&lt;/strong&gt;查询 value 和 shottxt 两个字段时，&lt;strong&gt;是否使用子查询优化&lt;/strong&gt;对耗时影响不大，略去不讨论。&lt;/p&gt;
-&lt;h3 id=&#34;通过主键索引查询-longtxt-列&#34;&gt;通过主键索引查询 longtxt 列&lt;/h3&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h3 id=&#34;通过主键索引查询-longtxt-列&#34;&gt;通过主键索引查询 longtxt 列
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -382,8 +372,8 @@
 &lt;/blockquote&gt;
 &lt;p&gt;在 &lt;strong&gt;InnoDB&lt;/strong&gt; 中，小于 768 字节的列会全部存储在页上，大于 768 字节则会分开存储。在上面的 &lt;code&gt;lookup&lt;/code&gt; 表中，&lt;code&gt;shottxt&lt;/code&gt; 列总是 &lt;code&gt;on-page&lt;/code&gt; 存储的，而 &lt;code&gt;longtxt&lt;/code&gt; 则是 &lt;code&gt;off-page&lt;/code&gt;的。&lt;/p&gt;
 &lt;p&gt;因此，直接查询 &lt;code&gt;longtxt&lt;/code&gt; 时，每扫描一条记录都要出发两次&lt;code&gt;page lookups&lt;/code&gt;：第一次查聚簇索引，第二次查外部存储。这既会花费很多时间，也可能破坏 &lt;strong&gt;InnoDB&lt;/strong&gt; 缓存，导致缓存命中率下降。&lt;/p&gt;
-&lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列&lt;/h3&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -421,12 +411,12 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;LIMIT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;OFFSET&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;90000&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;rows&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;in&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;set&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;209&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sec&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;&lt;code&gt;0.022 sec&lt;/code&gt; vs &lt;code&gt;0.209 sec&lt;/code&gt;，耗时相差 10 倍。&lt;br /&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;0.022 sec&lt;/code&gt; vs &lt;code&gt;0.209 sec&lt;/code&gt;，耗时相差 10 倍。
 &lt;strong&gt;InnoDB&lt;/strong&gt;的二级索引查询有点类似&lt;strong&gt;MyISAM&lt;/strong&gt;，都需要一次额外的&lt;strong&gt;回表查询&lt;/strong&gt;去获取正在的数据。&lt;/p&gt;
 &lt;p&gt;上面第一个查询对于跳过的记录不会执行&lt;strong&gt;回表查询&lt;/strong&gt;，因此速度是原来的 10 倍。它甚至比在&lt;strong&gt;主键索引&lt;/strong&gt;上的查询(&lt;code&gt;0.044 sec&lt;/code&gt;)还快，原因是&lt;strong&gt;二级索引&lt;/strong&gt;包含的数据比&lt;strong&gt;主键索引&lt;/strong&gt;更少，每页保存的数据更多，因此索引可能更加矮胖，扫描速度更快。&lt;/p&gt;
 &lt;p&gt;当然，二级索引上同样是&lt;strong&gt;Early Row Lookups&lt;/strong&gt;。&lt;/p&gt;
-&lt;h3 id=&#34;结论-1&#34;&gt;结论&lt;/h3&gt;
-&lt;blockquote&gt;
+&lt;h3 id=&#34;结论-1&#34;&gt;结论
+&lt;/h3&gt;&lt;blockquote&gt;
 &lt;p&gt;A trick used to avoid early row lookups for the &lt;code&gt;LIMIT … OFFSET&lt;/code&gt; queries is useful on &lt;strong&gt;InnoDB&lt;/strong&gt; tables too, though to different extent, depending on the ORDER BY condition and the columns involved:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;It&amp;rsquo;s very useful on queries involving columns stored off-page (long &lt;code&gt;TEXT&lt;/code&gt;, &lt;code&gt;BLOB&lt;/code&gt; and &lt;code&gt;VARCHAR&lt;/code&gt; columns)&lt;/li&gt;
@@ -435,9 +425,9 @@
 &lt;li&gt;It&amp;rsquo;s almost useless on short columns without complex CPU-intensive processing&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;其它&#34;&gt;其它&lt;/h1&gt;
-&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划&lt;/h2&gt;
-&lt;ul&gt;
+&lt;h1 id=&#34;其它&#34;&gt;其它
+&lt;/h1&gt;&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划
+&lt;/h2&gt;&lt;ul&gt;
 &lt;li&gt;除第一行以外每个-&amp;gt;表示一个子动作&lt;/li&gt;
 &lt;li&gt;查询计划的阅读顺序都是从后往前&lt;/li&gt;
 &lt;li&gt;cost 由 .. 分割成两个数字，第一个数字表示启动成本，即返回第一行的成本；第二个数字表示返回所有数据的成本。&lt;/li&gt;
@@ -445,57 +435,12 @@
 &lt;li&gt;width 表示每行平均宽度&lt;/li&gt;
 &lt;li&gt;loops 表示索引扫描被执行过几次&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;reference&#34;&gt;Reference&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://www.postgresql.org/docs/current/using-explain.html&#34;&gt;Documentation: 15: 14.1. Using EXPLAIN - PostgreSQL&lt;/a&gt;&lt;/li&gt;
+&lt;h1 id=&#34;reference&#34;&gt;Reference
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.postgresql.org/docs/current/using-explain.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Documentation: 15: 14.1. Using EXPLAIN - PostgreSQL&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
+        </item>
         
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-          
-            
-              <category>Notes</category>
-            
-          
-            
-              <category>MySQL</category>
-            
-          
-            
-              <category>Performance</category>
-            
-          
-            
-              <category>Optimization</category>
-            
-          
-            
-              <category>Late Row Lookups</category>
-            
-          
-            
-              <category>InnoDB</category>
-            
-          
-            
-              <category>PostgreSQL</category>
-            
-          
-        
-        
-          
-            
-              <category>MySQL</category>
-            
-          
-        
-        
-      </item>
-      
-
-    
-  </channel>
+    </channel>
 </rss>

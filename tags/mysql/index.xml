@@ -1,34 +1,22 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<rss version="2.0" 
-  xmlns:content="http://purl.org/rss/1.0/modules/content/" 
-  xmlns:dc="http://purl.org/dc/elements/1.1/" 
-  xmlns:atom="http://www.w3.org/2005/Atom" 
-  xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" 
-  xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <title>MySQL on Somnus&#39;s Blog</title>
-    <link>https://zhumengzhu.github.io/tags/mysql/</link>
-    <description>Recent content in MySQL on Somnus&#39;s Blog</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>©2023, All Rights Reserved</copyright>
-    <lastBuildDate>Sun, 20 Nov 2022 17:21:39 +0800</lastBuildDate>
-    
-        <atom:link href="https://zhumengzhu.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
-    
-
-      
-      <item>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>MySQL on Somnus</title>
+        <link>https://zhumengzhu.github.io/tags/mysql/</link>
+        <description>Recent content in MySQL on Somnus</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>All Rights Reserved</copyright>
+        <lastBuildDate>Sun, 11 Dec 2022 03:21:01 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>Mysql 只更新未使用的一行数据问题</title>
         <link>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
-        <atom:modified>Sun, 11 Dec 2022 03:21:01 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</guid>
-        <description>&lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
-&lt;p&gt;本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的&lt;code&gt;update just one unused row&lt;/code&gt;模式，最后聊一下 MySQL 8.0.1 的 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 特性。&lt;/p&gt;
-&lt;h1 id=&#34;券发放问题&#34;&gt;『券发放』问题&lt;/h1&gt;
-&lt;p&gt;券发放，一般使用『预生成』模式。在发放前，先将券全部生成好，存在一张全表，这张表一般至少包含三个字段：&lt;/p&gt;
+        <description>&lt;h1 id=&#34;简介&#34;&gt;简介
+&lt;/h1&gt;&lt;p&gt;本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的&lt;code&gt;update just one unused row&lt;/code&gt;模式，最后聊一下 MySQL 8.0.1 的 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 特性。&lt;/p&gt;
+&lt;h1 id=&#34;券发放问题&#34;&gt;『券发放』问题
+&lt;/h1&gt;&lt;p&gt;券发放，一般使用『预生成』模式。在发放前，先将券全部生成好，存在一张全表，这张表一般至少包含三个字段：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;一个全局唯一的券码字段；&lt;/li&gt;
 &lt;li&gt;一个状态字段表示是否发放；&lt;/li&gt;
@@ -70,50 +58,50 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;券表中的数据如下：&lt;/p&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;ID&lt;/th&gt;
-&lt;th&gt;CODE&lt;/th&gt;
-&lt;th&gt;status&lt;/th&gt;
-&lt;th&gt;user_id&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;1&lt;/td&gt;
-&lt;td&gt;c1&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;2&lt;/td&gt;
-&lt;td&gt;c2&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;3&lt;/td&gt;
-&lt;td&gt;c3&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;4&lt;/td&gt;
-&lt;td&gt;c4&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;5&lt;/td&gt;
-&lt;td&gt;c5&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;ID&lt;/th&gt;
+          &lt;th&gt;CODE&lt;/th&gt;
+          &lt;th&gt;status&lt;/th&gt;
+          &lt;th&gt;user_id&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;1&lt;/td&gt;
+          &lt;td&gt;c1&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td&gt;c2&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3&lt;/td&gt;
+          &lt;td&gt;c3&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;c4&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;5&lt;/td&gt;
+          &lt;td&gt;c5&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+          &lt;td&gt;0&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;假设领券的用户 ID 为 1000。&lt;/p&gt;
-&lt;h2 id=&#34;方法一乐观锁-cas&#34;&gt;方法一：乐观锁-CAS&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h2 id=&#34;方法一乐观锁-cas&#34;&gt;方法一：乐观锁-CAS
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -149,40 +137,40 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;上述方法，在并发情况下可能存在问题：&lt;/p&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;操作顺序&lt;/th&gt;
-&lt;th&gt;线程一&lt;/th&gt;
-&lt;th&gt;线程二&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;1&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 假设返回记录券码为 c1&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;2&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 假设返回记录券码也是 c1&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;3&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;4&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # &lt;strong&gt;失败&lt;/strong&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;操作顺序&lt;/th&gt;
+          &lt;th&gt;线程一&lt;/th&gt;
+          &lt;th&gt;线程二&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;1&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 假设返回记录券码为 c1&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 假设返回记录券码也是 c1&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # &lt;strong&gt;失败&lt;/strong&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;由于线程一执行完第三步后，已将&lt;code&gt;c1&lt;/code&gt;这条记录的&lt;code&gt;status&lt;/code&gt;的值改为 1，因此线程二执行第四步会失败。所以需要重试。&lt;/p&gt;
 &lt;p&gt;这可以看做一种『乐观锁』模式，『乐观锁』不适合高并发场景。&lt;/p&gt;
-&lt;h2 id=&#34;方法二悲观锁-select-for-update&#34;&gt;方法二：悲观锁-SELECT FOR UPDATE&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h2 id=&#34;方法二悲观锁-select-for-update&#34;&gt;方法二：悲观锁-SELECT FOR UPDATE
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -232,69 +220,69 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;5&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;、返回券码&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;为了解决并发的情况下某个操作失败， 可以开启一个事务，然后使用 &lt;code&gt;select for update&lt;/code&gt; 先对记录进行加锁，然后再修改记录状态。&lt;br /&gt;
+&lt;/div&gt;&lt;p&gt;为了解决并发的情况下某个操作失败， 可以开启一个事务，然后使用 &lt;code&gt;select for update&lt;/code&gt; 先对记录进行加锁，然后再修改记录状态。
 假设操作顺序如下：&lt;/p&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;操作顺序&lt;/th&gt;
-&lt;th&gt;线程一&lt;/th&gt;
-&lt;th&gt;线程二&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;1&lt;/td&gt;
-&lt;td&gt;begin;&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;2&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;begin;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;3&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE; # 假设返回记录券码为 &lt;code&gt;c1&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;4&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE; # &lt;strong&gt;阻塞&lt;/strong&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;5&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;6&lt;/td&gt;
-&lt;td&gt;commit; # 释放记录&lt;code&gt;c1&lt;/code&gt;的锁&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;7&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 成功，返回券码 &lt;code&gt;c2&lt;/code&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;8&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c2&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;9&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;commit; # 释放记录&lt;code&gt;c2&lt;/code&gt;的锁&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;操作顺序&lt;/th&gt;
+          &lt;th&gt;线程一&lt;/th&gt;
+          &lt;th&gt;线程二&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;1&lt;/td&gt;
+          &lt;td&gt;begin;&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;begin;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE; # 假设返回记录券码为 &lt;code&gt;c1&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE; # &lt;strong&gt;阻塞&lt;/strong&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;5&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;6&lt;/td&gt;
+          &lt;td&gt;commit; # 释放记录&lt;code&gt;c1&lt;/code&gt;的锁&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;7&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1; # 成功，返回券码 &lt;code&gt;c2&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;8&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c2&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;9&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;commit; # 释放记录&lt;code&gt;c2&lt;/code&gt;的锁&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;p&gt;线程二在执行第 4 步时，由于线程一已经抢到记录&lt;code&gt;c1&lt;/code&gt;的锁，线程二会被阻塞，直到线程一提交事务（ 根据2PL，提交事务时才会释放锁）；线程二在&lt;br /&gt;
+&lt;p&gt;线程二在执行第 4 步时，由于线程一已经抢到记录&lt;code&gt;c1&lt;/code&gt;的锁，线程二会被阻塞，直到线程一提交事务（ 根据2PL，提交事务时才会释放锁）；线程二在
 7 步获取锁后，由于记录&lt;code&gt;c1&lt;/code&gt;的&lt;code&gt;status&lt;/code&gt;的值已被线程一改为 1，所以此时查询到的记录是&lt;code&gt;c2&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;方法二虽然可以保证券发放不会失败，但在高并发下，会有大量线程阻塞。&lt;/p&gt;
-&lt;h2 id=&#34;方法三使用-last_insert_id-优化锁的持有时间&#34;&gt;方法三：使用 LAST_INSERT_ID 优化锁的持有时间&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h2 id=&#34;方法三使用-last_insert_id-优化锁的持有时间&#34;&gt;方法三：使用 LAST_INSERT_ID 优化锁的持有时间
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -334,19 +322,20 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;4&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;、返回券码&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;方法二中，根据 2PL（两阶段锁协议），锁的持有时间从 &lt;code&gt;select for update&lt;/code&gt; 一直持续到 &lt;code&gt;commit&lt;/code&gt;。 通过使用 &lt;code&gt;LAST_INSERT_ID&lt;/code&gt;&lt;br /&gt;
+&lt;/div&gt;&lt;p&gt;方法二中，根据 2PL（两阶段锁协议），锁的持有时间从 &lt;code&gt;select for update&lt;/code&gt; 一直持续到 &lt;code&gt;commit&lt;/code&gt;。 通过使用 &lt;code&gt;LAST_INSERT_ID&lt;/code&gt;
 可以避免开启事务，锁的持有时间非常短。&lt;/p&gt;
-&lt;p&gt;不过这个方法没法避免锁争抢，因为根据 InnoDB 的锁机制，在扫描到满足条件的记录时会进行加锁(由于 &lt;code&gt;idx_status&lt;/code&gt; 是非唯一索引，因此会加&lt;br /&gt;
-next-key 锁)&lt;br /&gt;
+&lt;p&gt;不过这个方法没法避免锁争抢，因为根据 InnoDB 的锁机制，在扫描到满足条件的记录时会进行加锁(由于 &lt;code&gt;idx_status&lt;/code&gt; 是非唯一索引，因此会加
+next-key 锁)
 ，所以并发执行时仍然会存在阻塞的情况。&lt;/p&gt;
 &lt;p&gt;这其实就是经典的**『热点数据更新』**问题。&lt;/p&gt;
 &lt;p&gt;此外，要这个方法是 &lt;strong&gt;multi-user safe&lt;/strong&gt; 的，所以在并发情况下也是安全的:&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with&lt;br /&gt;
-the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their&lt;br /&gt;
+&lt;p&gt;It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with
+the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their
 own sequence values.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;see &lt;a href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;&gt;MySQL 8.0 Reference Manual&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;see &lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL 8.0 Reference Manual&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;最后，还可以对上面的 SQL 进一步优化，使得只需执行 2 次 SQL：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -384,8 +373,8 @@ own sequence values.&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;、返回券码&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;方法四使用-skip-locked-避免锁争抢&#34;&gt;方法四：使用 SKIP LOCKED 避免锁争抢&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h2 id=&#34;方法四使用-skip-locked-避免锁争抢&#34;&gt;方法四：使用 SKIP LOCKED 避免锁争抢
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -437,61 +426,61 @@ own sequence values.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;假设操作顺序如下：&lt;/p&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;操作顺序&lt;/th&gt;
-&lt;th&gt;线程一&lt;/th&gt;
-&lt;th&gt;线程二&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;1&lt;/td&gt;
-&lt;td&gt;begin;&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;2&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;begin;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;3&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE SKIP LOCKED; # 假设返回记录券码为 &lt;code&gt;c1&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;4&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE SKIP LOCKED; # 成功，返回券码 &lt;code&gt;c2&lt;/code&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;5&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;6&lt;/td&gt;
-&lt;td&gt;commit; # 释放记录&lt;code&gt;c1&lt;/code&gt;的锁&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;8&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c2&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;9&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;commit; # 释放记录&lt;code&gt;c2&lt;/code&gt;的锁&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;操作顺序&lt;/th&gt;
+          &lt;th&gt;线程一&lt;/th&gt;
+          &lt;th&gt;线程二&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;1&lt;/td&gt;
+          &lt;td&gt;begin;&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;begin;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE SKIP LOCKED; # 假设返回记录券码为 &lt;code&gt;c1&lt;/code&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;SELECT * FROM coupon WHERE &lt;code&gt;status&lt;/code&gt; = 0 LIMIT 1 FOR UPDATE SKIP LOCKED; # 成功，返回券码 &lt;code&gt;c2&lt;/code&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;5&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c1&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;6&lt;/td&gt;
+          &lt;td&gt;commit; # 释放记录&lt;code&gt;c1&lt;/code&gt;的锁&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;8&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;UPDATE coupon SET &lt;code&gt;status&lt;/code&gt;  = 1, &lt;code&gt;user_id&lt;/code&gt; = 1000 WHERE &lt;code&gt;code&lt;/code&gt; = &amp;lsquo;c2&amp;rsquo; AND &lt;code&gt;status&lt;/code&gt; = 0; # 成功&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;9&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+          &lt;td&gt;commit; # 释放记录&lt;code&gt;c2&lt;/code&gt;的锁&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;不同于方法二，线程二在执行第 4 步时，不会阻塞在记录&lt;code&gt;c1&lt;/code&gt;上，而是会跳过这条记录，直接对下一条记录&lt;code&gt;c2&lt;/code&gt;进行加锁。&lt;/p&gt;
 &lt;p&gt;这个方法，锁的持有时间与方法二相同，但避免了争抢锁，也能达到一个很好的性能。&lt;/p&gt;
 &lt;p&gt;注意，&lt;code&gt;SKIP LOCKED&lt;/code&gt; 是 MySQL 8.0.1 引入的新特性。&lt;/p&gt;
-&lt;h2 id=&#34;方法五使用-redis-减少-sql-的执行次数&#34;&gt;方法五：使用 Redis 减少 SQL 的执行次数&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h2 id=&#34;方法五使用-redis-减少-sql-的执行次数&#34;&gt;方法五：使用 Redis 减少 SQL 的执行次数
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -540,16 +529,16 @@ own sequence values.&lt;/p&gt;
 &lt;li&gt;回滚 Redis 可能实现起来比较复杂，因为将券码放回 Redis 时可能失败，需要重试机；&lt;/li&gt;
 &lt;li&gt;Redis 主从同步可能存在延迟，此时&lt;strong&gt;主从切换&lt;/strong&gt;可能导致 Redis 返回重复的券码，导致方法失败，需要重试机制；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;小节&#34;&gt;小节&lt;/h2&gt;
-&lt;ul&gt;
+&lt;h2 id=&#34;小节&#34;&gt;小节
+&lt;/h2&gt;&lt;ul&gt;
 &lt;li&gt;方法一和方法二不适合高并发场景，前者失败率高，后者性能特别差；&lt;/li&gt;
 &lt;li&gt;方法三持有锁的时间很短，性能比较好，实现也很简单，但存在热点数据更新问题；&lt;/li&gt;
 &lt;li&gt;方法四持有锁的时间稍长，因为锁的是不同的记录，因此不存在热点数据，性能比较好，实现也简单，但只能在 MySQL 8.0.1 及以上才能使用；&lt;/li&gt;
 &lt;li&gt;方法五引入 Redis，在性能上有最大的潜力，但实现起来更复杂；&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;方法三、四、五孰优孰劣，留待实践进行检验。&lt;/p&gt;
-&lt;h1 id=&#34;update-just-one-unused-row&#34;&gt;Update just one unused row&lt;/h1&gt;
-&lt;p&gt;仅更新一行未使用的数据，是一种非常常见的场景，看似非常容易解决：&lt;/p&gt;
+&lt;h1 id=&#34;update-just-one-unused-row&#34;&gt;Update just one unused row
+&lt;/h1&gt;&lt;p&gt;仅更新一行未使用的数据，是一种非常常见的场景，看似非常容易解决：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -569,81 +558,49 @@ own sequence values.&lt;/p&gt;
 &lt;/div&gt;&lt;p&gt;但当我们需要获取被更新数据的 ID 时，问题瞬间变得复杂起来。&lt;/p&gt;
 &lt;p&gt;获取变更 ID，除了上面介绍的使用悲观锁&lt;code&gt;SELECT FOR UPDATE&lt;/code&gt;和&lt;code&gt;LAST_INSERT_ID&lt;/code&gt;两个方法外，还可以通过临时变量来实现：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;SET @update_id := 0;&lt;br /&gt;
-UPDATE some_table SET column_name = &amp;lsquo;value&amp;rsquo;, id = (SELECT @update_id := id)&lt;br /&gt;
-WHERE some_other_column = &amp;lsquo;blah&amp;rsquo; LIMIT 1;&lt;br /&gt;
+&lt;p&gt;SET @update_id := 0;
+UPDATE some_table SET column_name = &amp;lsquo;value&amp;rsquo;, id = (SELECT @update_id := id)
+WHERE some_other_column = &amp;lsquo;blah&amp;rsquo; LIMIT 1;
 SELECT @update_id;&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;详情见：&lt;a href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;&gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;详情见：&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
 &lt;p&gt;这种方法在需要&lt;strong&gt;一次更新多条记录&lt;/strong&gt;时特别有用。&lt;/p&gt;
-&lt;h1 id=&#34;mysql-801-skip-locked-and-nowait&#34;&gt;MySQL 8.0.1 SKIP LOCKED and NOWAIT&lt;/h1&gt;
-&lt;p&gt;推荐一篇文章：&lt;a href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;&gt;MySQL 8.0.1: Using SKIP LOCKED and NOWAIT to handle hot rows&lt;/a&gt;&lt;br /&gt;
+&lt;h1 id=&#34;mysql-801-skip-locked-and-nowait&#34;&gt;MySQL 8.0.1 SKIP LOCKED and NOWAIT
+&lt;/h1&gt;&lt;p&gt;推荐一篇文章：&lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL 8.0.1: Using SKIP LOCKED and NOWAIT to handle hot rows&lt;/a&gt;
 这篇文章是在 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 的使用方法。&lt;/p&gt;
 &lt;p&gt;另外，需要特别注意：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;reference&#34;&gt;Reference&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&#34;&gt;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://stackoverflow.com/questions/1388025/how-to-get-id-of-the-last-updated-row-in-mysql&#34;&gt;https://stackoverflow.com/questions/1388025/how-to-get-id-of-the-last-updated-row-in-mysql&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://gist.github.com/PieterScheffers/189cad9510d304118c33135965e9cddb&#34;&gt;https://gist.github.com/PieterScheffers/189cad9510d304118c33135965e9cddb&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;&gt;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;&gt;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html&#34;&gt;https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html&lt;/a&gt;&lt;/li&gt;
+&lt;h1 id=&#34;reference&#34;&gt;Reference
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/questions/1388025/how-to-get-id-of-the-last-updated-row-in-mysql&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://stackoverflow.com/questions/1388025/how-to-get-id-of-the-last-updated-row-in-mysql&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://gist.github.com/PieterScheffers/189cad9510d304118c33135965e9cddb&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://gist.github.com/PieterScheffers/189cad9510d304118c33135965e9cddb&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://dev.mysql.com/blog-archive/mysql-8-0-1-using-skip-locked-and-nowait-to-handle-hot-rows/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-          
-            
-              <category>MySQL</category>
-            
-          
-            
-              <category>InnoDB</category>
-            
-          
-            
-              <category>Select for update</category>
-            
-          
-            
-              <category>LAST_INSERT_ID</category>
-            
-          
-            
-              <category>SKIP LOCKED</category>
-            
-          
-            
-              <category>NOWAIT</category>
-            
-          
-        
-        
-          
-            
-              <category>MySQL</category>
-            
-          
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Late Row Lookups: InnoDB</title>
         <link>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</link>
         <pubDate>Mon, 14 Nov 2022 19:12:47 +0800</pubDate>
         
-        <atom:modified>Sun, 11 Dec 2022 03:09:04 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/</guid>
-        <description>&lt;h1 id=&#34;背景&#34;&gt;背景&lt;/h1&gt;
-&lt;p&gt;这是一篇博客阅读笔记，原博客&lt;a href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;&gt;Late row lookups: InnoDB&lt;/a&gt;写于 2011 年，作者是一个叫 Quassnoi 的俄罗斯人。&lt;/p&gt;
-&lt;p&gt;Quassnoi 在 2009 年时写了一篇文章讲 &lt;code&gt;MySQL Limit&lt;/code&gt; 的性能优化(&lt;a href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;&gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;)，后来有读者提了两个问题：&lt;/p&gt;
+        <description>&lt;h1 id=&#34;背景&#34;&gt;背景
+&lt;/h1&gt;&lt;p&gt;这是一篇博客阅读笔记，原博客&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Late row lookups: InnoDB&lt;/a&gt;写于 2011 年，作者是一个叫 Quassnoi 的俄罗斯人。&lt;/p&gt;
+&lt;p&gt;Quassnoi 在 2009 年时写了一篇文章讲 &lt;code&gt;MySQL Limit&lt;/code&gt; 的性能优化(&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;)，后来有读者提了两个问题：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;ul&gt;
 &lt;li&gt;Is this workaround specific to &lt;strong&gt;MyISAM&lt;/strong&gt; engine?&lt;/li&gt;
@@ -651,8 +608,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Quassnoi 写下这篇新博客，即为了回答上述两个问题。&lt;/p&gt;
-&lt;h1 id=&#34;正文&#34;&gt;正文&lt;/h1&gt;
-&lt;blockquote&gt;
+&lt;h1 id=&#34;正文&#34;&gt;正文
+&lt;/h1&gt;&lt;blockquote&gt;
 &lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -695,16 +652,16 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;注意：作者之前的文章讨论的是这个方法对 &lt;strong&gt;MyISAM&lt;/strong&gt; 是有效的；问题是，对于 &lt;strong&gt;InnoDB&lt;/strong&gt; 和 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 呢？&lt;/p&gt;
-&lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;&lt;/h2&gt;
-&lt;h3 id=&#34;the-answer&#34;&gt;The Answer&lt;/h3&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;
+&lt;/h2&gt;&lt;h3 id=&#34;the-answer&#34;&gt;The Answer
+&lt;/h3&gt;&lt;blockquote&gt;
 &lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;这句话是说，&lt;strong&gt;PostgreSQL&lt;/strong&gt; 只会在需要的时候才&lt;strong&gt;回表查询&lt;/strong&gt;。如果一个查询涉及 &lt;code&gt;ORDER BY&lt;/code&gt;、&lt;code&gt;LIMIT&lt;/code&gt; 和 &lt;code&gt;OFFSET&lt;/code&gt;，那么可以先利用索引跳过不需要的记录，只对需要的记录进行进行回表。&lt;/p&gt;
 &lt;p&gt;这其实就是『&lt;strong&gt;Late Row Lookups&lt;/strong&gt;』；与之相对的，MySQL 执行的是『&lt;strong&gt;Early Row Lookups&lt;/strong&gt;』。&lt;/p&gt;
 &lt;p&gt;作者后面说虽然 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 的查询计划不会输出&lt;strong&gt;回表信息&lt;/strong&gt;，但可以通过一个简单的测试进行验证。但具体怎么进行这个实验，作者没讲，下面试着做个补充。&lt;/p&gt;
-&lt;h3 id=&#34;验证存疑&#34;&gt;验证(存疑)&lt;/h3&gt;
-&lt;details&gt;
+&lt;h3 id=&#34;验证存疑&#34;&gt;验证(存疑)
+&lt;/h3&gt;&lt;details&gt;
 &lt;summary&gt;建表详情&lt;/summary&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -830,12 +787,12 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/div&gt;&lt;/details&gt;
 三个查询的耗时为：`540.022 ms` vs `369.004 ms` vs `362.707 ms`。
 &gt; Tips: 使用 `EXPLAIN ANALYZE` 既可以获得查询计划，又能执行语句。
-&lt;h3 id=&#34;结论&#34;&gt;结论&lt;/h3&gt;
-&lt;p&gt;上述实验可以证明该优化对于 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 同样可以有效。&lt;/p&gt;
-&lt;h2 id=&#34;innodb&#34;&gt;&lt;strong&gt;InnoDB&lt;/strong&gt;&lt;/h2&gt;
-&lt;p&gt;为了回答这个问题，作者首先创建了一张表。&lt;/p&gt;
-&lt;h3 id=&#34;建表&#34;&gt;建表&lt;/h3&gt;
-&lt;details&gt;
+&lt;h3 id=&#34;结论&#34;&gt;结论
+&lt;/h3&gt;&lt;p&gt;上述实验可以证明该优化对于 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 同样可以有效。&lt;/p&gt;
+&lt;h2 id=&#34;innodb&#34;&gt;&lt;strong&gt;InnoDB&lt;/strong&gt;
+&lt;/h2&gt;&lt;p&gt;为了回答这个问题，作者首先创建了一张表。&lt;/p&gt;
+&lt;h3 id=&#34;建表&#34;&gt;建表
+&lt;/h3&gt;&lt;details&gt;
 &lt;summary&gt;建表详情&lt;/summary&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -948,8 +905,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/div&gt;&lt;/details&gt;
 上面利用一张内存表和存储计划创建了一张 InnoDB 表 `lookup`：这张表包含一个加了索引的 `INT` 列，以及两个 `TEXT` 列，其中 shorttxt 存储短字符串(包含 1~100 个字符)，longtxt 存储长字符串(包含 8193~8293 个字符)。
 &lt;p&gt;通过&lt;strong&gt;主键索引&lt;/strong&gt;查询 value 和 shottxt 两个字段时，&lt;strong&gt;是否使用子查询优化&lt;/strong&gt;对耗时影响不大，略去不讨论。&lt;/p&gt;
-&lt;h3 id=&#34;通过主键索引查询-longtxt-列&#34;&gt;通过主键索引查询 longtxt 列&lt;/h3&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h3 id=&#34;通过主键索引查询-longtxt-列&#34;&gt;通过主键索引查询 longtxt 列
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -998,8 +955,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;在 &lt;strong&gt;InnoDB&lt;/strong&gt; 中，小于 768 字节的列会全部存储在页上，大于 768 字节则会分开存储。在上面的 &lt;code&gt;lookup&lt;/code&gt; 表中，&lt;code&gt;shottxt&lt;/code&gt; 列总是 &lt;code&gt;on-page&lt;/code&gt; 存储的，而 &lt;code&gt;longtxt&lt;/code&gt; 则是 &lt;code&gt;off-page&lt;/code&gt;的。&lt;/p&gt;
 &lt;p&gt;因此，直接查询 &lt;code&gt;longtxt&lt;/code&gt; 时，每扫描一条记录都要出发两次&lt;code&gt;page lookups&lt;/code&gt;：第一次查聚簇索引，第二次查外部存储。这既会花费很多时间，也可能破坏 &lt;strong&gt;InnoDB&lt;/strong&gt; 缓存，导致缓存命中率下降。&lt;/p&gt;
-&lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列&lt;/h3&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列
+&lt;/h3&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -1037,12 +994,12 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;LIMIT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;OFFSET&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;90000&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;rows&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;in&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;set&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;209&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sec&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;&lt;code&gt;0.022 sec&lt;/code&gt; vs &lt;code&gt;0.209 sec&lt;/code&gt;，耗时相差 10 倍。&lt;br /&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;0.022 sec&lt;/code&gt; vs &lt;code&gt;0.209 sec&lt;/code&gt;，耗时相差 10 倍。
 &lt;strong&gt;InnoDB&lt;/strong&gt;的二级索引查询有点类似&lt;strong&gt;MyISAM&lt;/strong&gt;，都需要一次额外的&lt;strong&gt;回表查询&lt;/strong&gt;去获取正在的数据。&lt;/p&gt;
 &lt;p&gt;上面第一个查询对于跳过的记录不会执行&lt;strong&gt;回表查询&lt;/strong&gt;，因此速度是原来的 10 倍。它甚至比在&lt;strong&gt;主键索引&lt;/strong&gt;上的查询(&lt;code&gt;0.044 sec&lt;/code&gt;)还快，原因是&lt;strong&gt;二级索引&lt;/strong&gt;包含的数据比&lt;strong&gt;主键索引&lt;/strong&gt;更少，每页保存的数据更多，因此索引可能更加矮胖，扫描速度更快。&lt;/p&gt;
 &lt;p&gt;当然，二级索引上同样是&lt;strong&gt;Early Row Lookups&lt;/strong&gt;。&lt;/p&gt;
-&lt;h3 id=&#34;结论-1&#34;&gt;结论&lt;/h3&gt;
-&lt;blockquote&gt;
+&lt;h3 id=&#34;结论-1&#34;&gt;结论
+&lt;/h3&gt;&lt;blockquote&gt;
 &lt;p&gt;A trick used to avoid early row lookups for the &lt;code&gt;LIMIT … OFFSET&lt;/code&gt; queries is useful on &lt;strong&gt;InnoDB&lt;/strong&gt; tables too, though to different extent, depending on the ORDER BY condition and the columns involved:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;It&amp;rsquo;s very useful on queries involving columns stored off-page (long &lt;code&gt;TEXT&lt;/code&gt;, &lt;code&gt;BLOB&lt;/code&gt; and &lt;code&gt;VARCHAR&lt;/code&gt; columns)&lt;/li&gt;
@@ -1051,9 +1008,9 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;It&amp;rsquo;s almost useless on short columns without complex CPU-intensive processing&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;其它&#34;&gt;其它&lt;/h1&gt;
-&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划&lt;/h2&gt;
-&lt;ul&gt;
+&lt;h1 id=&#34;其它&#34;&gt;其它
+&lt;/h1&gt;&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划
+&lt;/h2&gt;&lt;ul&gt;
 &lt;li&gt;除第一行以外每个-&amp;gt;表示一个子动作&lt;/li&gt;
 &lt;li&gt;查询计划的阅读顺序都是从后往前&lt;/li&gt;
 &lt;li&gt;cost 由 .. 分割成两个数字，第一个数字表示启动成本，即返回第一行的成本；第二个数字表示返回所有数据的成本。&lt;/li&gt;
@@ -1061,67 +1018,22 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;width 表示每行平均宽度&lt;/li&gt;
 &lt;li&gt;loops 表示索引扫描被执行过几次&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;reference&#34;&gt;Reference&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://www.postgresql.org/docs/current/using-explain.html&#34;&gt;Documentation: 15: 14.1. Using EXPLAIN - PostgreSQL&lt;/a&gt;&lt;/li&gt;
+&lt;h1 id=&#34;reference&#34;&gt;Reference
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.postgresql.org/docs/current/using-explain.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Documentation: 15: 14.1. Using EXPLAIN - PostgreSQL&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
-        
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-          
-            
-              <category>Notes</category>
-            
-          
-            
-              <category>MySQL</category>
-            
-          
-            
-              <category>Performance</category>
-            
-          
-            
-              <category>Optimization</category>
-            
-          
-            
-              <category>Late Row Lookups</category>
-            
-          
-            
-              <category>InnoDB</category>
-            
-          
-            
-              <category>PostgreSQL</category>
-            
-          
-        
-        
-          
-            
-              <category>MySQL</category>
-            
-          
-        
-        
-      </item>
-      
-      <item>
+        </item>
+        <item>
         <title>Mysql 的深分页问题及优化方法</title>
         <link>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</link>
         <pubDate>Sat, 05 Nov 2022 12:36:01 +0800</pubDate>
         
-        <atom:modified>Sun, 20 Nov 2022 17:16:16 +0800</atom:modified>
         <guid>https://zhumengzhu.github.io/2022/11/mysql-order-by-limit-performance-optimization/</guid>
-        <description>&lt;h1 id=&#34;一深分页为什么慢&#34;&gt;一、深分页为什么慢&lt;/h1&gt;
-&lt;p&gt;深分页指的是形如 &lt;code&gt;select ... from ... where ... order by ... limit offset, size&lt;/code&gt; 的查询语句中 &lt;code&gt;offset&lt;/code&gt; 特别大的情况。高性能 MySQL(第三版) 的第 6.7.5 节专门讲了此问题，但比较简略。&lt;/p&gt;
-&lt;h2 id=&#34;有多慢&#34;&gt;有多慢&lt;/h2&gt;
-&lt;p&gt;假设有一张 &lt;code&gt;page&lt;/code&gt; 表包含 &lt;code&gt;600 多万&lt;/code&gt;条数据，分别执行下面两条语句：&lt;/p&gt;
+        <description>&lt;h1 id=&#34;一深分页为什么慢&#34;&gt;一、深分页为什么慢
+&lt;/h1&gt;&lt;p&gt;深分页指的是形如 &lt;code&gt;select ... from ... where ... order by ... limit offset, size&lt;/code&gt; 的查询语句中 &lt;code&gt;offset&lt;/code&gt; 特别大的情况。高性能 MySQL(第三版) 的第 6.7.5 节专门讲了此问题，但比较简略。&lt;/p&gt;
+&lt;h2 id=&#34;有多慢&#34;&gt;有多慢
+&lt;/h2&gt;&lt;p&gt;假设有一张 &lt;code&gt;page&lt;/code&gt; 表包含 &lt;code&gt;600 多万&lt;/code&gt;条数据，分别执行下面两条语句：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1143,8 +1055,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;注意到 SQL 二其实是按主键 ID 排序的(意味着不需要进行 filesort，直接按主键索引顺序扫描即可)，耗时仍然高达 &lt;code&gt;0.940&lt;/code&gt; 秒。&lt;/p&gt;
-&lt;h2 id=&#34;为什么慢&#34;&gt;为什么慢&lt;/h2&gt;
-&lt;p&gt;『查询计划』&lt;/p&gt;
+&lt;h2 id=&#34;为什么慢&#34;&gt;为什么慢
+&lt;/h2&gt;&lt;p&gt;『查询计划』&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1184,16 +1096,16 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;select&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;from&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;page&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;order&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;by&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;limit&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;6000000&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;注意到 rows 和 为 rows_examined 分别为 5988448、6000010。&lt;br /&gt;
+&lt;/div&gt;&lt;p&gt;注意到 rows 和 为 rows_examined 分别为 5988448、6000010。
 原因显而易见：为了完成 &lt;code&gt;limit offset, size&lt;/code&gt; 这样的查询， MySQL 要扫描至少 &lt;code&gt;offset + size&lt;/code&gt; 行数据；&lt;code&gt;offset&lt;/code&gt; 越大，则扫描次数越多，速度越慢。&lt;/p&gt;
-&lt;h1 id=&#34;二深分页怎么优化&#34;&gt;二、深分页怎么优化&lt;/h1&gt;
-&lt;p&gt;分页从原理上来讲，主要是两种：&lt;/p&gt;
+&lt;h1 id=&#34;二深分页怎么优化&#34;&gt;二、深分页怎么优化
+&lt;/h1&gt;&lt;p&gt;分页从原理上来讲，主要是两种：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;一种就是前面讲的基于 &lt;code&gt;limit offset, size&lt;/code&gt; 的分页，英文一般叫 &lt;strong&gt;offset pagination&lt;/strong&gt;；&lt;/li&gt;
 &lt;li&gt;另一种方法放弃了 &lt;code&gt;offset&lt;/code&gt;，改用 &lt;code&gt;left off&lt;/code&gt;, SQL 形如 &lt;code&gt;SELECT ... WHERE ... AND id &amp;lt; $left_off ORDER BY id DESC LIMIT 10&lt;/code&gt;, 英文一般叫 &lt;strong&gt;cursor pagination&lt;/strong&gt;, 也有人称之为 &lt;strong&gt;seek method&lt;/strong&gt; 或 &lt;strong&gt;keyset pagination&lt;/strong&gt;。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;offset-pagination&#34;&gt;Offset pagination&lt;/h2&gt;
-&lt;p&gt;就像基于比较的排序算法的平均时间复杂度的下界是 O(nlogn) 一样，对于 MySQL 来说，凡是形如 &lt;code&gt;limit offset, size&lt;/code&gt; 的查询，扫描次数的下限就是 &lt;code&gt;offset + size&lt;/code&gt;，我们只能尽量逼近这个下限。&lt;br /&gt;
+&lt;h2 id=&#34;offset-pagination&#34;&gt;Offset pagination
+&lt;/h2&gt;&lt;p&gt;就像基于比较的排序算法的平均时间复杂度的下界是 O(nlogn) 一样，对于 MySQL 来说，凡是形如 &lt;code&gt;limit offset, size&lt;/code&gt; 的查询，扫描次数的下限就是 &lt;code&gt;offset + size&lt;/code&gt;，我们只能尽量逼近这个下限。
 由于在主键索引上的优化比较复杂，同样的 SQL 对于不同的数据规模效果不一样，暂不讨论。这里主要分析在二级索引上的优化。&lt;/p&gt;
 &lt;p&gt;对于拥有 &lt;code&gt;600 多万条&lt;/code&gt;数据的 &lt;code&gt;page&lt;/code&gt; 表：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1223,8 +1135,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;通过使用利用了覆盖索引的子查询，性能提升约 80%~90%：&lt;/p&gt;
-&lt;h2 id=&#34;keyset-pagination&#34;&gt;Keyset pagination&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h2 id=&#34;keyset-pagination&#34;&gt;Keyset pagination
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
@@ -1238,9 +1150,9 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;    &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;SELECT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;...&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;WHERE&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;...&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;AND&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;err&#34;&gt;$&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;left_off&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;ORDER&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;BY&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;DESC&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;LIMIT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h1 id=&#34;三优化为什么有效&#34;&gt;三、优化为什么有效&lt;/h1&gt;
-&lt;h2 id=&#34;优化前&#34;&gt;优化前&lt;/h2&gt;
-&lt;p&gt;考虑原始 SQL &lt;code&gt;select * from page force index(idx_name) order by name limit 6000000, 10&lt;/code&gt; 的执行过程：&lt;/p&gt;
+&lt;/div&gt;&lt;h1 id=&#34;三优化为什么有效&#34;&gt;三、优化为什么有效
+&lt;/h1&gt;&lt;h2 id=&#34;优化前&#34;&gt;优化前
+&lt;/h2&gt;&lt;p&gt;考虑原始 SQL &lt;code&gt;select * from page force index(idx_name) order by name limit 6000000, 10&lt;/code&gt; 的执行过程：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;首先 Sever 层向 InnoDB 请求第一条数据；InnoDB 从 &lt;code&gt;idx_name&lt;/code&gt; 上获取第一条二级索引记录，然后查询聚簇索引获取完整记录(即回表操作)，返回给 Server 层;&lt;/li&gt;
 &lt;li&gt;由于存在 &lt;code&gt;limit 6000000&lt;/code&gt; 的限制, Server 层会将该数据丢弃并计数，然后向 InnoDB 请求下一条数据；&lt;/li&gt;
@@ -1252,8 +1164,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;回表首先意味着先读一次二级索引，然后读一次聚簇索引，因此记录的扫描总数实际会是 &lt;code&gt;2 * 600 万次=1200 万次&lt;/code&gt;；&lt;/li&gt;
 &lt;li&gt;其次，回表操作可能需要一次磁盘&lt;strong&gt;随机读&lt;/strong&gt;；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;优化后&#34;&gt;优化后&lt;/h2&gt;
-&lt;p&gt;再考虑优化后的 SQL &lt;code&gt;select t1.* from page t1 join (select id from page order by name limit 6000000, 10) t2 on t1.id = t2.id order by t1.name&lt;/code&gt; 的执行过程：&lt;/p&gt;
+&lt;h2 id=&#34;优化后&#34;&gt;优化后
+&lt;/h2&gt;&lt;p&gt;再考虑优化后的 SQL &lt;code&gt;select t1.* from page t1 join (select id from page order by name limit 6000000, 10) t2 on t1.id = t2.id order by t1.name&lt;/code&gt; 的执行过程：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;首先 Sever 层向 InnoDB 请求第一条数据；InnoDB 从 &lt;code&gt;idx_name&lt;/code&gt; 上获取第一条二级索引记录，&lt;del&gt;然后查询聚簇索引获取完整记录(这一操作叫回表)&lt;/del&gt;，然后将主键 ID 返回给 Server 层;&lt;/li&gt;
 &lt;li&gt;由于存在 &lt;code&gt;limit 6000000&lt;/code&gt; 的限制, Server 层会将该数据丢弃并计数，然后向 InnoDB 请求下一条数据；&lt;/li&gt;
@@ -1261,15 +1173,15 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;之后的第 &lt;code&gt;6000001&lt;/code&gt;~&lt;code&gt;6000010&lt;/code&gt; 10 条数据则会被放入内存缓冲区；&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;查询聚簇索引，获取 10 个主键 ID 对应的完整记录&lt;/strong&gt;；&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
-&lt;p&gt;在优化后：&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结
+&lt;/h2&gt;&lt;p&gt;在优化后：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;记录的总扫描次数从 &lt;code&gt;1200 万次&lt;/code&gt; 减少到 &lt;code&gt;600 万零 10 次&lt;/code&gt;；&lt;/li&gt;
 &lt;li&gt;磁盘随机读的次数从 &lt;code&gt;600 万次&lt;/code&gt; 减少到 &lt;code&gt;10 次&lt;/code&gt;；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;四试验方法&#34;&gt;四、试验方法&lt;/h1&gt;
-&lt;h2 id=&#34;建表和数据初始化&#34;&gt;建表和数据初始化&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;h1 id=&#34;四试验方法&#34;&gt;四、试验方法
+&lt;/h1&gt;&lt;h2 id=&#34;建表和数据初始化&#34;&gt;建表和数据初始化
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -1331,8 +1243,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;CALL&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;init_page&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;启用慢查询日志&#34;&gt;启用慢查询日志&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h2 id=&#34;启用慢查询日志&#34;&gt;启用慢查询日志
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
@@ -1350,8 +1262,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;SHOW&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;VARIABLES&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;LIKE&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;%slow_query%&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;对比-sql&#34;&gt;对比 SQL&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h2 id=&#34;对比-sql&#34;&gt;对比 SQL
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
@@ -1387,8 +1299,8 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;select&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;from&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;page&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;select&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;from&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;page&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;order&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;by&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;limit&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;6000000&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t2&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;where&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;order&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;by&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;查看慢查询日志和数据存储位置&#34;&gt;查看慢查询日志和数据存储位置&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/div&gt;&lt;h2 id=&#34;查看慢查询日志和数据存储位置&#34;&gt;查看慢查询日志和数据存储位置
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
@@ -1406,63 +1318,32 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# ps. 执行前面的存储计划，创建 100 万条数据，占用磁盘空间大约 100MB；创建 600 万条数据，占用空间大约 600MB；&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h1 id=&#34;五references&#34;&gt;五、References&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://mp.weixin.qq.com/s/F_c36mAkWxGyQrhkviC46Q&#34;&gt;mysql查询 limit 1000,10 和limit 10 速度一样快吗？如果我要分页，我该怎么办？&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://blog.csdn.net/qq_34115899/article/details/120727513&#34;&gt;要想通过面试，MySQL的Limit子句底层原理你不可不知&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://shashwat-creator.medium.com/mysqls-logical-architecture-1-eaaa1f63ec2f&#34;&gt;MySQL Logical Architecture&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://stackoverflow.com/a/1613021/3496176&#34;&gt;Mysql index configuration&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;&gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;&gt;Late Row Lookups: InnoDB&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://www.percona.com/blog/2006/09/01/mysql-order-by-limit-performance-optimization/&#34;&gt;MySQL ORDER BY LIMIT Performance Optimization&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/zhangyachen/zhangyachen.github.io/issues/117&#34;&gt;mysql 证明为什么用limit时，offset很大会影响性能 &lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/5.7/en/limit-optimization.html&#34;&gt;MySQL 5.7 Reference Manual/LIMIT Query Optimization&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://mariadb.com/kb/en/pagination-optimization/#implementation-getting-rid-of-offset&#34;&gt;Pagination Optimization&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://use-the-index-luke.com/no-offset&#34;&gt;We need tool support for keyset pagination&lt;/a&gt;&lt;/li&gt;
+&lt;/div&gt;&lt;h1 id=&#34;五references&#34;&gt;五、References
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://mp.weixin.qq.com/s/F_c36mAkWxGyQrhkviC46Q&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;mysql查询 limit 1000,10 和limit 10 速度一样快吗？如果我要分页，我该怎么办？&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/qq_34115899/article/details/120727513&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;要想通过面试，MySQL的Limit子句底层原理你不可不知&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://shashwat-creator.medium.com/mysqls-logical-architecture-1-eaaa1f63ec2f&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL Logical Architecture&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/a/1613021/3496176&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Mysql index configuration&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL ORDER BY / LIMIT performance: late row lookups&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://explainextended.com/2011/02/11/late-row-lookups-innodb/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Late Row Lookups: InnoDB&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.percona.com/blog/2006/09/01/mysql-order-by-limit-performance-optimization/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL ORDER BY LIMIT Performance Optimization&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/zhangyachen/zhangyachen.github.io/issues/117&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;mysql 证明为什么用limit时，offset很大会影响性能 &lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/5.7/en/limit-optimization.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;MySQL 5.7 Reference Manual/LIMIT Query Optimization&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://mariadb.com/kb/en/pagination-optimization/#implementation-getting-rid-of-offset&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Pagination Optimization&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://use-the-index-luke.com/no-offset&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;We need tool support for keyset pagination&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
+        </item>
         
-        <dc:creator>zhumengzhu</dc:creator>
-        
-        
-        
-        
-          
-            
-              <category>Notes</category>
-            
-          
-            
-              <category>MySQL</category>
-            
-          
-            
-              <category>Performance</category>
-            
-          
-            
-              <category>Optimization</category>
-            
-          
-            
-              <category>High offset</category>
-            
-          
-            
-              <category>Keyset Pagination</category>
-            
-          
-        
-        
-          
-            
-              <category>MySQL</category>
-            
-          
-        
-        
-      </item>
-      
-
-    
-  </channel>
+    </channel>
 </rss>
