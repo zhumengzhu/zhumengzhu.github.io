@@ -7,7 +7,7 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Sun, 11 Dec 2022 03:21:01 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/innodb/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Sun, 20 Nov 2022 17:21:39 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/innodb/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>Mysql 只更新未使用的一行数据问题</title>
         <link>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>

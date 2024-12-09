@@ -1539,7 +1539,7 @@ SELECT @update_id;&lt;/p&gt;
 </description>
         </item>
         <item>
-        <title>我的 Hugo 配置笔记</title>
+        <title>Hugo 配置记录</title>
         <link>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</link>
         <pubDate>Sun, 30 Oct 2022 22:22:52 +0800</pubDate>
         
@@ -1562,12 +1562,16 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;参考链接&#34;&gt;参考链接
 &lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://gohugo.io/documentation/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Hugo 官方文档&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://olowolo.com/post/hugo-quick-start&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;Hugo 从入门到会用&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://creaink.github.io/post/Devtools/Hugo/Hugo-intro.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;Hugo 搭建博客实践&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://gohugo.io/documentation/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;Hugo 官方文档&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://cattk.com/p/hugo_stack/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Hugo+Stack 博客修改记录&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://i-square.us.kg/p/hugo-upgrade-and-hugo-theme-stack-modify-and-last-modified-time/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;hugo升级与hugo-theme-stack主题修改与最后修改时间问题&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
         </item>
         <item>

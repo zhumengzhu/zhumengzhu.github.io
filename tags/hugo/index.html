@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/tags/hugo/'>
 
-<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="Tag: Hugo - Somnus">
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Tag: Hugo - Somnus">
 <meta property='og:description' content="孟柱的小窝">
 <meta property='og:url' content='https://zhumengzhu.github.io/tags/hugo/'>
 <meta property='og:site_name' content='Somnus'>
@@ -335,8 +335,8 @@
                 MySQL
             </a>
         
-            <a href="/categories/hugo/" class="font_size_1">
-                Hugo
+            <a href="/categories/blog/" class="font_size_1">
+                Blog
             </a>
         
             <a href="/categories/java/" class="font_size_1">
@@ -368,12 +368,12 @@
 
     <div class="tagCloud-tags">
         
-            <a href="/tags/notes/" class="font_size_4">
-                Notes
-            </a>
-        
             <a href="/tags/mysql/" class="font_size_3">
                 MySQL
+            </a>
+        
+            <a href="/tags/notes/" class="font_size_3">
+                Notes
             </a>
         
             <a href="/tags/innodb/" class="font_size_2">
@@ -386,6 +386,10 @@
         
             <a href="/tags/performance/" class="font_size_2">
                 Performance
+            </a>
+        
+            <a href="/tags/blog/" class="font_size_1">
+                Blog
             </a>
         
             <a href="/tags/git/" class="font_size_1">
@@ -402,10 +406,6 @@
         
             <a href="/tags/java/" class="font_size_1">
                 Java
-            </a>
-        
-            <a href="/tags/keyset-pagination/" class="font_size_1">
-                Keyset Pagination
             </a>
         
     </div>
@@ -437,7 +437,7 @@
             <article>
     <a href="/2022/10/hugo-quick-start/">
         <div class="article-details">
-            <h2 class="article-title">我的 Hugo 配置笔记</h2>
+            <h2 class="article-title">Hugo 配置记录</h2>
             <footer class="article-time">
                 <time datetime='2022-10-30T22:22:52&#43;08:00'>2022/10/30</time>
             </footer>
@@ -459,13 +459,48 @@
         使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
         主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了6篇文章 · 
+        总计8.27k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
 </footer>
 
 
             </main>
         </div>
         <script 
-                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
                 
                 >
             </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
@@ -481,5 +516,50 @@
     }());
 </script>
 
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
     </body>
 </html>
