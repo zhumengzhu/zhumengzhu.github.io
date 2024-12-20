@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="参数建议 这些建议基于以下前提：\n假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半； 对于目前使用的 JDK 1.8.0_151，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数； 如果后续 JDK 版本升级到 1.8.0_191-b12 及以上，则不需要上述三个参数，改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数； 统一设置的参数 -XX:+UseG1GC 使用垃圾优先(G1)收集器 -XX:+PrintFlagsFinal 打印所有参数的最终值（参考：Java -XX:+PrintFlagsFinal命令行参数详解） -XX:+PrintCommandLineFlags 是打印那些被新值覆盖的项 -XX:+PrintStringTableStatistics 在 JVM 进程退出时会输出 SymbolTable 统计和 StringTable 统计（参考：聊聊jvm的StringTable及SymbolTable） -XX:+PrintGC 打印GC日志 -XX:+PrintGCDetails 打印详细的GC日志，还会在退出前打印堆的详细信息 -XX:+PrintGCDateStamps 打印CG发生的日期时间 -XX:+PrintGCTimeStamps 打印CG发生的相对时间戳 -XX:+PrintHeapAtGC 每次GC前后打印堆信息 -XX:+PrintTenuringDistribution YGC 时，打印出幸存区中对象的年龄分布 -XX:+PrintAdaptiveSizePolicy 打印分代大小调整的信息 -XX:+PrintGCApplicationStoppedTime 打印应用由于GC而产生的停顿时间 -XX:+PrintGCApplicationConcurrentTime 打印应用程序的执行时间 -XX:+PrintReferenceGC 打印软引用、弱引用、虚引用和Finallize队列处理情况 -XX:ParallelRefProcEnabled 启用并行引用处理 -XX:-OmitStackTraceInFastThrow 禁用 FastThrow 优化。如果开启，会导致抛出异常时没有堆栈信息，不利于排查问题。 -Xloggc:/app/logs/gc_$HOSTNAME.log GC 日志路径 -XX:GCLogFileSize=30M GC 日志文件大小 -XX:+UseGCLogFileRotation 启用 GC 日志文件滚动策略，需要先设置 -Xloggc -XX:NumberOfGCLogFiles=10 设置滚动日志时的文件数 -XX:+HeapDumpOnOutOfMemoryError 当发生 OOM 时，自动生成 dump 文件 -XX:HeapDumpPath=&quot;/app/logs/java_%p_$HOSTNAME.hprof&quot; 指定 dump 文件的路径 -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log 错误发生时，错误数据的存储路径 -Djava.security.egd=file:/dev/./urandom 加快随机数产生过程 允许调整的参数 -Xms2g -Xms4g total_memory / 2 最小堆内存，JVM 初始化时就会分配的堆内存大小。 -Xmx2g -Xms4g total_memory / 2 最大堆内存 -XX:MaxDirectMemorySize=512m -XX:MaxDirectMemorySize=512m - 设置最大直接内存（参考 JVM源码分析之堆外内存完全解读） -XX:MaxMetaspaceSize=512m -XX:MaxMetaspaceSize=512m - 设置最大元空间（参考JVM源码分析之Metaspace解密） -XX:MaxGCPauseMillis=200 -XX:MaxGCPauseMillis=200 - 设置最大GC暂停时间的目标。这是一个软目标，JVM将尽最大努力实现它。默认 200ms。 -XX:ParallelGCThreads=4 -XX:ParallelGCThreads=8 - 设置垃圾回收器并行阶段使用的线程数。计算公式见JVM调优系列: 默认GC线程数的计算公式 -XX:ConcGCThreads=1 -XX:ConcGCThreads=2 - 设置垃圾回收器并发阶段使用的线程数 -XX:G1ConcRefinementThreads=5 -XX:G1ConcRefinementThreads=9 ParallelGCThreads+1 设置并发优化线程，只专注扫描日志缓冲区记录的卡片来维护更新 RSet -XX:G1ReservePercent=10 -XX:G1ReservePercent=10 - 设置要保持空闲的预留内存的百分比，以减少空间溢出的风险。 默认值是10%。 当增加或减少这个百分比时，请确保对Java堆总量进行相同的调整。 -XX:InitiatingHeapOccupancyPercent=45 -XX:InitiatingHeapOccupancyPercent=45 - 启动并发GC周期的(整个)堆占用的百分比。 它由基于整个堆占用情况触发并发GC周期的GC使用，而不仅仅是其中的一个代(例如G1)。 值为0表示“执行恒定的GC周期”。 缺省值为45。 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:SoftRefLRUPolicyMSPerMB=1000 - 每1M空闲空间可保持的SoftReference对象生存的时长（单位ms）（参考：一次 JVM FullGC 的排查过程及解决方案！） 不建议设置的参数 不设置 -XX:+DisableExplicitGC，这样允许业务使用 System.gc() 在某些特定情况下主动 FullGC； 不要指定 -Xmn 参数，让 G1 自己去调整；如果设置了年轻代大小，会导致 G1 无法使用暂停时间目标； 完整参数示例 以下针对 4C8G 机器\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 -Xms4g -Xmx4g -XX:MaxDirectMemorySize=512m -XX:MaxMetaspaceSize=512m -XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags -XX:+PrintStringTableStatistics -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -XX:ConcGCThreads=2 -XX:G1ConcRefinementThreads=9 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -XX:+PrintAdaptiveSizePolicy -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:G1ReservePercent=10 -XX:InitiatingHeapOccupancyPercent=45 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:+PrintReferenceGC -XX:ParallelRefProcEnabled -Xloggc:/app/logs/gc_$HOSTNAME.log -XX:GCLogFileSize=30M -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=&#34;/app/logs/java_%p_$HOSTNAME.hprof&#34; -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log -XX:-OmitStackTraceInFastThrow -Djava.security.egd=file:/dev/./urandom 其它 建议升级 JDK 至少到 1.8.0_191-b12 及以上，原因参考 JVM如何获取当前容器的资源限制？ 和 云原生架构：容器资源限制及资源可见性 参考资料 Java HotSpot VM Options 10 Garbage-First Garbage Collector Tuning Collecting and reading G1 garbage collector logs - part 2 JVM性能——JVM调优参数列表 详解 G1 垃圾收集器 JVM之G1回收器和常见参数配置 ">
+<meta name="keywords" content="Java, JVM, Tunning"><title>JVM 参数建议及理由</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="JVM 参数建议及理由">
+<meta property='og:description' content="参数建议 这些建议基于以下前提：\n假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半； 对于目前使用的 JDK 1.8.0_151，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数； 如果后续 JDK 版本升级到 1.8.0_191-b12 及以上，则不需要上述三个参数，改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数； 统一设置的参数 -XX:+UseG1GC 使用垃圾优先(G1)收集器 -XX:+PrintFlagsFinal 打印所有参数的最终值（参考：Java -XX:+PrintFlagsFinal命令行参数详解） -XX:+PrintCommandLineFlags 是打印那些被新值覆盖的项 -XX:+PrintStringTableStatistics 在 JVM 进程退出时会输出 SymbolTable 统计和 StringTable 统计（参考：聊聊jvm的StringTable及SymbolTable） -XX:+PrintGC 打印GC日志 -XX:+PrintGCDetails 打印详细的GC日志，还会在退出前打印堆的详细信息 -XX:+PrintGCDateStamps 打印CG发生的日期时间 -XX:+PrintGCTimeStamps 打印CG发生的相对时间戳 -XX:+PrintHeapAtGC 每次GC前后打印堆信息 -XX:+PrintTenuringDistribution YGC 时，打印出幸存区中对象的年龄分布 -XX:+PrintAdaptiveSizePolicy 打印分代大小调整的信息 -XX:+PrintGCApplicationStoppedTime 打印应用由于GC而产生的停顿时间 -XX:+PrintGCApplicationConcurrentTime 打印应用程序的执行时间 -XX:+PrintReferenceGC 打印软引用、弱引用、虚引用和Finallize队列处理情况 -XX:ParallelRefProcEnabled 启用并行引用处理 -XX:-OmitStackTraceInFastThrow 禁用 FastThrow 优化。如果开启，会导致抛出异常时没有堆栈信息，不利于排查问题。 -Xloggc:/app/logs/gc_$HOSTNAME.log GC 日志路径 -XX:GCLogFileSize=30M GC 日志文件大小 -XX:+UseGCLogFileRotation 启用 GC 日志文件滚动策略，需要先设置 -Xloggc -XX:NumberOfGCLogFiles=10 设置滚动日志时的文件数 -XX:+HeapDumpOnOutOfMemoryError 当发生 OOM 时，自动生成 dump 文件 -XX:HeapDumpPath=&quot;/app/logs/java_%p_$HOSTNAME.hprof&quot; 指定 dump 文件的路径 -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log 错误发生时，错误数据的存储路径 -Djava.security.egd=file:/dev/./urandom 加快随机数产生过程 允许调整的参数 -Xms2g -Xms4g total_memory / 2 最小堆内存，JVM 初始化时就会分配的堆内存大小。 -Xmx2g -Xms4g total_memory / 2 最大堆内存 -XX:MaxDirectMemorySize=512m -XX:MaxDirectMemorySize=512m - 设置最大直接内存（参考 JVM源码分析之堆外内存完全解读） -XX:MaxMetaspaceSize=512m -XX:MaxMetaspaceSize=512m - 设置最大元空间（参考JVM源码分析之Metaspace解密） -XX:MaxGCPauseMillis=200 -XX:MaxGCPauseMillis=200 - 设置最大GC暂停时间的目标。这是一个软目标，JVM将尽最大努力实现它。默认 200ms。 -XX:ParallelGCThreads=4 -XX:ParallelGCThreads=8 - 设置垃圾回收器并行阶段使用的线程数。计算公式见JVM调优系列: 默认GC线程数的计算公式 -XX:ConcGCThreads=1 -XX:ConcGCThreads=2 - 设置垃圾回收器并发阶段使用的线程数 -XX:G1ConcRefinementThreads=5 -XX:G1ConcRefinementThreads=9 ParallelGCThreads+1 设置并发优化线程，只专注扫描日志缓冲区记录的卡片来维护更新 RSet -XX:G1ReservePercent=10 -XX:G1ReservePercent=10 - 设置要保持空闲的预留内存的百分比，以减少空间溢出的风险。 默认值是10%。 当增加或减少这个百分比时，请确保对Java堆总量进行相同的调整。 -XX:InitiatingHeapOccupancyPercent=45 -XX:InitiatingHeapOccupancyPercent=45 - 启动并发GC周期的(整个)堆占用的百分比。 它由基于整个堆占用情况触发并发GC周期的GC使用，而不仅仅是其中的一个代(例如G1)。 值为0表示“执行恒定的GC周期”。 缺省值为45。 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:SoftRefLRUPolicyMSPerMB=1000 - 每1M空闲空间可保持的SoftReference对象生存的时长（单位ms）（参考：一次 JVM FullGC 的排查过程及解决方案！） 不建议设置的参数 不设置 -XX:+DisableExplicitGC，这样允许业务使用 System.gc() 在某些特定情况下主动 FullGC； 不要指定 -Xmn 参数，让 G1 自己去调整；如果设置了年轻代大小，会导致 G1 无法使用暂停时间目标； 完整参数示例 以下针对 4C8G 机器\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 -Xms4g -Xmx4g -XX:MaxDirectMemorySize=512m -XX:MaxMetaspaceSize=512m -XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags -XX:+PrintStringTableStatistics -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -XX:ConcGCThreads=2 -XX:G1ConcRefinementThreads=9 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -XX:+PrintAdaptiveSizePolicy -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:G1ReservePercent=10 -XX:InitiatingHeapOccupancyPercent=45 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:+PrintReferenceGC -XX:ParallelRefProcEnabled -Xloggc:/app/logs/gc_$HOSTNAME.log -XX:GCLogFileSize=30M -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=&#34;/app/logs/java_%p_$HOSTNAME.hprof&#34; -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log -XX:-OmitStackTraceInFastThrow -Djava.security.egd=file:/dev/./urandom 其它 建议升级 JDK 至少到 1.8.0_191-b12 及以上，原因参考 JVM如何获取当前容器的资源限制？ 和 云原生架构：容器资源限制及资源可见性 参考资料 Java HotSpot VM Options 10 Garbage-First Garbage Collector Tuning Collecting and reading G1 garbage collector logs - part 2 JVM性能——JVM调优参数列表 详解 G1 垃圾收集器 JVM之G1回收器和常见参数配置 ">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Java' /><meta property='article:tag' content='JVM' /><meta property='article:tag' content='Tunning' /><meta property='article:published_time' content='2023-06-18T12:18:18&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T12:18:18&#43;08:00'/>
+<meta name="twitter:title" content="JVM 参数建议及理由">
+<meta name="twitter:description" content="参数建议 这些建议基于以下前提：\n假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半； 对于目前使用的 JDK 1.8.0_151，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数； 如果后续 JDK 版本升级到 1.8.0_191-b12 及以上，则不需要上述三个参数，改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数； 统一设置的参数 -XX:+UseG1GC 使用垃圾优先(G1)收集器 -XX:+PrintFlagsFinal 打印所有参数的最终值（参考：Java -XX:+PrintFlagsFinal命令行参数详解） -XX:+PrintCommandLineFlags 是打印那些被新值覆盖的项 -XX:+PrintStringTableStatistics 在 JVM 进程退出时会输出 SymbolTable 统计和 StringTable 统计（参考：聊聊jvm的StringTable及SymbolTable） -XX:+PrintGC 打印GC日志 -XX:+PrintGCDetails 打印详细的GC日志，还会在退出前打印堆的详细信息 -XX:+PrintGCDateStamps 打印CG发生的日期时间 -XX:+PrintGCTimeStamps 打印CG发生的相对时间戳 -XX:+PrintHeapAtGC 每次GC前后打印堆信息 -XX:+PrintTenuringDistribution YGC 时，打印出幸存区中对象的年龄分布 -XX:+PrintAdaptiveSizePolicy 打印分代大小调整的信息 -XX:+PrintGCApplicationStoppedTime 打印应用由于GC而产生的停顿时间 -XX:+PrintGCApplicationConcurrentTime 打印应用程序的执行时间 -XX:+PrintReferenceGC 打印软引用、弱引用、虚引用和Finallize队列处理情况 -XX:ParallelRefProcEnabled 启用并行引用处理 -XX:-OmitStackTraceInFastThrow 禁用 FastThrow 优化。如果开启，会导致抛出异常时没有堆栈信息，不利于排查问题。 -Xloggc:/app/logs/gc_$HOSTNAME.log GC 日志路径 -XX:GCLogFileSize=30M GC 日志文件大小 -XX:+UseGCLogFileRotation 启用 GC 日志文件滚动策略，需要先设置 -Xloggc -XX:NumberOfGCLogFiles=10 设置滚动日志时的文件数 -XX:+HeapDumpOnOutOfMemoryError 当发生 OOM 时，自动生成 dump 文件 -XX:HeapDumpPath=&quot;/app/logs/java_%p_$HOSTNAME.hprof&quot; 指定 dump 文件的路径 -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log 错误发生时，错误数据的存储路径 -Djava.security.egd=file:/dev/./urandom 加快随机数产生过程 允许调整的参数 -Xms2g -Xms4g total_memory / 2 最小堆内存，JVM 初始化时就会分配的堆内存大小。 -Xmx2g -Xms4g total_memory / 2 最大堆内存 -XX:MaxDirectMemorySize=512m -XX:MaxDirectMemorySize=512m - 设置最大直接内存（参考 JVM源码分析之堆外内存完全解读） -XX:MaxMetaspaceSize=512m -XX:MaxMetaspaceSize=512m - 设置最大元空间（参考JVM源码分析之Metaspace解密） -XX:MaxGCPauseMillis=200 -XX:MaxGCPauseMillis=200 - 设置最大GC暂停时间的目标。这是一个软目标，JVM将尽最大努力实现它。默认 200ms。 -XX:ParallelGCThreads=4 -XX:ParallelGCThreads=8 - 设置垃圾回收器并行阶段使用的线程数。计算公式见JVM调优系列: 默认GC线程数的计算公式 -XX:ConcGCThreads=1 -XX:ConcGCThreads=2 - 设置垃圾回收器并发阶段使用的线程数 -XX:G1ConcRefinementThreads=5 -XX:G1ConcRefinementThreads=9 ParallelGCThreads+1 设置并发优化线程，只专注扫描日志缓冲区记录的卡片来维护更新 RSet -XX:G1ReservePercent=10 -XX:G1ReservePercent=10 - 设置要保持空闲的预留内存的百分比，以减少空间溢出的风险。 默认值是10%。 当增加或减少这个百分比时，请确保对Java堆总量进行相同的调整。 -XX:InitiatingHeapOccupancyPercent=45 -XX:InitiatingHeapOccupancyPercent=45 - 启动并发GC周期的(整个)堆占用的百分比。 它由基于整个堆占用情况触发并发GC周期的GC使用，而不仅仅是其中的一个代(例如G1)。 值为0表示“执行恒定的GC周期”。 缺省值为45。 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:SoftRefLRUPolicyMSPerMB=1000 - 每1M空闲空间可保持的SoftReference对象生存的时长（单位ms）（参考：一次 JVM FullGC 的排查过程及解决方案！） 不建议设置的参数 不设置 -XX:+DisableExplicitGC，这样允许业务使用 System.gc() 在某些特定情况下主动 FullGC； 不要指定 -Xmn 参数，让 G1 自己去调整；如果设置了年轻代大小，会导致 G1 无法使用暂停时间目标； 完整参数示例 以下针对 4C8G 机器\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 -Xms4g -Xmx4g -XX:MaxDirectMemorySize=512m -XX:MaxMetaspaceSize=512m -XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags -XX:+PrintStringTableStatistics -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -XX:ConcGCThreads=2 -XX:G1ConcRefinementThreads=9 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -XX:+PrintAdaptiveSizePolicy -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:G1ReservePercent=10 -XX:InitiatingHeapOccupancyPercent=45 -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:+PrintReferenceGC -XX:ParallelRefProcEnabled -Xloggc:/app/logs/gc_$HOSTNAME.log -XX:GCLogFileSize=30M -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=&#34;/app/logs/java_%p_$HOSTNAME.hprof&#34; -XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log -XX:-OmitStackTraceInFastThrow -Djava.security.egd=file:/dev/./urandom 其它 建议升级 JDK 至少到 1.8.0_191-b12 及以上，原因参考 JVM如何获取当前容器的资源限制？ 和 云原生架构：容器资源限制及资源可见性 参考资料 Java HotSpot VM Options 10 Garbage-First Garbage Collector Tuning Collecting and reading G1 garbage collector logs - part 2 JVM性能——JVM调优参数列表 详解 G1 垃圾收集器 JVM之G1回收器和常见参数配置 ">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#参数建议">参数建议</a>
+      <ol>
+        <li><a href="#统一设置的参数">统一设置的参数</a></li>
+        <li><a href="#允许调整的参数">允许调整的参数</a></li>
+        <li><a href="#不建议设置的参数">不建议设置的参数</a></li>
+      </ol>
+    </li>
+    <li><a href="#完整参数示例">完整参数示例</a></li>
+    <li><a href="#其它">其它</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/java/" >
+                Java
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2023/06/jvm-parameter-recommendations-and-reasons/">JVM 参数建议及理由</a>
+        </h2>
+    
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2023/06/18</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-20 12:18:18 &#43;0800 CST" title="2024-12-20 12:18:18 &#43;0800 CST">
+                            2024/12/20 12:18 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 3 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="参数建议">参数建议
+</h2><p>这些建议基于以下前提：</p>
+<ul>
+<li>假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；</li>
+<li>对于目前使用的 <strong>JDK 1.8.0_151</strong>，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；</li>
+<li>如果后续 JDK 版本升级到 <strong>1.8.0_191-b12</strong> 及以上，则不需要上述三个参数，<del>改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数</del>；</li>
+</ul>
+<h3 id="统一设置的参数">统一设置的参数
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>-XX:+UseG1GC</th>
+          <th>使用垃圾优先(G1)收集器</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>-XX:+PrintFlagsFinal</td>
+          <td>打印所有参数的最终值（参考：Java -XX:+PrintFlagsFinal命令行参数详解）</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintCommandLineFlags</td>
+          <td>是打印那些被新值覆盖的项</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintStringTableStatistics</td>
+          <td>在 JVM 进程退出时会输出 SymbolTable 统计和 StringTable 统计（参考：聊聊jvm的StringTable及SymbolTable）</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGC</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>打印GC日志</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGCDetails</td>
+          <td>打印详细的GC日志，还会在退出前打印堆的详细信息</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGCDateStamps</td>
+          <td>打印CG发生的日期时间</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGCTimeStamps</td>
+          <td>打印CG发生的相对时间戳</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintHeapAtGC</td>
+          <td>每次GC前后打印堆信息</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintTenuringDistribution</td>
+          <td>YGC 时，打印出幸存区中对象的年龄分布</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintAdaptiveSizePolicy</td>
+          <td>打印分代大小调整的信息</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGCApplicationStoppedTime</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>打印应用由于GC而产生的停顿时间</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintGCApplicationConcurrentTime</td>
+          <td>打印应用程序的执行时间</td>
+      </tr>
+      <tr>
+          <td>-XX:+PrintReferenceGC</td>
+          <td>打印软引用、弱引用、虚引用和Finallize队列处理情况</td>
+      </tr>
+      <tr>
+          <td>-XX:ParallelRefProcEnabled</td>
+          <td>启用并行引用处理</td>
+      </tr>
+      <tr>
+          <td>-XX:-OmitStackTraceInFastThrow</td>
+          <td>禁用 FastThrow 优化。如果开启，会导致抛出异常时没有堆栈信息，不利于排查问题。</td>
+      </tr>
+      <tr>
+          <td>-Xloggc:/app/logs/gc_$HOSTNAME.log</td>
+          <td>GC 日志路径</td>
+      </tr>
+      <tr>
+          <td>-XX:GCLogFileSize=30M</td>
+          <td>GC 日志文件大小</td>
+      </tr>
+      <tr>
+          <td>-XX:+UseGCLogFileRotation</td>
+          <td>启用 GC 日志文件滚动策略，需要先设置 -Xloggc</td>
+      </tr>
+      <tr>
+          <td>-XX:NumberOfGCLogFiles=10</td>
+          <td>设置滚动日志时的文件数</td>
+      </tr>
+      <tr>
+          <td>-XX:+HeapDumpOnOutOfMemoryError</td>
+          <td>当发生 OOM 时，自动生成 dump 文件</td>
+      </tr>
+      <tr>
+          <td>-XX:HeapDumpPath=&quot;/app/logs/java_%p_$HOSTNAME.hprof&quot;</td>
+          <td>指定 dump 文件的路径</td>
+      </tr>
+      <tr>
+          <td>-XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log</td>
+          <td>错误发生时，错误数据的存储路径</td>
+      </tr>
+      <tr>
+          <td>-Djava.security.egd=file:/dev/./urandom</td>
+          <td>加快随机数产生过程</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="允许调整的参数">允许调整的参数
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>-Xms2g</th>
+          <th>-Xms4g</th>
+          <th>total_memory / 2</th>
+          <th>最小堆内存，JVM 初始化时就会分配的堆内存大小。</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>-Xmx2g</td>
+          <td>-Xms4g</td>
+          <td>total_memory / 2</td>
+          <td>最大堆内存</td>
+      </tr>
+      <tr>
+          <td>-XX:MaxDirectMemorySize=512m</td>
+          <td>-XX:MaxDirectMemorySize=512m</td>
+          <td>-</td>
+          <td>设置最大直接内存（参考 <a class="link" href="http://lovestblog.cn/blog/2015/05/12/direct-buffer/"  target="_blank" rel="noopener"
+    >JVM源码分析之堆外内存完全解读</a>）</td>
+      </tr>
+      <tr>
+          <td>-XX:MaxMetaspaceSize=512m</td>
+          <td>-XX:MaxMetaspaceSize=512m</td>
+          <td>-</td>
+          <td>设置最大元空间（参考<a class="link" href="http://lovestblog.cn/blog/2016/10/29/metaspace/"  target="_blank" rel="noopener"
+    >JVM源码分析之Metaspace解密</a>）</td>
+      </tr>
+      <tr>
+          <td>-XX:MaxGCPauseMillis=200</td>
+          <td>-XX:MaxGCPauseMillis=200</td>
+          <td>-</td>
+          <td>设置最大GC暂停时间的目标。这是一个软目标，JVM将尽最大努力实现它。默认 200ms。</td>
+      </tr>
+      <tr>
+          <td>-XX:ParallelGCThreads=4</td>
+          <td>-XX:ParallelGCThreads=8</td>
+          <td>-</td>
+          <td>设置垃圾回收器并行阶段使用的线程数。计算公式见<a class="link" href="https://github.com/cncounter/translation/blob/master/tiemao_2022/03_gc_thread_count/README.md#g1-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8"  target="_blank" rel="noopener"
+    >JVM调优系列: 默认GC线程数的计算公式</a></td>
+      </tr>
+      <tr>
+          <td>-XX:ConcGCThreads=1</td>
+          <td>-XX:ConcGCThreads=2</td>
+          <td>-</td>
+          <td>设置垃圾回收器并发阶段使用的线程数</td>
+      </tr>
+      <tr>
+          <td>-XX:G1ConcRefinementThreads=5</td>
+          <td>-XX:G1ConcRefinementThreads=9</td>
+          <td>ParallelGCThreads+1</td>
+          <td>设置并发优化线程，只专注扫描日志缓冲区记录的卡片来维护更新 RSet</td>
+      </tr>
+      <tr>
+          <td>-XX:G1ReservePercent=10</td>
+          <td>-XX:G1ReservePercent=10</td>
+          <td>-</td>
+          <td>设置要保持空闲的预留内存的百分比，以减少空间溢出的风险。 默认值是10%。 当增加或减少这个百分比时，请确保对Java堆总量进行相同的调整。</td>
+      </tr>
+      <tr>
+          <td>-XX:InitiatingHeapOccupancyPercent=45</td>
+          <td>-XX:InitiatingHeapOccupancyPercent=45</td>
+          <td>-</td>
+          <td>启动并发GC周期的(整个)堆占用的百分比。 它由基于整个堆占用情况触发并发GC周期的GC使用，而不仅仅是其中的一个代(例如G1)。 值为0表示“执行恒定的GC周期”。 缺省值为45。</td>
+      </tr>
+      <tr>
+          <td>-XX:SoftRefLRUPolicyMSPerMB=1000</td>
+          <td>-XX:SoftRefLRUPolicyMSPerMB=1000</td>
+          <td>-</td>
+          <td>每1M空闲空间可保持的SoftReference对象生存的时长（单位ms）（参考：<a class="link" href="https://juejin.cn/post/6844903863062003720"  target="_blank" rel="noopener"
+    >一次 JVM FullGC 的排查过程及解决方案！</a>）</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="不建议设置的参数">不建议设置的参数
+</h3><ul>
+<li>不设置 -XX:+DisableExplicitGC，这样允许业务使用 System.gc() 在某些特定情况下主动 FullGC；</li>
+<li><strong>不要指定 -Xmn 参数</strong>，让 G1 自己去调整；如果设置了年轻代大小，会导致 G1 无法使用暂停时间目标；</li>
+</ul>
+<h2 id="完整参数示例">完整参数示例
+</h2><p>以下针对 4C8G 机器</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">-Xms4g
+</span></span><span class="line"><span class="cl">-Xmx4g
+</span></span><span class="line"><span class="cl">-XX:MaxDirectMemorySize<span class="o">=</span>512m
+</span></span><span class="line"><span class="cl">-XX:MaxMetaspaceSize<span class="o">=</span>512m
+</span></span><span class="line"><span class="cl">-XX:+PrintFlagsFinal
+</span></span><span class="line"><span class="cl">-XX:+PrintCommandLineFlags
+</span></span><span class="line"><span class="cl">-XX:+PrintStringTableStatistics
+</span></span><span class="line"><span class="cl">-XX:+UseG1GC
+</span></span><span class="line"><span class="cl">-XX:MaxGCPauseMillis<span class="o">=</span><span class="m">200</span>
+</span></span><span class="line"><span class="cl">-XX:ParallelGCThreads<span class="o">=</span><span class="m">8</span>
+</span></span><span class="line"><span class="cl">-XX:ConcGCThreads<span class="o">=</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl">-XX:G1ConcRefinementThreads<span class="o">=</span><span class="m">9</span>
+</span></span><span class="line"><span class="cl">-XX:+PrintGC
+</span></span><span class="line"><span class="cl">-XX:+PrintGCDetails
+</span></span><span class="line"><span class="cl">-XX:+PrintGCDateStamps
+</span></span><span class="line"><span class="cl">-XX:+PrintGCTimeStamps
+</span></span><span class="line"><span class="cl">-XX:+PrintHeapAtGC
+</span></span><span class="line"><span class="cl">-XX:+PrintTenuringDistribution
+</span></span><span class="line"><span class="cl">-XX:+PrintAdaptiveSizePolicy
+</span></span><span class="line"><span class="cl">-XX:+PrintGCApplicationStoppedTime
+</span></span><span class="line"><span class="cl">-XX:+PrintGCApplicationConcurrentTime
+</span></span><span class="line"><span class="cl">-XX:G1ReservePercent<span class="o">=</span><span class="m">10</span>
+</span></span><span class="line"><span class="cl">-XX:InitiatingHeapOccupancyPercent<span class="o">=</span><span class="m">45</span>
+</span></span><span class="line"><span class="cl">-XX:SoftRefLRUPolicyMSPerMB<span class="o">=</span><span class="m">1000</span>
+</span></span><span class="line"><span class="cl">-XX:+PrintReferenceGC 
+</span></span><span class="line"><span class="cl">-XX:ParallelRefProcEnabled
+</span></span><span class="line"><span class="cl">-Xloggc:/app/logs/gc_<span class="nv">$HOSTNAME</span>.log 
+</span></span><span class="line"><span class="cl">-XX:GCLogFileSize<span class="o">=</span>30M
+</span></span><span class="line"><span class="cl">-XX:+UseGCLogFileRotation
+</span></span><span class="line"><span class="cl">-XX:NumberOfGCLogFiles<span class="o">=</span><span class="m">5</span>
+</span></span><span class="line"><span class="cl">-XX:+HeapDumpOnOutOfMemoryError
+</span></span><span class="line"><span class="cl">-XX:HeapDumpPath<span class="o">=</span><span class="s2">&#34;/app/logs/java_%p_</span><span class="nv">$HOSTNAME</span><span class="s2">.hprof&#34;</span>
+</span></span><span class="line"><span class="cl">-XX:ErrorFile<span class="o">=</span>/app/logs/hs_err_%p_<span class="nv">$HOSTNAME</span>.log
+</span></span><span class="line"><span class="cl">-XX:-OmitStackTraceInFastThrow
+</span></span><span class="line"><span class="cl">-Djava.security.egd<span class="o">=</span>file:/dev/./urandom
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="其它">其它
+</h2><ul>
+<li>建议升级 JDK 至少到 1.8.0_191-b12 及以上，原因参考 <a class="link" href="https://developer.aliyun.com/article/1128500#slide-1"  target="_blank" rel="noopener"
+    >JVM如何获取当前容器的资源限制？</a> 和 <a class="link" href="https://xie.infoq.cn/article/59a80c31fa55b2d26751b513f"  target="_blank" rel="noopener"
+    >云原生架构：容器资源限制及资源可见性</a></li>
+</ul>
+<h2 id="参考资料">参考资料
+</h2><ul>
+<li><a class="link" href="https://www.oracle.com/java/technologies/javase/vmoptions-jsp.html"  target="_blank" rel="noopener"
+    >Java HotSpot VM Options</a></li>
+<li><a class="link" href="https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc_tuning.html#sthref51"  target="_blank" rel="noopener"
+    >10 Garbage-First Garbage Collector Tuning</a></li>
+<li><a class="link" href="https://www.redhat.com/en/blog/collecting-and-reading-g1-garbage-collector-logs-part-2"  target="_blank" rel="noopener"
+    >Collecting and reading G1 garbage collector logs - part 2</a></li>
+<li><a class="link" href="https://blog.csdn.net/qq330983778/article/details/127644300"  target="_blank" rel="noopener"
+    >JVM性能——JVM调优参数列表</a></li>
+<li><a class="link" href="http://www.linkedkeeper.com/1511.html"  target="_blank" rel="noopener"
+    >详解 G1 垃圾收集器</a></li>
+<li><a class="link" href="https://zhuanlan.zhihu.com/p/83804324"  target="_blank" rel="noopener"
+    >JVM之G1回收器和常见参数配置</a></li>
+</ul>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/java/">Java</a>
+        
+            <a href="/tags/jvm/">JVM</a>
+        
+            <a href="/tags/tunning/">Tunning</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            最后更新于 2024/12/20 12:18 CST
+        </span>
+    </section></footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="">
+    <a href="/2024/07/in-depth-jvm-performance-tuning-guide/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JVM性能调优实战分享</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/01/java-random-number-issues-overview/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java 随机数问题综述</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2024 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了8篇文章 ·
+        总计11.50k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

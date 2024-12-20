@@ -3,25 +3,31 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://zhumengzhu.github.io/post/</loc>
-    <lastmod>2024-12-16T11:57:29+08:00</lastmod>
+    <lastmod>2024-12-20T15:04:09+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/categories/</loc>
-    <lastmod>2024-12-16T11:57:29+08:00</lastmod>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/gc/</loc>
     <lastmod>2024-12-16T11:57:29+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/java/</loc>
-    <lastmod>2024-12-16T11:57:29+08:00</lastmod>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/jvm/</loc>
-    <lastmod>2024-12-16T11:57:29+08:00</lastmod>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/2024/07/in-depth-jvm-performance-tuning-guide/</loc>
     <lastmod>2024-12-16T11:57:29+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/</loc>
-    <lastmod>2024-12-16T11:57:29+08:00</lastmod>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/</loc>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/tunning/</loc>
+    <lastmod>2024-12-20T12:18:18+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/2023/01/java-random-number-issues-overview/</loc>
     <lastmod>2023-01-30T10:33:47+08:00</lastmod>
@@ -89,13 +95,13 @@
     <loc>https://zhumengzhu.github.io/tags/blog/</loc>
     <lastmod>2022-11-05T22:22:52+08:00</lastmod>
   </url><url>
-    <loc>https://zhumengzhu.github.io/categories/blog/</loc>
-    <lastmod>2022-11-05T22:22:52+08:00</lastmod>
-  </url><url>
     <loc>https://zhumengzhu.github.io/tags/hugo/</loc>
     <lastmod>2022-11-05T22:22:52+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/2022/10/hugo-quick-start/</loc>
+    <lastmod>2022-11-05T22:22:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/categories/learning-journal/</loc>
     <lastmod>2022-11-05T22:22:52+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/git/</loc>
@@ -111,9 +117,6 @@
     <lastmod>2022-10-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/%E6%9D%82%E8%B0%88/</loc>
-    <lastmod>2022-10-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://zhumengzhu.github.io/categories/%E6%9D%82%E8%B0%88/</loc>
     <lastmod>2022-10-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/archives/</loc>

@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Tunning on Somnus</title>
+        <link>https://zhumengzhu.github.io/tags/tunning/</link>
+        <description>Recent content in Tunning on Somnus</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>All Rights Reserved</copyright>
+        <lastBuildDate>Fri, 20 Dec 2024 12:18:18 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/tunning/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>JVM 参数建议及理由</title>
+        <link>https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/</link>
+        <pubDate>Sun, 18 Jun 2023 12:18:18 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/</guid>
+        <description>&lt;h2 id=&#34;参数建议&#34;&gt;参数建议
+&lt;/h2&gt;&lt;p&gt;这些建议基于以下前提：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；&lt;/li&gt;
+&lt;li&gt;对于目前使用的 &lt;strong&gt;JDK 1.8.0_151&lt;/strong&gt;，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；&lt;/li&gt;
+&lt;li&gt;如果后续 JDK 版本升级到 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt; 及以上，则不需要上述三个参数，&lt;del&gt;改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数&lt;/del&gt;；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;统一设置的参数&#34;&gt;统一设置的参数
+&lt;/h3&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;-XX:+UseG1GC&lt;/th&gt;
+          &lt;th&gt;使用垃圾优先(G1)收集器&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintFlagsFinal&lt;/td&gt;
+          &lt;td&gt;打印所有参数的最终值（参考：Java -XX:+PrintFlagsFinal命令行参数详解）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintCommandLineFlags&lt;/td&gt;
+          &lt;td&gt;是打印那些被新值覆盖的项&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintStringTableStatistics&lt;/td&gt;
+          &lt;td&gt;在 JVM 进程退出时会输出 SymbolTable 统计和 StringTable 统计（参考：聊聊jvm的StringTable及SymbolTable）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGC&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;打印GC日志&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGCDetails&lt;/td&gt;
+          &lt;td&gt;打印详细的GC日志，还会在退出前打印堆的详细信息&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGCDateStamps&lt;/td&gt;
+          &lt;td&gt;打印CG发生的日期时间&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGCTimeStamps&lt;/td&gt;
+          &lt;td&gt;打印CG发生的相对时间戳&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintHeapAtGC&lt;/td&gt;
+          &lt;td&gt;每次GC前后打印堆信息&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintTenuringDistribution&lt;/td&gt;
+          &lt;td&gt;YGC 时，打印出幸存区中对象的年龄分布&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintAdaptiveSizePolicy&lt;/td&gt;
+          &lt;td&gt;打印分代大小调整的信息&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGCApplicationStoppedTime&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;打印应用由于GC而产生的停顿时间&lt;/td&gt;
+          &lt;td&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintGCApplicationConcurrentTime&lt;/td&gt;
+          &lt;td&gt;打印应用程序的执行时间&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+PrintReferenceGC&lt;/td&gt;
+          &lt;td&gt;打印软引用、弱引用、虚引用和Finallize队列处理情况&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:ParallelRefProcEnabled&lt;/td&gt;
+          &lt;td&gt;启用并行引用处理&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:-OmitStackTraceInFastThrow&lt;/td&gt;
+          &lt;td&gt;禁用 FastThrow 优化。如果开启，会导致抛出异常时没有堆栈信息，不利于排查问题。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-Xloggc:/app/logs/gc_$HOSTNAME.log&lt;/td&gt;
+          &lt;td&gt;GC 日志路径&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:GCLogFileSize=30M&lt;/td&gt;
+          &lt;td&gt;GC 日志文件大小&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+UseGCLogFileRotation&lt;/td&gt;
+          &lt;td&gt;启用 GC 日志文件滚动策略，需要先设置 -Xloggc&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:NumberOfGCLogFiles=10&lt;/td&gt;
+          &lt;td&gt;设置滚动日志时的文件数&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:+HeapDumpOnOutOfMemoryError&lt;/td&gt;
+          &lt;td&gt;当发生 OOM 时，自动生成 dump 文件&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:HeapDumpPath=&amp;quot;/app/logs/java_%p_$HOSTNAME.hprof&amp;quot;&lt;/td&gt;
+          &lt;td&gt;指定 dump 文件的路径&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:ErrorFile=/app/logs/hs_err_%p_$HOSTNAME.log&lt;/td&gt;
+          &lt;td&gt;错误发生时，错误数据的存储路径&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-Djava.security.egd=file:/dev/./urandom&lt;/td&gt;
+          &lt;td&gt;加快随机数产生过程&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;允许调整的参数&#34;&gt;允许调整的参数
+&lt;/h3&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;-Xms2g&lt;/th&gt;
+          &lt;th&gt;-Xms4g&lt;/th&gt;
+          &lt;th&gt;total_memory / 2&lt;/th&gt;
+          &lt;th&gt;最小堆内存，JVM 初始化时就会分配的堆内存大小。&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-Xmx2g&lt;/td&gt;
+          &lt;td&gt;-Xms4g&lt;/td&gt;
+          &lt;td&gt;total_memory / 2&lt;/td&gt;
+          &lt;td&gt;最大堆内存&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:MaxDirectMemorySize=512m&lt;/td&gt;
+          &lt;td&gt;-XX:MaxDirectMemorySize=512m&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置最大直接内存（参考 &lt;a class=&#34;link&#34; href=&#34;http://lovestblog.cn/blog/2015/05/12/direct-buffer/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM源码分析之堆外内存完全解读&lt;/a&gt;）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:MaxMetaspaceSize=512m&lt;/td&gt;
+          &lt;td&gt;-XX:MaxMetaspaceSize=512m&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置最大元空间（参考&lt;a class=&#34;link&#34; href=&#34;http://lovestblog.cn/blog/2016/10/29/metaspace/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM源码分析之Metaspace解密&lt;/a&gt;）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:MaxGCPauseMillis=200&lt;/td&gt;
+          &lt;td&gt;-XX:MaxGCPauseMillis=200&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置最大GC暂停时间的目标。这是一个软目标，JVM将尽最大努力实现它。默认 200ms。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:ParallelGCThreads=4&lt;/td&gt;
+          &lt;td&gt;-XX:ParallelGCThreads=8&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置垃圾回收器并行阶段使用的线程数。计算公式见&lt;a class=&#34;link&#34; href=&#34;https://github.com/cncounter/translation/blob/master/tiemao_2022/03_gc_thread_count/README.md#g1-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM调优系列: 默认GC线程数的计算公式&lt;/a&gt;&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:ConcGCThreads=1&lt;/td&gt;
+          &lt;td&gt;-XX:ConcGCThreads=2&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置垃圾回收器并发阶段使用的线程数&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:G1ConcRefinementThreads=5&lt;/td&gt;
+          &lt;td&gt;-XX:G1ConcRefinementThreads=9&lt;/td&gt;
+          &lt;td&gt;ParallelGCThreads+1&lt;/td&gt;
+          &lt;td&gt;设置并发优化线程，只专注扫描日志缓冲区记录的卡片来维护更新 RSet&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:G1ReservePercent=10&lt;/td&gt;
+          &lt;td&gt;-XX:G1ReservePercent=10&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;设置要保持空闲的预留内存的百分比，以减少空间溢出的风险。 默认值是10%。 当增加或减少这个百分比时，请确保对Java堆总量进行相同的调整。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:InitiatingHeapOccupancyPercent=45&lt;/td&gt;
+          &lt;td&gt;-XX:InitiatingHeapOccupancyPercent=45&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;启动并发GC周期的(整个)堆占用的百分比。 它由基于整个堆占用情况触发并发GC周期的GC使用，而不仅仅是其中的一个代(例如G1)。 值为0表示“执行恒定的GC周期”。 缺省值为45。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;-XX:SoftRefLRUPolicyMSPerMB=1000&lt;/td&gt;
+          &lt;td&gt;-XX:SoftRefLRUPolicyMSPerMB=1000&lt;/td&gt;
+          &lt;td&gt;-&lt;/td&gt;
+          &lt;td&gt;每1M空闲空间可保持的SoftReference对象生存的时长（单位ms）（参考：&lt;a class=&#34;link&#34; href=&#34;https://juejin.cn/post/6844903863062003720&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;一次 JVM FullGC 的排查过程及解决方案！&lt;/a&gt;）&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;不建议设置的参数&#34;&gt;不建议设置的参数
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;不设置 -XX:+DisableExplicitGC，这样允许业务使用 System.gc() 在某些特定情况下主动 FullGC；&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;不要指定 -Xmn 参数&lt;/strong&gt;，让 G1 自己去调整；如果设置了年轻代大小，会导致 G1 无法使用暂停时间目标；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;完整参数示例&#34;&gt;完整参数示例
+&lt;/h2&gt;&lt;p&gt;以下针对 4C8G 机器&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;26
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;27
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;28
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;29
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;30
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;31
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;32
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;33
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;34
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;35
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-Xms4g
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-Xmx4g
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:MaxDirectMemorySize&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;512m
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:MaxMetaspaceSize&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;512m
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintFlagsFinal
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintCommandLineFlags
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintStringTableStatistics
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+UseG1GC
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:MaxGCPauseMillis&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;200&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:ParallelGCThreads&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;8&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:ConcGCThreads&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:G1ConcRefinementThreads&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;9&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGC
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGCDetails
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGCDateStamps
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGCTimeStamps
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintHeapAtGC
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintTenuringDistribution
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintAdaptiveSizePolicy
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGCApplicationStoppedTime
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintGCApplicationConcurrentTime
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:G1ReservePercent&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;10&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:InitiatingHeapOccupancyPercent&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;45&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:SoftRefLRUPolicyMSPerMB&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+PrintReferenceGC 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:ParallelRefProcEnabled
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-Xloggc:/app/logs/gc_&lt;span class=&#34;nv&#34;&gt;$HOSTNAME&lt;/span&gt;.log 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:GCLogFileSize&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;30M
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+UseGCLogFileRotation
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:NumberOfGCLogFiles&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;5&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+HeapDumpOnOutOfMemoryError
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:HeapDumpPath&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;#34;/app/logs/java_%p_&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOSTNAME&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;.hprof&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:ErrorFile&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;/app/logs/hs_err_%p_&lt;span class=&#34;nv&#34;&gt;$HOSTNAME&lt;/span&gt;.log
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:-OmitStackTraceInFastThrow
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-Djava.security.egd&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;file:/dev/./urandom
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;其它&#34;&gt;其它
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;建议升级 JDK 至少到 1.8.0_191-b12 及以上，原因参考 &lt;a class=&#34;link&#34; href=&#34;https://developer.aliyun.com/article/1128500#slide-1&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM如何获取当前容器的资源限制？&lt;/a&gt; 和 &lt;a class=&#34;link&#34; href=&#34;https://xie.infoq.cn/article/59a80c31fa55b2d26751b513f&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;云原生架构：容器资源限制及资源可见性&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考资料&#34;&gt;参考资料
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.oracle.com/java/technologies/javase/vmoptions-jsp.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Java HotSpot VM Options&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc_tuning.html#sthref51&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;10 Garbage-First Garbage Collector Tuning&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.redhat.com/en/blog/collecting-and-reading-g1-garbage-collector-logs-part-2&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Collecting and reading G1 garbage collector logs - part 2&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/qq330983778/article/details/127644300&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM性能——JVM调优参数列表&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;http://www.linkedkeeper.com/1511.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;详解 G1 垃圾收集器&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://zhuanlan.zhihu.com/p/83804324&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM之G1回收器和常见参数配置&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+        </item>
+        
+    </channel>
+</rss>

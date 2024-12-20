@@ -407,7 +407,29 @@
 &lt;li&gt;现代 CPU 可以在 1 秒内用暴力方法逆向的推测出当前的种子值；&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;benchmark&#34;&gt;Benchmark
-&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;/h2&gt;&lt;p&gt;单线程结果：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/random_1_2023-2-2_13-51-43.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;4 线程结果：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/random_2_2023-2-2_13-51-43.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
