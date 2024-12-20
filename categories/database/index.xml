@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
-        <title>MySQL on Somnus</title>
-        <link>https://zhumengzhu.github.io/categories/mysql/</link>
-        <description>Recent content in MySQL on Somnus</description>
+        <title>Database on Somnus</title>
+        <link>https://zhumengzhu.github.io/categories/database/</link>
+        <description>Recent content in Database on Somnus</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <copyright>All Rights Reserved</copyright><atom:link href="https://zhumengzhu.github.io/categories/mysql/index.xml" rel="self" type="application/rss+xml" /><item>
+        <copyright>All Rights Reserved</copyright><atom:link href="https://zhumengzhu.github.io/categories/database/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>Mysql 只更新未使用的一行数据问题</title>
         <link>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
