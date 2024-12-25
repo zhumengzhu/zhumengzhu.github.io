@@ -431,6 +431,102 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
 &lt;/ul&gt;</description>
         </item>
         <item>
+        <title>Oracle JDK 和 OpenJDK 如何选择？</title>
+        <link>https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/</link>
+        <pubDate>Tue, 11 Jul 2023 12:35:11 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/</guid>
+        <description>&lt;h2 id=&#34;q1jdk-和-jre-的区别&#34;&gt;Q1、JDK 和 JRE 的区别
+&lt;/h2&gt;&lt;p&gt;答：&lt;strong&gt;JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;JDK&lt;/code&gt;(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;JRE&lt;/code&gt;(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。
+见：https://docs.oracle.com/javase/8/docs/&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/jdk_selection_1_2023-7-11_17-19-25.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;q2oracle-jdk-究竟从哪个版本开始收费&#34;&gt;Q2、Oracle JDK 究竟从哪个版本开始收费？
+&lt;/h2&gt;&lt;p&gt;答：&lt;strong&gt;jdk8u201&lt;/strong&gt; 和 &lt;strong&gt;jdk8u202&lt;/strong&gt; 是 orcale jdk8 最后的免费版本，从 &lt;strong&gt;jdk8u211&lt;/strong&gt; 和 &lt;strong&gt;jdk8u212&lt;/strong&gt; 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;如果使用 Orcale JDK，建议 jdk8u201:&lt;/strong&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/jdk_selection_2_2023-7-11_17-19-25.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;q3如何下载-orcale-jdk-8u201&#34;&gt;Q3、如何下载 Orcale JDK 8u201?
+&lt;/h2&gt;&lt;p&gt;答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/jdk_selection_3_2023-7-11_17-19-25.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;q4oracle-jdk8u-和-openjdk8u-有什么区别&#34;&gt;Q4、Oracle JDK8u 和 OpenJDK8u 有什么区别？
+&lt;/h2&gt;&lt;p&gt;答：&lt;strong&gt;最主要的是授权协议不同&lt;/strong&gt;。Orcale 的高版本商用时收费，OpenJDK 则完全免费。&lt;/p&gt;
+&lt;p&gt;其次还有&lt;strong&gt;OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK&lt;/strong&gt;等问题，但一般来说，这些影响可以忽略。&lt;/p&gt;
+&lt;h2 id=&#34;q5jdk8-的支持到什么时候结束&#34;&gt;Q5、JDK8 的支持到什么时候结束？
+&lt;/h2&gt;&lt;p&gt;答：&lt;strong&gt;2030年12月31日&lt;/strong&gt;，https://endoflife.date/java
+&lt;img src=&#34;https://zhumengzhu.github.io/images/jdk_selection_4_2023-7-11_17-19-25.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;q6openjdk-支持-java-flight-recorder-吗&#34;&gt;Q6、OpenJDK 支持 Java Flight Recorder 吗？
+&lt;/h2&gt;&lt;p&gt;答：支持，见：&lt;a class=&#34;link&#34; href=&#34;https://www.infoq.cn/article/9jTktb5c2qzizFTxzE7Q&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;低延迟 Profile 工具 Flight Recorder 被移植到 Java 8&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;开启方法：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;q7openjdk8-中的-java-flight-recorder-是商用特性吗&#34;&gt;Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？
+&lt;/h2&gt;&lt;p&gt;答：不是，该特性在 OpenJDK 是完全免费的，见：&lt;a class=&#34;link&#34; href=&#34;https://developers.redhat.com/blog/2020/08/25/get-started-with-jdk-flight-recorder-in-openjdk-8u&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Get started with JDK Flight Recorder in OpenJDK 8u&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 &lt;code&gt;-XX:+UnlockCommercialFeatures&lt;/code&gt; 开启；同时&lt;strong&gt;为了兼容性，使用 OpenJDK 也要添加该参数&lt;/strong&gt;。&lt;/p&gt;
+&lt;h2 id=&#34;q8openjdk8-支持识别-docker-容器的资源限制吗&#34;&gt;Q8、OpenJDK8 支持识别 Docker 容器的资源限制吗？
+&lt;/h2&gt;&lt;p&gt;答：取决于版本。&lt;/p&gt;
+&lt;p&gt;比如：从 jdk8u191 开始完整支持，不需要需要使用 &lt;code&gt;-XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8&lt;/code&gt; 这些参数指定 GC 线程数。&lt;/p&gt;
+&lt;p&gt;详见：&lt;a class=&#34;link&#34; href=&#34;https://blog.longtian.info/2021/04/13/containerized-jvm-parameters.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;JVM 对容器化支持的参数&lt;/a&gt;（强烈建议，参考该文章在 docker 中进行验证）。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;小于 &lt;code&gt;jdk8u131&lt;/code&gt; 版本不支持；&lt;/li&gt;
+&lt;li&gt;大于等于 &lt;code&gt;jdk8u131&lt;/code&gt;，小于 &lt;code&gt;jdk8u191&lt;/code&gt; 实验性支持；&lt;/li&gt;
+&lt;li&gt;大于等于 &lt;code&gt;jdk8u191&lt;/code&gt; 开始完整的支持；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;q9如何下载-openjdk8&#34;&gt;Q9、如何下载 OpenJDK8？
+&lt;/h2&gt;&lt;p&gt;答： 很多，这里给出两个：&lt;a class=&#34;link&#34; href=&#34;https://www.azul.com/downloads/?version=java-8-lts&amp;amp;os=linux&amp;amp;package=jdk#zulu&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Azul Zulu Downloads&lt;/a&gt;，&lt;a class=&#34;link&#34; href=&#34;https://www.openlogic.com/openjdk-downloads?field_java_parent_version_target_id=416&amp;amp;field_operating_system_target_id=426&amp;amp;field_architecture_target_id=391&amp;amp;field_java_package_target_id=396&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;OpenLogic OpenJDK Downloads&lt;/a&gt; 。&lt;/p&gt;
+&lt;p&gt;特别地，如果是在&lt;strong&gt;个人开发电脑&lt;/strong&gt;，则强烈建议使用 &lt;a class=&#34;link&#34; href=&#34;https://sdkman.io/install/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;SDKMAN&lt;/a&gt; ，它支持&lt;strong&gt;并行版本管理&lt;/strong&gt;，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。&lt;/p&gt;</description>
+        </item>
+        <item>
         <title>JVM 参数建议及理由</title>
         <link>https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/</link>
         <pubDate>Sun, 18 Jun 2023 12:18:18 +0800</pubDate>
@@ -439,9 +535,9 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
         <description>&lt;h2 id=&#34;参数建议&#34;&gt;参数建议
 &lt;/h2&gt;&lt;p&gt;这些建议基于以下前提：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；&lt;/li&gt;
-&lt;li&gt;对于目前使用的 &lt;strong&gt;JDK 1.8.0_151&lt;/strong&gt;，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；&lt;/li&gt;
-&lt;li&gt;如果后续 JDK 版本升级到 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt; 及以上，则不需要上述三个参数，&lt;del&gt;改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数&lt;/del&gt;；&lt;/li&gt;
+&lt;li&gt;服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；&lt;/li&gt;
+&lt;li&gt;如果 JDK 版本小于 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt;(如&lt;strong&gt;JDK 1.8.0_151&lt;/strong&gt;)，则需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；&lt;/li&gt;
+&lt;li&gt;如果 JDK 版本升级到 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt; 及以上，则最好不要设置上述三个参数，&lt;del&gt;改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数&lt;/del&gt;；&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;统一设置的参数&#34;&gt;统一设置的参数
 &lt;/h3&gt;&lt;table&gt;

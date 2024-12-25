@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="记录我的网络代理设置">
-<meta name="keywords" content="Network, Git, Proxy"><title>代理设置</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="Q1、JDK 和 JRE 的区别 答：JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。\nJDK(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。 JRE(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。 见：https://docs.oracle.com/javase/8/docs/ Q2、Oracle JDK 究竟从哪个版本开始收费？ 答：jdk8u201 和 jdk8u202 是 orcale jdk8 最后的免费版本，从 jdk8u211 和 jdk8u212 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html\n如果使用 Orcale JDK，建议 jdk8u201: Q3、如何下载 Orcale JDK 8u201? 答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html\nQ4、Oracle JDK8u 和 OpenJDK8u 有什么区别？ 答：最主要的是授权协议不同。Orcale 的高版本商用时收费，OpenJDK 则完全免费。\n其次还有OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK等问题，但一般来说，这些影响可以忽略。\nQ5、JDK8 的支持到什么时候结束？ 答：2030年12月31日，https://endoflife.date/java Q6、OpenJDK 支持 Java Flight Recorder 吗？ 答：支持，见：低延迟 Profile 工具 Flight Recorder 被移植到 Java 8。\n开启方法：\n1 -XX:+UnlockCommercialFeatures -XX:+FlightRecorder Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？ 答：不是，该特性在 OpenJDK 是完全免费的，见：Get started with JDK Flight Recorder in OpenJDK 8u。\n但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 -XX:+UnlockCommercialFeatures 开启；同时为了兼容性，使用 OpenJDK 也要添加该参数。\nQ8、OpenJDK8 支持识别 Docker 容器的资源限制吗？ 答：取决于版本。\n比如：从 jdk8u191 开始完整支持，不需要需要使用 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8 这些参数指定 GC 线程数。\n详见：JVM 对容器化支持的参数（强烈建议，参考该文章在 docker 中进行验证）。\n小于 jdk8u131 版本不支持； 大于等于 jdk8u131，小于 jdk8u191 实验性支持； 大于等于 jdk8u191 开始完整的支持； Q9、如何下载 OpenJDK8？ 答： 很多，这里给出两个：Azul Zulu Downloads，OpenLogic OpenJDK Downloads 。\n特别地，如果是在个人开发电脑，则强烈建议使用 SDKMAN ，它支持并行版本管理，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。\n">
+<meta name="keywords" content="OpenJDK"><title>Oracle JDK 和 OpenJDK 如何选择？</title>
 
-<link rel='canonical' href='https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/'>
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="代理设置">
-<meta property='og:description' content="记录我的网络代理设置">
-<meta property='og:url' content='https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/'>
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Oracle JDK 和 OpenJDK 如何选择？">
+<meta property='og:description' content="Q1、JDK 和 JRE 的区别 答：JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。\nJDK(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。 JRE(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。 见：https://docs.oracle.com/javase/8/docs/ Q2、Oracle JDK 究竟从哪个版本开始收费？ 答：jdk8u201 和 jdk8u202 是 orcale jdk8 最后的免费版本，从 jdk8u211 和 jdk8u212 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html\n如果使用 Orcale JDK，建议 jdk8u201: Q3、如何下载 Orcale JDK 8u201? 答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html\nQ4、Oracle JDK8u 和 OpenJDK8u 有什么区别？ 答：最主要的是授权协议不同。Orcale 的高版本商用时收费，OpenJDK 则完全免费。\n其次还有OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK等问题，但一般来说，这些影响可以忽略。\nQ5、JDK8 的支持到什么时候结束？ 答：2030年12月31日，https://endoflife.date/java Q6、OpenJDK 支持 Java Flight Recorder 吗？ 答：支持，见：低延迟 Profile 工具 Flight Recorder 被移植到 Java 8。\n开启方法：\n1 -XX:+UnlockCommercialFeatures -XX:+FlightRecorder Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？ 答：不是，该特性在 OpenJDK 是完全免费的，见：Get started with JDK Flight Recorder in OpenJDK 8u。\n但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 -XX:+UnlockCommercialFeatures 开启；同时为了兼容性，使用 OpenJDK 也要添加该参数。\nQ8、OpenJDK8 支持识别 Docker 容器的资源限制吗？ 答：取决于版本。\n比如：从 jdk8u191 开始完整支持，不需要需要使用 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8 这些参数指定 GC 线程数。\n详见：JVM 对容器化支持的参数（强烈建议，参考该文章在 docker 中进行验证）。\n小于 jdk8u131 版本不支持； 大于等于 jdk8u131，小于 jdk8u191 实验性支持； 大于等于 jdk8u191 开始完整的支持； Q9、如何下载 OpenJDK8？ 答： 很多，这里给出两个：Azul Zulu Downloads，OpenLogic OpenJDK Downloads 。\n特别地，如果是在个人开发电脑，则强烈建议使用 SDKMAN ，它支持并行版本管理，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。\n">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/'>
 <meta property='og:site_name' content='Somnus'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='杂谈' /><meta property='article:tag' content='Network' /><meta property='article:tag' content='Git' /><meta property='article:tag' content='Proxy' /><meta property='article:published_time' content='2022-10-16T19:09:32&#43;08:00'/><meta property='article:modified_time' content='2022-10-30T00:00:00&#43;00:00'/>
-<meta name="twitter:title" content="代理设置">
-<meta name="twitter:description" content="记录我的网络代理设置">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='OracleJDK' /><meta property='article:tag' content='OpenJDK' /><meta property='article:published_time' content='2023-07-11T12:35:11&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T12:35:11&#43;08:00'/>
+<meta name="twitter:title" content="Oracle JDK 和 OpenJDK 如何选择？">
+<meta name="twitter:description" content="Q1、JDK 和 JRE 的区别 答：JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。\nJDK(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。 JRE(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。 见：https://docs.oracle.com/javase/8/docs/ Q2、Oracle JDK 究竟从哪个版本开始收费？ 答：jdk8u201 和 jdk8u202 是 orcale jdk8 最后的免费版本，从 jdk8u211 和 jdk8u212 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html\n如果使用 Orcale JDK，建议 jdk8u201: Q3、如何下载 Orcale JDK 8u201? 答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html\nQ4、Oracle JDK8u 和 OpenJDK8u 有什么区别？ 答：最主要的是授权协议不同。Orcale 的高版本商用时收费，OpenJDK 则完全免费。\n其次还有OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK等问题，但一般来说，这些影响可以忽略。\nQ5、JDK8 的支持到什么时候结束？ 答：2030年12月31日，https://endoflife.date/java Q6、OpenJDK 支持 Java Flight Recorder 吗？ 答：支持，见：低延迟 Profile 工具 Flight Recorder 被移植到 Java 8。\n开启方法：\n1 -XX:+UnlockCommercialFeatures -XX:+FlightRecorder Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？ 答：不是，该特性在 OpenJDK 是完全免费的，见：Get started with JDK Flight Recorder in OpenJDK 8u。\n但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 -XX:+UnlockCommercialFeatures 开启；同时为了兼容性，使用 OpenJDK 也要添加该参数。\nQ8、OpenJDK8 支持识别 Docker 容器的资源限制吗？ 答：取决于版本。\n比如：从 jdk8u191 开始完整支持，不需要需要使用 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8 这些参数指定 GC 线程数。\n详见：JVM 对容器化支持的参数（强烈建议，参考该文章在 docker 中进行验证）。\n小于 jdk8u131 版本不支持； 大于等于 jdk8u131，小于 jdk8u191 实验性支持； 大于等于 jdk8u191 开始完整的支持； Q9、如何下载 OpenJDK8？ 答： 很多，这里给出两个：Azul Zulu Downloads，OpenLogic OpenJDK Downloads 。\n特别地，如果是在个人开发电脑，则强烈建议使用 SDKMAN ，它支持并行版本管理，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。\n">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -275,9 +275,15 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
-    <li><a href="#mac-客户端">Mac 客户端</a></li>
-    <li><a href="#terminal-代理">Terminal 代理</a></li>
-    <li><a href="#git-ssh-代理">git ssh 代理</a></li>
+    <li><a href="#q1jdk-和-jre-的区别">Q1、JDK 和 JRE 的区别</a></li>
+    <li><a href="#q2oracle-jdk-究竟从哪个版本开始收费">Q2、Oracle JDK 究竟从哪个版本开始收费？</a></li>
+    <li><a href="#q3如何下载-orcale-jdk-8u201">Q3、如何下载 Orcale JDK 8u201?</a></li>
+    <li><a href="#q4oracle-jdk8u-和-openjdk8u-有什么区别">Q4、Oracle JDK8u 和 OpenJDK8u 有什么区别？</a></li>
+    <li><a href="#q5jdk8-的支持到什么时候结束">Q5、JDK8 的支持到什么时候结束？</a></li>
+    <li><a href="#q6openjdk-支持-java-flight-recorder-吗">Q6、OpenJDK 支持 Java Flight Recorder 吗？</a></li>
+    <li><a href="#q7openjdk8-中的-java-flight-recorder-是商用特性吗">Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？</a></li>
+    <li><a href="#q8openjdk8-支持识别-docker-容器的资源限制吗">Q8、OpenJDK8 支持识别 Docker 容器的资源限制吗？</a></li>
+    <li><a href="#q9如何下载-openjdk8">Q9、如何下载 OpenJDK8？</a></li>
   </ol>
 </nav>
         </div>
@@ -297,8 +303,8 @@
     
     <header class="article-category">
         
-            <a href="/categories/learning-journal/" >
-                Learning Journal
+            <a href="/categories/java/" >
+                Java
             </a>
         
     </header>
@@ -306,13 +312,9 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/2022/10/how-to-set-network-proxy/">代理设置</a>
+            <a href="/2023/07/oracle-jdk-vs-openjdk-selection-guide/">Oracle JDK 和 OpenJDK 如何选择？</a>
         </h2>
     
-        
-        <h3 class="article-subtitle">
-            记录我的网络代理设置
-        </h3>
         
     </div>
 
@@ -329,15 +331,15 @@
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                    <time class="article-time--published">2022/10/16</time>
+                    <time class="article-time--published">2023/07/11</time>
                 </div>
             
 
             
             
                         最后修改于:
-                        <time class="article-time--updated" datetime="2022-10-30 00:00:00 &#43;0000 UTC" title="2022-10-30 00:00:00 &#43;0000 UTC">
-                            2022/10/30 00:00 UTC
+                        <time class="article-time--updated" datetime="2024-12-20 12:35:11 &#43;0800 CST" title="2024-12-20 12:35:11 &#43;0800 CST">
+                            2024/12/20 12:35 CST
                         </time>
 
             
@@ -351,7 +353,7 @@
 
 
                     <time class="article-time--reading">
-                        阅读时长: 1 分钟
+                        阅读时长: 3 分钟
                     </time>
                 </div>
             
@@ -367,38 +369,95 @@
     <section class="article-content">
     
     
-    <h2 id="mac-客户端">Mac 客户端
-</h2><ul>
-<li>推荐 <a class="link" href="https://github.com/yanue/V2rayU/releases"  target="_blank" rel="noopener"
-    >V2rayU</a></li>
+    <h2 id="q1jdk-和-jre-的区别">Q1、JDK 和 JRE 的区别
+</h2><p>答：<strong>JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。</strong></p>
+<ul>
+<li><code>JDK</code>(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。</li>
+<li><code>JRE</code>(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。
+见：https://docs.oracle.com/javase/8/docs/</li>
 </ul>
-<h2 id="terminal-代理">Terminal 代理
-</h2><div class="highlight"><div class="chroma">
+<p><img src="/images/jdk_selection_1_2023-7-11_17-19-25.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image1"
+	
+	
+></p>
+<h2 id="q2oracle-jdk-究竟从哪个版本开始收费">Q2、Oracle JDK 究竟从哪个版本开始收费？
+</h2><p>答：<strong>jdk8u201</strong> 和 <strong>jdk8u202</strong> 是 orcale jdk8 最后的免费版本，从 <strong>jdk8u211</strong> 和 <strong>jdk8u212</strong> 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html</p>
+<p><strong>如果使用 Orcale JDK，建议 jdk8u201:</strong>
+<img src="/images/jdk_selection_2_2023-7-11_17-19-25.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></p>
+<h2 id="q3如何下载-orcale-jdk-8u201">Q3、如何下载 Orcale JDK 8u201?
+</h2><p>答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html</p>
+<p><img src="/images/jdk_selection_3_2023-7-11_17-19-25.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image3"
+	
+	
+></p>
+<h2 id="q4oracle-jdk8u-和-openjdk8u-有什么区别">Q4、Oracle JDK8u 和 OpenJDK8u 有什么区别？
+</h2><p>答：<strong>最主要的是授权协议不同</strong>。Orcale 的高版本商用时收费，OpenJDK 则完全免费。</p>
+<p>其次还有<strong>OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK</strong>等问题，但一般来说，这些影响可以忽略。</p>
+<h2 id="q5jdk8-的支持到什么时候结束">Q5、JDK8 的支持到什么时候结束？
+</h2><p>答：<strong>2030年12月31日</strong>，https://endoflife.date/java
+<img src="/images/jdk_selection_4_2023-7-11_17-19-25.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image4"
+	
+	
+></p>
+<h2 id="q6openjdk-支持-java-flight-recorder-吗">Q6、OpenJDK 支持 Java Flight Recorder 吗？
+</h2><p>答：支持，见：<a class="link" href="https://www.infoq.cn/article/9jTktb5c2qzizFTxzE7Q"  target="_blank" rel="noopener"
+    >低延迟 Profile 工具 Flight Recorder 被移植到 Java 8</a>。</p>
+<p>开启方法：</p>
+<div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># .config/fish/config.fish</span>
-</span></span><span class="line"><span class="cl"><span class="nb">alias</span> <span class="nv">all_proxy</span><span class="o">=</span><span class="s1">&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39;</span>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">-XX:+UnlockCommercialFeatures -XX:+FlightRecorder
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h2 id="git-ssh-代理">git ssh 代理
-</h2><div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># .ssh/config
-</span></span><span class="line"><span class="cl">Host github.com
-</span></span><span class="line"><span class="cl">    User git
-</span></span><span class="line"><span class="cl">    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
-</span></span></code></pre></td></tr></table>
-</div>
-</div>
+</div><h2 id="q7openjdk8-中的-java-flight-recorder-是商用特性吗">Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？
+</h2><p>答：不是，该特性在 OpenJDK 是完全免费的，见：<a class="link" href="https://developers.redhat.com/blog/2020/08/25/get-started-with-jdk-flight-recorder-in-openjdk-8u"  target="_blank" rel="noopener"
+    >Get started with JDK Flight Recorder in OpenJDK 8u</a>。</p>
+<p>但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 <code>-XX:+UnlockCommercialFeatures</code> 开启；同时<strong>为了兼容性，使用 OpenJDK 也要添加该参数</strong>。</p>
+<h2 id="q8openjdk8-支持识别-docker-容器的资源限制吗">Q8、OpenJDK8 支持识别 Docker 容器的资源限制吗？
+</h2><p>答：取决于版本。</p>
+<p>比如：从 jdk8u191 开始完整支持，不需要需要使用 <code>-XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8</code> 这些参数指定 GC 线程数。</p>
+<p>详见：<a class="link" href="https://blog.longtian.info/2021/04/13/containerized-jvm-parameters.html"  target="_blank" rel="noopener"
+    >JVM 对容器化支持的参数</a>（强烈建议，参考该文章在 docker 中进行验证）。</p>
+<ul>
+<li>小于 <code>jdk8u131</code> 版本不支持；</li>
+<li>大于等于 <code>jdk8u131</code>，小于 <code>jdk8u191</code> 实验性支持；</li>
+<li>大于等于 <code>jdk8u191</code> 开始完整的支持；</li>
+</ul>
+<h2 id="q9如何下载-openjdk8">Q9、如何下载 OpenJDK8？
+</h2><p>答： 很多，这里给出两个：<a class="link" href="https://www.azul.com/downloads/?version=java-8-lts&amp;os=linux&amp;package=jdk#zulu"  target="_blank" rel="noopener"
+    >Azul Zulu Downloads</a>，<a class="link" href="https://www.openlogic.com/openjdk-downloads?field_java_parent_version_target_id=416&amp;field_operating_system_target_id=426&amp;field_architecture_target_id=391&amp;field_java_package_target_id=396"  target="_blank" rel="noopener"
+    >OpenLogic OpenJDK Downloads</a> 。</p>
+<p>特别地，如果是在<strong>个人开发电脑</strong>，则强烈建议使用 <a class="link" href="https://sdkman.io/install/"  target="_blank" rel="noopener"
+    >SDKMAN</a> ，它支持<strong>并行版本管理</strong>，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。</p>
 </section>
 
 
@@ -406,13 +465,9 @@
     
     <section class="article-tags">
         
-            <a href="/tags/%E6%9D%82%E8%B0%88/">杂谈</a>
+            <a href="/tags/oraclejdk/">OracleJDK</a>
         
-            <a href="/tags/network/">Network</a>
-        
-            <a href="/tags/git/">Git</a>
-        
-            <a href="/tags/proxy/">Proxy</a>
+            <a href="/tags/openjdk/">OpenJDK</a>
         
     </section>
 
@@ -439,7 +494,7 @@
 
 
         <span>
-            最后更新于 2022/10/30 00:00 UTC
+            最后更新于 2024/12/20 12:35 CST
         </span>
     </section></footer>
 
@@ -482,12 +537,38 @@
             
                 
 <article class="">
-    <a href="/2022/10/hugo-quick-start/">
+    <a href="/2024/07/in-depth-jvm-performance-tuning-guide/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">Hugo 配置记录</h2>
+            <h2 class="article-title">JVM性能调优实战分享</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/06/jvm-parameter-recommendations-and-reasons/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JVM 参数建议及理由</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/01/java-random-number-issues-overview/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java 随机数问题综述</h2>
         </div>
     </a>
 </article>

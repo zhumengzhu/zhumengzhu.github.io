@@ -277,9 +277,9 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
         <description>&lt;h2 id=&#34;参数建议&#34;&gt;参数建议
 &lt;/h2&gt;&lt;p&gt;这些建议基于以下前提：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;假设服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；&lt;/li&gt;
-&lt;li&gt;对于目前使用的 &lt;strong&gt;JDK 1.8.0_151&lt;/strong&gt;，需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；&lt;/li&gt;
-&lt;li&gt;如果后续 JDK 版本升级到 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt; 及以上，则不需要上述三个参数，&lt;del&gt;改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数&lt;/del&gt;；&lt;/li&gt;
+&lt;li&gt;服务器 CPU 支持超线程，即一个核可以当成两个核用，否则，GC 线程相关参数值应该减半；&lt;/li&gt;
+&lt;li&gt;如果 JDK 版本小于 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt;(如&lt;strong&gt;JDK 1.8.0_151&lt;/strong&gt;)，则需要设置 -XX:ParallelGCThreads=n, -XX:ConcGCThreads=n, -XX:G1ConcRefinementThreads=n 三个参数；&lt;/li&gt;
+&lt;li&gt;如果 JDK 版本升级到 &lt;strong&gt;1.8.0_191-b12&lt;/strong&gt; 及以上，则最好不要设置上述三个参数，&lt;del&gt;改为设置 -XX:+UnlockExperimentalVMOptions -XX:ActiveProcessorCount=n，n 取容器核数&lt;/del&gt;；&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;统一设置的参数&#34;&gt;统一设置的参数
 &lt;/h3&gt;&lt;table&gt;
