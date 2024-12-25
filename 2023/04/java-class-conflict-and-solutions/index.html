@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="本文讨论 Java 类冲突问题的背景、解决方案，以及排查类冲突问题的小技巧。">
+<meta name="keywords" content="Java, Maven, Class Conflict"><title>Java 类冲突问题及其解决方案</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Java 类冲突问题及其解决方案">
+<meta property='og:description' content="本文讨论 Java 类冲突问题的背景、解决方案，以及排查类冲突问题的小技巧。">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Java' /><meta property='article:tag' content='Maven' /><meta property='article:tag' content='Class Conflict' /><meta property='article:published_time' content='2023-04-03T18:26:48&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T11:26:48&#43;08:00'/>
+<meta name="twitter:title" content="Java 类冲突问题及其解决方案">
+<meta name="twitter:description" content="本文讨论 Java 类冲突问题的背景、解决方案，以及排查类冲突问题的小技巧。">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#引子">引子</a></li>
+    <li><a href="#背景知识">背景知识</a></li>
+    <li><a href="#本地启动的-classpath-顺序">本地启动的 Classpath 顺序</a></li>
+    <li><a href="#远程启动的-classpath-顺序">远程启动的 Classpath 顺序</a>
+      <ol>
+        <li><a href="#meta-infmanifestmf">META-INF/MANIFEST.MF</a></li>
+        <li><a href="#spring-boot-maven-plugin">spring-boot-maven-plugin</a></li>
+      </ol>
+    </li>
+    <li><a href="#小节">小节</a></li>
+    <li><a href="#其它">其它</a>
+      <ol>
+        <li><a href="#业界的一些其他解决方案">业界的一些其他解决方案</a>
+          <ol>
+            <li><a href="#maven-plugin-shade">maven-plugin-shade</a></li>
+            <li><a href="#自定义类加载器">自定义类加载器</a></li>
+          </ol>
+        </li>
+        <li><a href="#类冲突问题排查小技巧">类冲突问题排查小技巧</a>
+          <ol>
+            <li><a href="#加启动参数--verboseclasspath">加启动参数 -verbose:classpath</a></li>
+            <li><a href="#使用-arthas-的-jad-功能">使用 arthas 的 Jad 功能</a></li>
+            <li><a href="#如何安装-arthas">如何安装 arthas</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/trouble-shooting/" >
+                Trouble Shooting
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2023/04/java-class-conflict-and-solutions/">Java 类冲突问题及其解决方案</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            本文讨论 Java 类冲突问题的背景、解决方案，以及排查类冲突问题的小技巧。
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2023/04/03</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-20 11:26:48 &#43;0800 CST" title="2024-12-20 11:26:48 &#43;0800 CST">
+                            2024/12/20 11:26 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 3 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="引子">引子
+</h2><p>在启动 Java 项时，可能会出现这种<strong>诡异</strong>的现象：</p>
+<ul>
+<li>在本地可以启动，但部署到服务器上却不能启动；</li>
+<li>或者，在服务器可以启动，但本地不可以启动；</li>
+</ul>
+<blockquote>
+<blockquote>
+<p>此时如果去查看错误日志，往往可以看到诸如 ClassNotFoundException、NoClassDefFoundError 等异常信息，接着很容易就会想到很可能是发生了类冲突。
+然后你会结合异常日志即依赖变更情况，定位到冲突的类及其所在的 jar 包，然后用 dependecy-exclude 等手段将冲突解决掉，最终使得服务可以正常启动。一般我们处理问题就到此为止了。
+本文试图更近一步，<strong>深入分析本地与远程服务器行为不一致的原因</strong>，并简单介绍<strong>业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧</strong>。</p>
+</blockquote>
+</blockquote>
+<h2 id="背景知识">背景知识
+</h2><p><strong>Java Classpath</strong>:
+<img src="/images/class_conflict_1_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image1"
+	
+	
+></p>
+<h2 id="本地启动的-classpath-顺序">本地启动的 Classpath 顺序
+</h2><p>本地一般都是在 IDEA 中启动；IDEA 启动服务时，会在 Console 打印启动参数：
+<img src="/images/class_conflict_2_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></p>
+<p>那么 IDEA 是以怎样的顺序将 jar 包添加到 classpath 中呢？</p>
+<p>答案：是按 Maven 依赖解析的方式进行加载的。通过执行 <code>mvn dependency:list</code> 可以看到 Maven 依赖解析的结果，这个顺序，就是 classpath 中 jar 的添加顺序：
+<img src="/images/class_conflict_3_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image3"
+	
+	
+></p>
+<p>通过对比可以发现，两者顺序一致。</p>
+<h2 id="远程启动的-classpath-顺序">远程启动的 Classpath 顺序
+</h2><p>登录服务器，使用 <code>ps aux | grep java</code> 查看启动参数，会发现，<strong>远程服务器没有加 <code>-classpath</code>  参数！！！相关的依赖在哪里？？？</strong>
+<img src="/images/class_conflict_4_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image4"
+	
+	
+></p>
+<p>实际上，在构建项目时，Maven 会将所有的依赖都添加到 xx-server.jar 中的 BOOT-INF/lib 目录下。</p>
+<p><font color=Orange><strong>JVM 在启动时，会根据 Jar 包中的另一个元数据文件&ndash;<code>META-INF/MANIFEST.MF</code>，来决定类的加载顺序。</strong></font></p>
+<h3 id="meta-infmanifestmf">META-INF/MANIFEST.MF
+</h3><p><img src="/images/class_conflict_5_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image5"
+	
+	
+></p>
+<p>默认情况下，JVM 在加载类的顺序依赖 OS 时，对于 Linux 来说，最底层是 <a class="link" href="https://www.jianshu.com/p/dcad5330b06f"  target="_blank" rel="noopener"
+    >opendir</a> 函数，这个函数返回的顺序，又与文件系统有关。『对于 CentOS 6，它使用的是Ext4，文件顺序与目录文件的大小是否超过一个磁盘块和文件系统计算的Hash值有关。』</p>
+<p>简单说，先加载完全是哪个看运气！远程服务器的版本不同，加载的顺序就可能不一样。这就是文章开头诡异问题的根源。</p>
+<p>看运气怎么行？！</p>
+<h3 id="spring-boot-maven-plugin">spring-boot-maven-plugin
+</h3><p>这个插件使用了 <a class="link" href="https://docs.spring.io/spring-boot/redirect.html?page=executable-jar"  target="_blank" rel="noopener"
+    >The Executable Jar Format</a>，支持一种称之为 Classpath Index 的索引文件，负责指定 jar 被添加到 classpath 中的顺序。很明显，通过这个插件可以保证 jar 的扫描顺序在不同的环境下是一致的。完美解决上面的问题。
+<img src="/images/class_conflict_6_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image6"
+	
+	
+></p>
+<h2 id="小节">小节
+</h2><ul>
+<li>类的加载顺序取决于 classpath；</li>
+<li>嵌套的 JARS 中的加载顺序，在默认情况取决于 OS，对于 Linux 来说取决于文件系统；</li>
+<li>Spring Boot 提供了一个插件，利用 The Executable Jar Format 完美解决了加载顺序错乱问题；</li>
+</ul>
+<h2 id="其它">其它
+</h2><h3 id="业界的一些其他解决方案">业界的一些其他解决方案
+</h3><p>Spring Boot 的方案可以解决拥有 main 方法的服务的冲突问题，解决方法依赖一个 Maven 差距。</p>
+<p>对于开发或扩展类库(比如 guava/hadoop)，或者 Java Agent 的开发时，有时候面临的问题更复杂，甚至要解决 classloader 冲突的问题。</p>
+<h4 id="maven-plugin-shade">maven-plugin-shade
+</h4><p><a class="link" href="https://www.cnblogs.com/lkxed/p/maven-plugin-shade.html"  target="_blank" rel="noopener"
+    >maven-plugin-shade 详解</a></p>
+<h4 id="自定义类加载器">自定义类加载器
+</h4><p><a class="link" href="https://tianshuang.me/2021/10/Java-Agent-%E7%9A%84%E7%B1%BB%E5%8A%A0%E8%BD%BD%E9%9A%94%E7%A6%BB%E5%AE%9E%E7%8E%B0/"  target="_blank" rel="noopener"
+    >Java Agent 的类加载隔离实现</a></p>
+<p>思路：『使用独立的类加载器去加载 Java Agent 依赖的类，该独立的类加载器的 parent 指向 Bootstrap ClassLoader，且<strong>将 Java Agent 依赖的类的默认后缀 .class 进行调整</strong>，以避免系统类加载器加载到这些类，以实现类的隔离。』</p>
+<h3 id="类冲突问题排查小技巧">类冲突问题排查小技巧
+</h3><h4 id="加启动参数--verboseclasspath">加启动参数 -verbose:classpath
+</h4><p><img src="/images/class_conflict_7_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image7"
+	
+	
+></p>
+<p>加上这个参数， JVM 会将『哪个类是从哪个 jar中被加载』的信息输出到 console 中。</p>
+<p><font color=Orange>这个方法需要你能控制启动参数，适合在本地，不确定哪个类冲突的时候使用。</font></p>
+<h4 id="使用-arthas-的-jad-功能">使用 arthas 的 Jad 功能
+</h4><p><img src="/images/class_conflict_8_2023-4-3_17-35-53.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image8"
+	
+	
+></p>
+<p>arthas 输出的信息更全面，出了现实加载的位置，还会告诉你 ClassLoader 是哪一个，并且自动反编译(<font color=Orange>jad 命令本来就是干这个的！</font>)</p>
+<p><font color=Orange>这个方法需要你安装 arthas，适合本地和 dev、test 环境，在你有了明确的怀疑对象时，优先使用这个命令。</font></p>
+<h4 id="如何安装-arthas">如何安装 arthas
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># https://arthas.aliyun.com/doc/install-detail.html</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -O https://arthas.aliyun.com/arthas-boot.jar
+</span></span><span class="line"><span class="cl">java -jar arthas-boot.jar
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/java/">Java</a>
+        
+            <a href="/tags/maven/">Maven</a>
+        
+            <a href="/tags/class-conflict/">Class Conflict</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            最后更新于 2024/12/20 11:26 CST
+        </span>
+    </section></footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="">
+    <a href="/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java 服务老年代内存异常：大对象的影响与解决方案</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/09/root-cause-jvm-deoptimization-storm/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JIT deoptimization 风暴导致 CPU 使用率飙升</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/07/memory-leak-issue-in-a-service/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">服务内存泄露问题排查记录</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2024 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了18篇文章 ·
+        总计29.50k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

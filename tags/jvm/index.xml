@@ -269,7 +269,7 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
 &lt;/script&gt;</description>
         </item>
         <item>
-        <title>记一次某服务内存泄露问题</title>
+        <title>服务内存泄露问题排查记录</title>
         <link>https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/</link>
         <pubDate>Mon, 17 Jul 2023 11:46:30 +0800</pubDate>
         

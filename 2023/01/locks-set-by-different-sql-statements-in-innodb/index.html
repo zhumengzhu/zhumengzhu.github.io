@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="说明 说明\n原文：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html 下文黑色字体原文，黄色字体是翻译，红色是自己加的标注，记录自己对原文的理解。 测试表结构： 1 2 3 4 5 6 CREATE TABLE `t` ( `id` bigint NOT NULL AUTO_INCREMENT COMMENT &#39;主键 ID&#39;, `version` bigint NOT NULL DEFAULT &#39;0&#39; COMMENT &#39;版本号&#39;, PRIMARY KEY (`id`), UNIQUE KEY `uk_version` (`version`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT=&#39;版本表&#39;； 表里的初始数据为：\n1 1 2 5 3 10 4 15 翻译&amp;笔记 『A locking read, an UPDATE, or a DELETE generally set record locks on every index record that is scanned in the processing of an SQL statement. It does not matter whether there are WHERE conditions in the statement that would exclude the row. InnoDB does not remember the exact WHERE condition, but only knows which index ranges were scanned. The locks are normally next-key locks that also block inserts into the “gap” immediately before the record. However, gap locking can be disabled explicitly, which causes next-key locking not to be used. For more information, see Section 15.7.1, “InnoDB Locking”. The transaction isolation level can also affect which locks are set; see Section 15.7.2.1, “Transaction Isolation Levels”.』\n一次加锁的读、更新或删除通常在 SQL 语句处理过程中扫描的每个索引记录上设置记录锁。 语句中是否使用 WHERE 条件排除了某些行并不关键。InnoDB 不会记住准确的 WHERE 条件，而是只关心索引的扫描范围。锁通常是临键锁，用来组织在记录之前的『间隙』插入记录。但是，间隙锁可以被禁用，此时不会使用临键锁。更多信息，见第15.7.1，『InnoDB Locking』。事务隔离级别也会影响锁的设置，详情见15.7.2.1，『Transaction Isolation Levels』。 锁是设置在索引记录上的。 『If a secondary index is used in a search and the index record locks to be set are exclusive, InnoDB also retrieves the corresponding clustered index records and sets locks on them.』\n如果在搜索中使用了二级索引，并且要设置的索引记录锁是排他的，InnoDB也会检索相应的聚集索引记录并对其设置锁。 怎么理解？ 『在搜索中使用二级索引』，InnoDB 在执行时是通过扫描二级索引来查找记录的，举个例子： 事务一，执行 begin; select * from t where version = 1 for update; 事务二，执行 select id from t where id = 1 for update; 会被阻塞；此时查询data_locks 表，会发现事务一在聚簇索引上设置了记录锁： 『If you have no indexes suitable for your statement and MySQL must scan the entire table to process the statement, every row of the table becomes locked, which in turn blocks all inserts by other users to the table. It is important to create good indexes so that your queries do not scan more rows than necessary.』\n如果没有适合语句的索引，MySQL必须扫描整个表来处理语句，此时表的每一行都被锁定，从而阻止其他用户对表的所有插入。 创建良好的索引非常重要，这样查询就不会扫描不必要的行。” 『InnoDB sets specific types of locks as follows.』\nInnoDB设置锁的具体类型如下。 『SELECT &hellip; FROM is a consistent read, reading a snapshot of the database and setting no locks unless the transaction isolation level is set to SERIALIZABLE. For SERIALIZABLE level, the search sets shared next-key locks on the index records it encounters. However, only an index record lock is required for statements that lock rows using a unique index to search for a unique row.』 『When UPDATE modifies a clustered index record, implicit locks are taken on affected secondary index records. The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.』 当 Update 修改聚簇索引记录时，会隐式的对受影响的次级索引加锁。在插入新的次级索引记录之前执行重复检查扫描时，以及在插入新的次级索引记录时，UPDATE 操作还对受影响的次级索引记录加共享锁。 怎么理解 『隐式加锁』？ 事务一，执行 begin; update t set version = -1 where id = 1; 然后查 data_locks 表，会发现没有对 uk_version 加锁； 事务二，执行 update t set version = -2 where version = 1; 会被阻塞，此时再次查看 data_locks 表，会发现事务一获取了 uk_version 的记录锁： 这说明，事务一确实会对次级索引加锁，只是不知道什么原因，没有锁冲突是，在 data_locks 表中查不到锁记录； 怎么理解『进行重复性检查扫描时，会对受影响的次级索引加共享锁』？ 执行 begin; insert into t (version) value (1); 然后查 data_locks 表，会发现事务持有了 uk_version 上的 S 锁； 由于表中已经有一条 version=1 的记录，当在插入 version=1 的记录时，会加一个 S 锁以进行重复检查； ">
+<meta name="keywords" content="MySQL, Lock"><title>『Locks Set by Different SQL Statements in InnoDB』翻译&amp;笔记</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/01/locks-set-by-different-sql-statements-in-innodb/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="『Locks Set by Different SQL Statements in InnoDB』翻译&笔记">
+<meta property='og:description' content="说明 说明\n原文：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html 下文黑色字体原文，黄色字体是翻译，红色是自己加的标注，记录自己对原文的理解。 测试表结构： 1 2 3 4 5 6 CREATE TABLE `t` ( `id` bigint NOT NULL AUTO_INCREMENT COMMENT &#39;主键 ID&#39;, `version` bigint NOT NULL DEFAULT &#39;0&#39; COMMENT &#39;版本号&#39;, PRIMARY KEY (`id`), UNIQUE KEY `uk_version` (`version`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT=&#39;版本表&#39;； 表里的初始数据为：\n1 1 2 5 3 10 4 15 翻译&amp;笔记 『A locking read, an UPDATE, or a DELETE generally set record locks on every index record that is scanned in the processing of an SQL statement. It does not matter whether there are WHERE conditions in the statement that would exclude the row. InnoDB does not remember the exact WHERE condition, but only knows which index ranges were scanned. The locks are normally next-key locks that also block inserts into the “gap” immediately before the record. However, gap locking can be disabled explicitly, which causes next-key locking not to be used. For more information, see Section 15.7.1, “InnoDB Locking”. The transaction isolation level can also affect which locks are set; see Section 15.7.2.1, “Transaction Isolation Levels”.』\n一次加锁的读、更新或删除通常在 SQL 语句处理过程中扫描的每个索引记录上设置记录锁。 语句中是否使用 WHERE 条件排除了某些行并不关键。InnoDB 不会记住准确的 WHERE 条件，而是只关心索引的扫描范围。锁通常是临键锁，用来组织在记录之前的『间隙』插入记录。但是，间隙锁可以被禁用，此时不会使用临键锁。更多信息，见第15.7.1，『InnoDB Locking』。事务隔离级别也会影响锁的设置，详情见15.7.2.1，『Transaction Isolation Levels』。 锁是设置在索引记录上的。 『If a secondary index is used in a search and the index record locks to be set are exclusive, InnoDB also retrieves the corresponding clustered index records and sets locks on them.』\n如果在搜索中使用了二级索引，并且要设置的索引记录锁是排他的，InnoDB也会检索相应的聚集索引记录并对其设置锁。 怎么理解？ 『在搜索中使用二级索引』，InnoDB 在执行时是通过扫描二级索引来查找记录的，举个例子： 事务一，执行 begin; select * from t where version = 1 for update; 事务二，执行 select id from t where id = 1 for update; 会被阻塞；此时查询data_locks 表，会发现事务一在聚簇索引上设置了记录锁： 『If you have no indexes suitable for your statement and MySQL must scan the entire table to process the statement, every row of the table becomes locked, which in turn blocks all inserts by other users to the table. It is important to create good indexes so that your queries do not scan more rows than necessary.』\n如果没有适合语句的索引，MySQL必须扫描整个表来处理语句，此时表的每一行都被锁定，从而阻止其他用户对表的所有插入。 创建良好的索引非常重要，这样查询就不会扫描不必要的行。” 『InnoDB sets specific types of locks as follows.』\nInnoDB设置锁的具体类型如下。 『SELECT &hellip; FROM is a consistent read, reading a snapshot of the database and setting no locks unless the transaction isolation level is set to SERIALIZABLE. For SERIALIZABLE level, the search sets shared next-key locks on the index records it encounters. However, only an index record lock is required for statements that lock rows using a unique index to search for a unique row.』 『When UPDATE modifies a clustered index record, implicit locks are taken on affected secondary index records. The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.』 当 Update 修改聚簇索引记录时，会隐式的对受影响的次级索引加锁。在插入新的次级索引记录之前执行重复检查扫描时，以及在插入新的次级索引记录时，UPDATE 操作还对受影响的次级索引记录加共享锁。 怎么理解 『隐式加锁』？ 事务一，执行 begin; update t set version = -1 where id = 1; 然后查 data_locks 表，会发现没有对 uk_version 加锁； 事务二，执行 update t set version = -2 where version = 1; 会被阻塞，此时再次查看 data_locks 表，会发现事务一获取了 uk_version 的记录锁： 这说明，事务一确实会对次级索引加锁，只是不知道什么原因，没有锁冲突是，在 data_locks 表中查不到锁记录； 怎么理解『进行重复性检查扫描时，会对受影响的次级索引加共享锁』？ 执行 begin; insert into t (version) value (1); 然后查 data_locks 表，会发现事务持有了 uk_version 上的 S 锁； 由于表中已经有一条 version=1 的记录，当在插入 version=1 的记录时，会加一个 S 锁以进行重复检查； ">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/01/locks-set-by-different-sql-statements-in-innodb/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='MySQL' /><meta property='article:tag' content='Lock' /><meta property='article:published_time' content='2023-01-16T11:07:26&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T11:07:26&#43;08:00'/>
+<meta name="twitter:title" content="『Locks Set by Different SQL Statements in InnoDB』翻译&笔记">
+<meta name="twitter:description" content="说明 说明\n原文：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html 下文黑色字体原文，黄色字体是翻译，红色是自己加的标注，记录自己对原文的理解。 测试表结构： 1 2 3 4 5 6 CREATE TABLE `t` ( `id` bigint NOT NULL AUTO_INCREMENT COMMENT &#39;主键 ID&#39;, `version` bigint NOT NULL DEFAULT &#39;0&#39; COMMENT &#39;版本号&#39;, PRIMARY KEY (`id`), UNIQUE KEY `uk_version` (`version`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT=&#39;版本表&#39;； 表里的初始数据为：\n1 1 2 5 3 10 4 15 翻译&amp;笔记 『A locking read, an UPDATE, or a DELETE generally set record locks on every index record that is scanned in the processing of an SQL statement. It does not matter whether there are WHERE conditions in the statement that would exclude the row. InnoDB does not remember the exact WHERE condition, but only knows which index ranges were scanned. The locks are normally next-key locks that also block inserts into the “gap” immediately before the record. However, gap locking can be disabled explicitly, which causes next-key locking not to be used. For more information, see Section 15.7.1, “InnoDB Locking”. The transaction isolation level can also affect which locks are set; see Section 15.7.2.1, “Transaction Isolation Levels”.』\n一次加锁的读、更新或删除通常在 SQL 语句处理过程中扫描的每个索引记录上设置记录锁。 语句中是否使用 WHERE 条件排除了某些行并不关键。InnoDB 不会记住准确的 WHERE 条件，而是只关心索引的扫描范围。锁通常是临键锁，用来组织在记录之前的『间隙』插入记录。但是，间隙锁可以被禁用，此时不会使用临键锁。更多信息，见第15.7.1，『InnoDB Locking』。事务隔离级别也会影响锁的设置，详情见15.7.2.1，『Transaction Isolation Levels』。 锁是设置在索引记录上的。 『If a secondary index is used in a search and the index record locks to be set are exclusive, InnoDB also retrieves the corresponding clustered index records and sets locks on them.』\n如果在搜索中使用了二级索引，并且要设置的索引记录锁是排他的，InnoDB也会检索相应的聚集索引记录并对其设置锁。 怎么理解？ 『在搜索中使用二级索引』，InnoDB 在执行时是通过扫描二级索引来查找记录的，举个例子： 事务一，执行 begin; select * from t where version = 1 for update; 事务二，执行 select id from t where id = 1 for update; 会被阻塞；此时查询data_locks 表，会发现事务一在聚簇索引上设置了记录锁： 『If you have no indexes suitable for your statement and MySQL must scan the entire table to process the statement, every row of the table becomes locked, which in turn blocks all inserts by other users to the table. It is important to create good indexes so that your queries do not scan more rows than necessary.』\n如果没有适合语句的索引，MySQL必须扫描整个表来处理语句，此时表的每一行都被锁定，从而阻止其他用户对表的所有插入。 创建良好的索引非常重要，这样查询就不会扫描不必要的行。” 『InnoDB sets specific types of locks as follows.』\nInnoDB设置锁的具体类型如下。 『SELECT &hellip; FROM is a consistent read, reading a snapshot of the database and setting no locks unless the transaction isolation level is set to SERIALIZABLE. For SERIALIZABLE level, the search sets shared next-key locks on the index records it encounters. However, only an index record lock is required for statements that lock rows using a unique index to search for a unique row.』 『When UPDATE modifies a clustered index record, implicit locks are taken on affected secondary index records. The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.』 当 Update 修改聚簇索引记录时，会隐式的对受影响的次级索引加锁。在插入新的次级索引记录之前执行重复检查扫描时，以及在插入新的次级索引记录时，UPDATE 操作还对受影响的次级索引记录加共享锁。 怎么理解 『隐式加锁』？ 事务一，执行 begin; update t set version = -1 where id = 1; 然后查 data_locks 表，会发现没有对 uk_version 加锁； 事务二，执行 update t set version = -2 where version = 1; 会被阻塞，此时再次查看 data_locks 表，会发现事务一获取了 uk_version 的记录锁： 这说明，事务一确实会对次级索引加锁，只是不知道什么原因，没有锁冲突是，在 data_locks 表中查不到锁记录； 怎么理解『进行重复性检查扫描时，会对受影响的次级索引加共享锁』？ 执行 begin; insert into t (version) value (1); 然后查 data_locks 表，会发现事务持有了 uk_version 上的 S 锁； 由于表中已经有一条 version=1 的记录，当在插入 version=1 的记录时，会加一个 S 锁以进行重复检查； ">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#说明">说明</a></li>
+    <li><a href="#翻译笔记">翻译&amp;笔记</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/database/" style="background-color: #2a9d8f; color: #fff;">
+                Database
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2023/01/locks-set-by-different-sql-statements-in-innodb/">『Locks Set by Different SQL Statements in InnoDB』翻译&amp;笔记</a>
+        </h2>
+    
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2023/01/16</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-20 11:07:26 &#43;0800 CST" title="2024-12-20 11:07:26 &#43;0800 CST">
+                            2024/12/20 11:07 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 3 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="说明">说明
+</h2><p>说明</p>
+<ol>
+<li>原文：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html</li>
+<li>下文黑色字体原文，<font color=Orange>黄色字体是翻译</font>，<font color=Red>红色是自己加的标注，记录自己对原文的理解</font>。</li>
+<li>测试表结构：</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-mysql" data-lang="mysql"><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="w"> </span><span class="kt">bigint</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="kp">AUTO_INCREMENT</span><span class="w"> </span><span class="n">COMMENT</span><span class="w"> </span><span class="s1">&#39;主键 ID&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="o">`</span><span class="n">version</span><span class="o">`</span><span class="w"> </span><span class="kt">bigint</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="w"> </span><span class="n">COMMENT</span><span class="w"> </span><span class="s1">&#39;版本号&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="o">`</span><span class="n">uk_version</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">version</span><span class="o">`</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="kp">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="kp">CHARSET</span><span class="o">=</span><span class="n">utf8mb4</span><span class="w"> </span><span class="k">COLLATE</span><span class="o">=</span><span class="n">utf8mb4_0900_ai_ci</span><span class="w"> </span><span class="n">COMMENT</span><span class="o">=</span><span class="s1">&#39;版本表&#39;</span><span class="err">；</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>表里的初始数据为：</p>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>1</th>
+          <th>1</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>2</td>
+          <td>5</td>
+      </tr>
+      <tr>
+          <td>3</td>
+          <td>10</td>
+      </tr>
+      <tr>
+          <td>4</td>
+          <td>15</td>
+      </tr>
+  </tbody>
+</table></div>
+<h2 id="翻译笔记">翻译&amp;笔记
+</h2><ul>
+<li>
+<p>『A locking read, an UPDATE, or a DELETE generally set record locks on every index record that is scanned in the processing of an SQL statement. It does not matter whether there are WHERE conditions in the statement that would exclude the row. InnoDB does not remember the exact WHERE condition, but only knows which index ranges were scanned. The locks are normally next-key locks that also block inserts into the “gap” immediately before the record. However, gap locking can be disabled explicitly, which causes next-key locking not to be used. For more information, see Section 15.7.1, “InnoDB Locking”. The transaction isolation level can also affect which locks are set; see Section 15.7.2.1, “Transaction Isolation Levels”.』</p>
+<ul>
+<li><font color=Orange>一次加锁的读、更新或删除通常在 SQL 语句处理过程中扫描的每个索引记录上设置记录锁。 语句中是否使用 WHERE 条件排除了某些行并不关键。InnoDB 不会记住准确的 WHERE 条件，而是只关心索引的扫描范围。锁通常是临键锁，用来组织在记录之前的『间隙』插入记录。但是，间隙锁可以被禁用，此时不会使用临键锁。更多信息，见第15.7.1，『InnoDB Locking』。事务隔离级别也会影响锁的设置，详情见15.7.2.1，『Transaction Isolation Levels』</font>。</li>
+<li><font color=red>锁是设置在索引记录上的</font>。</li>
+</ul>
+</li>
+<li>
+<p>『If a secondary index is used in a search and the index record locks to be set are exclusive, InnoDB also retrieves the corresponding clustered index records and sets locks on them.』</p>
+<ul>
+<li><font color=Orange>如果在搜索中使用了二级索引，并且要设置的索引记录锁是排他的，InnoDB也会检索相应的聚集索引记录并对其设置锁。</font></li>
+<li><font color=red>怎么理解？
+<ul>
+<li>『在搜索中使用二级索引』，InnoDB 在执行时是通过扫描二级索引来查找记录的，举个例子：</li>
+<li>事务一，执行  begin; select * from t where version = 1 for update;</li>
+<li>事务二，执行 select id from t where id = 1 for update; 会被阻塞；此时查询data_locks 表，会发现事务一在聚簇索引上设置了记录锁：</font>
+<img src="/images/myslql_1_2023-2-9_20-39-40.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>『If you have no indexes suitable for your statement and MySQL must scan the entire table to process the statement, every row of the table becomes locked, which in turn blocks all inserts by other users to the table. It is important to create good indexes so that your queries do not scan more rows than necessary.』</p>
+<ul>
+<li><font color=Orange>如果没有适合语句的索引，MySQL必须扫描整个表来处理语句，此时表的每一行都被锁定，从而阻止其他用户对表的所有插入。 创建良好的索引非常重要，这样查询就不会扫描不必要的行。” </font></li>
+</ul>
+</li>
+<li>
+<p>『InnoDB sets specific types of locks as follows.』</p>
+<ul>
+<li><font color=Orange>InnoDB设置锁的具体类型如下。</font></li>
+<li>『SELECT &hellip; FROM is a consistent read, reading a snapshot of the database and setting no locks unless the transaction isolation level is set to SERIALIZABLE. For SERIALIZABLE level, the search sets shared next-key locks on the index records it encounters. However, only an index record lock is required for statements that lock rows using a unique index to search for a unique row.』</li>
+<li>『When UPDATE modifies a clustered index record, implicit locks are taken on affected secondary index records. The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.』
+<ul>
+<li><font color=Orange>当 Update 修改聚簇索引记录时，会隐式的对受影响的次级索引加锁。在插入新的次级索引记录之前执行重复检查扫描时，以及在插入新的次级索引记录时，UPDATE 操作还对受影响的次级索引记录加共享锁。</font></li>
+<li><font color=Red>怎么理解 <strong>『隐式加锁』</strong>？</font>
+<ul>
+<li><font color=Red>事务一，执行 begin; update t set version = -1 where id = 1; 然后查 data_locks 表，会发现没有对 uk_version  加锁；</li>
+<li>事务二，执行 update t set version = -2 where version = 1; 会被阻塞，此时再次查看 data_locks 表，会发现事务一获取了 uk_version 的记录锁：</li>
+<li><img src="/images/myslql_2_2023-2-9_20-39-40.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></li>
+<li>这说明，事务一确实会对次级索引加锁，只是<strong>不知道什么原因</strong>，没有锁<code>冲突</code>是，在 data_locks 表中查不到锁记录；</li>
+</ul>
+</li>
+<li>怎么理解『进行重复性检查扫描时，<strong>会对受影响的次级索引加共享锁</strong>』？
+<ul>
+<li>执行 begin; insert into t (version) value (1); 然后查 data_locks 表，会发现事务持有了 uk_version 上的 S 锁；</li>
+<li><img src="/images/myslql_3_2023-2-9_20-39-40.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></li>
+<li>由于表中已经有一条 version=1 的记录，当在插入 version=1 的记录时，会加一个 S 锁以进行重复检查；</font></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/mysql/">MySQL</a>
+        
+            <a href="/tags/lock/">Lock</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            最后更新于 2024/12/20 11:07 CST
+        </span>
+    </section></footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="">
+    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2022/11/mysql-update-just-one-unused-row/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MySQL 中如何实现只更新未使用的一行数据</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2022/11/late-row-lookups-innodb/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Late Row Lookups: InnoDB</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2022/11/mysql-order-by-limit-performance-optimization/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Mysql 的深分页问题及优化方法</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2024 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了18篇文章 ·
+        总计29.50k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="背景 某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。 排查记录 分析堆内存 dump dump&amp;&amp;分析 jmap -dump:[live],format=b,file=&lt;file-path&gt; &lt;pid&gt; live: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional. format=b: specifies that the dump file will be in binary format. If not set, the result is the same. file: the file where the dump will be written to pid: id of the Java process 1、不进行 FullGC 直接 dump 内存\n1 2 3 jmap -dump:format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof # 压缩，以方便下载 Leak Suspects 显示主要疑点全部与 com.ecwid.consul.v1.Response 有关。 2、强制 FullGC 然后 dump 内存 依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。\n1 2 3 jmap -dump:live,format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof 结论 Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露； 根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类； CustomConfigWatch（javakit）获取的数据大小约 2MB； ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB； 这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）； 根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高 分析 GC 日志 结论 Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长； 每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次； 由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）； 在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理； 虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小； dev &amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降： 1 2 3 4 5 6 - 2023-06-30T07:10:32.869+0000: 3600.316: [GC pause (G1 Humongous Allocation) (mixed) 3600.316: [G1Ergonomics (CSet Construction) start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms] - 3600.316: [G1Ergonomics (CSet Construction) add young regions to CSet, eden: 384 regions, survivors: 0 regions, predicted young region time: 3.51 ms] - 3600.316: [G1Ergonomics (CSet Construction) finish adding old regions to CSet, reason: predicted time is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: 153 regions, min: 83 regions] - 3600.316: [G1Ergonomics (CSet Construction) finish choosing CSet, eden: 384 regions, survivors: 0 regions, old: 153 regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms] - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象； - 根据 jdk8u 的源码，此预测似乎基于对先前若干次回收时间的统计； 整体结论 Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个: ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次； CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次； Prometheus&amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？ H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率； 但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）； 问题在于预测时间为什么会这么短？ 优化方案 优化 PrometheusScrapeEndpoint 相关讨论：\nStringHttpMessageConverter may trigger humongous allocations (G1GC) #25645 Add support for streaming responses from actuator web endpoints #21308 思路？\n使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？ 减少 tag 数量？ ">
+<meta name="keywords" content="Java, GC, Humongous"><title>Java 服务老年代内存异常：大对象的影响与解决方案</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Java 服务老年代内存异常：大对象的影响与解决方案">
+<meta property='og:description' content="背景 某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。 排查记录 分析堆内存 dump dump&amp;&amp;分析 jmap -dump:[live],format=b,file=&lt;file-path&gt; &lt;pid&gt; live: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional. format=b: specifies that the dump file will be in binary format. If not set, the result is the same. file: the file where the dump will be written to pid: id of the Java process 1、不进行 FullGC 直接 dump 内存\n1 2 3 jmap -dump:format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof # 压缩，以方便下载 Leak Suspects 显示主要疑点全部与 com.ecwid.consul.v1.Response 有关。 2、强制 FullGC 然后 dump 内存 依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。\n1 2 3 jmap -dump:live,format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof 结论 Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露； 根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类； CustomConfigWatch（javakit）获取的数据大小约 2MB； ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB； 这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）； 根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高 分析 GC 日志 结论 Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长； 每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次； 由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）； 在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理； 虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小； dev &amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降： 1 2 3 4 5 6 - 2023-06-30T07:10:32.869+0000: 3600.316: [GC pause (G1 Humongous Allocation) (mixed) 3600.316: [G1Ergonomics (CSet Construction) start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms] - 3600.316: [G1Ergonomics (CSet Construction) add young regions to CSet, eden: 384 regions, survivors: 0 regions, predicted young region time: 3.51 ms] - 3600.316: [G1Ergonomics (CSet Construction) finish adding old regions to CSet, reason: predicted time is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: 153 regions, min: 83 regions] - 3600.316: [G1Ergonomics (CSet Construction) finish choosing CSet, eden: 384 regions, survivors: 0 regions, old: 153 regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms] - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象； - 根据 jdk8u 的源码，此预测似乎基于对先前若干次回收时间的统计； 整体结论 Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个: ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次； CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次； Prometheus&amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？ H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率； 但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）； 问题在于预测时间为什么会这么短？ 优化方案 优化 PrometheusScrapeEndpoint 相关讨论：\nStringHttpMessageConverter may trigger humongous allocations (G1GC) #25645 Add support for streaming responses from actuator web endpoints #21308 思路？\n使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？ 减少 tag 数量？ ">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Java' /><meta property='article:tag' content='GC' /><meta property='article:tag' content='Humongous' /><meta property='article:published_time' content='2023-06-26T13:30:37&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T13:30:37&#43;08:00'/>
+<meta name="twitter:title" content="Java 服务老年代内存异常：大对象的影响与解决方案">
+<meta name="twitter:description" content="背景 某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。 排查记录 分析堆内存 dump dump&amp;&amp;分析 jmap -dump:[live],format=b,file=&lt;file-path&gt; &lt;pid&gt; live: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional. format=b: specifies that the dump file will be in binary format. If not set, the result is the same. file: the file where the dump will be written to pid: id of the Java process 1、不进行 FullGC 直接 dump 内存\n1 2 3 jmap -dump:format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof # 压缩，以方便下载 Leak Suspects 显示主要疑点全部与 com.ecwid.consul.v1.Response 有关。 2、强制 FullGC 然后 dump 内存 依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。\n1 2 3 jmap -dump:live,format=b,file=dump.hprof 1 tar -cvzf dump.zip dump.hprof 结论 Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露； 根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类； CustomConfigWatch（javakit）获取的数据大小约 2MB； ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB； 这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）； 根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高 分析 GC 日志 结论 Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长； 每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次； 由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）； 在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理； 虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小； dev &amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降： 1 2 3 4 5 6 - 2023-06-30T07:10:32.869+0000: 3600.316: [GC pause (G1 Humongous Allocation) (mixed) 3600.316: [G1Ergonomics (CSet Construction) start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms] - 3600.316: [G1Ergonomics (CSet Construction) add young regions to CSet, eden: 384 regions, survivors: 0 regions, predicted young region time: 3.51 ms] - 3600.316: [G1Ergonomics (CSet Construction) finish adding old regions to CSet, reason: predicted time is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: 153 regions, min: 83 regions] - 3600.316: [G1Ergonomics (CSet Construction) finish choosing CSet, eden: 384 regions, survivors: 0 regions, old: 153 regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms] - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象； - 根据 jdk8u 的源码，此预测似乎基于对先前若干次回收时间的统计； 整体结论 Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个: ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次； CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次； Prometheus&amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？ H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率； 但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）； 问题在于预测时间为什么会这么短？ 优化方案 优化 PrometheusScrapeEndpoint 相关讨论：\nStringHttpMessageConverter may trigger humongous allocations (G1GC) #25645 Add support for streaming responses from actuator web endpoints #21308 思路？\n使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？ 减少 tag 数量？ ">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#排查记录">排查记录</a>
+      <ol>
+        <li><a href="#分析堆内存-dump">分析堆内存 dump</a>
+          <ol>
+            <li><a href="#dump分析">dump&amp;&amp;分析</a></li>
+            <li><a href="#结论">结论</a></li>
+          </ol>
+        </li>
+        <li><a href="#分析-gc-日志">分析 GC 日志</a>
+          <ol>
+            <li><a href="#结论-1">结论</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#整体结论">整体结论</a></li>
+    <li><a href="#优化方案">优化方案</a>
+      <ol>
+        <li><a href="#优化-prometheusscrapeendpoint">优化 PrometheusScrapeEndpoint</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/trouble-shooting/" >
+                Trouble Shooting
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/">Java 服务老年代内存异常：大对象的影响与解决方案</a>
+        </h2>
+    
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2023/06/26</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-20 13:30:37 &#43;0800 CST" title="2024-12-20 13:30:37 &#43;0800 CST">
+                            2024/12/20 13:30 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 3 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="背景">背景
+</h2><p>某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。
+<img src="/images/old_gen_1_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image1"
+	
+	
+></p>
+<h2 id="排查记录">排查记录
+</h2><h3 id="分析堆内存-dump">分析堆内存 dump
+</h3><h4 id="dump分析">dump&amp;&amp;分析
+</h4><ul>
+<li><code>jmap -dump:[live],format=b,file=&lt;file-path&gt; &lt;pid&gt;</code>
+<ul>
+<li><code>live</code>: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional.</li>
+<li><code>format=b</code>: specifies that the dump file will be in binary format. If not set, the result is the same.</li>
+<li><code>file</code>: the file where the dump will be written to</li>
+<li><code>pid</code>: id of the Java process</li>
+</ul>
+</li>
+</ul>
+<p>1、不进行 FullGC 直接 dump 内存</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">jmap -dump:format=b,file=dump.hprof 1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">tar -cvzf dump.zip dump.hprof # 压缩，以方便下载
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Leak Suspects 显示主要疑点全部与 <code>com.ecwid.consul.v1.Response</code> 有关。
+<img src="/images/old_gen_2_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+>
+<img src="/images/old_gen_3_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image3"
+	
+	
+>
+<img src="/images/old_gen_4_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image4"
+	
+	
+></p>
+<p>2、强制 FullGC 然后 dump 内存
+依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">jmap -dump:live,format=b,file=dump.hprof 1
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">tar -cvzf dump.zip dump.hprof
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="结论">结论
+</h4><ul>
+<li>Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露；</li>
+<li>根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类；
+<ul>
+<li>CustomConfigWatch（javakit）获取的数据大小约 2MB；</li>
+<li>ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB；</li>
+<li>这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）；</li>
+</ul>
+</li>
+<li>根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高
+<img src="/images/old_gen_5_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image5"
+	
+	
+>
+<img src="/images/old_gen_6_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image6"
+	
+	
+></li>
+</ul>
+<h3 id="分析-gc-日志">分析 GC 日志
+</h3><h4 id="结论-1">结论
+</h4><ul>
+<li>Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长；</li>
+<li>每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次；</li>
+<li>由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）；</li>
+<li>在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理；</li>
+<li>虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小；</li>
+<li>dev &amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降：</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">    - 2023-06-30T07:10:32.869+0000: 3600.316: <span class="o">[</span>GC pause <span class="o">(</span>G1 Humongous Allocation<span class="o">)</span> <span class="o">(</span>mixed<span class="o">)</span> 3600.316: <span class="o">[</span>G1Ergonomics <span class="o">(</span>CSet Construction<span class="o">)</span> start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms<span class="o">]</span>
+</span></span><span class="line"><span class="cl">    - 3600.316: <span class="o">[</span>G1Ergonomics <span class="o">(</span>CSet Construction<span class="o">)</span> add young regions to CSet, eden: <span class="m">384</span> regions, survivors: <span class="m">0</span> regions, predicted young region time: 3.51 ms<span class="o">]</span>
+</span></span><span class="line"><span class="cl">    - 3600.316: <span class="o">[</span>G1Ergonomics <span class="o">(</span>CSet Construction<span class="o">)</span> finish adding old regions to CSet, reason: predicted <span class="nb">time</span> is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: <span class="m">153</span> regions, min: <span class="m">83</span> regions<span class="o">]</span>
+</span></span><span class="line"><span class="cl">    - 3600.316: <span class="o">[</span>G1Ergonomics <span class="o">(</span>CSet Construction<span class="o">)</span> finish choosing CSet, eden: <span class="m">384</span> regions, survivors: <span class="m">0</span> regions, old: <span class="m">153</span> regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms<span class="o">]</span>
+</span></span><span class="line"><span class="cl">    - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象；
+</span></span><span class="line"><span class="cl">        - 根据 jdk8u  的源码，此预测似乎基于对先前若干次回收时间的统计；
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="整体结论">整体结论
+</h2><ul>
+<li>Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个:
+<ul>
+<li>ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次；</li>
+<li>CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次；</li>
+<li>Prometheus&amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？</li>
+</ul>
+</li>
+<li>H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率；</li>
+<li>但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）；
+<ul>
+<li>问题在于预测时间为什么会这么短？</li>
+</ul>
+</li>
+</ul>
+<h2 id="优化方案">优化方案
+</h2><h3 id="优化-prometheusscrapeendpoint">优化 PrometheusScrapeEndpoint
+</h3><p>相关讨论：</p>
+<ul>
+<li><a class="link" href="https://github.com/spring-projects/spring-framework/issues/25645"  target="_blank" rel="noopener"
+    >StringHttpMessageConverter may trigger humongous allocations (G1GC) #25645</a></li>
+<li><a class="link" href="https://github.com/spring-projects/spring-boot/issues/21308"  target="_blank" rel="noopener"
+    >Add support for streaming responses from actuator web endpoints #21308</a></li>
+</ul>
+<p>思路？</p>
+<ol>
+<li>使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？</li>
+<li>减少 tag 数量？
+<img src="/images/old_gen_7_2023-6-26_19-48-46.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image7"
+	
+	
+></li>
+</ol>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/java/">Java</a>
+        
+            <a href="/tags/gc/">GC</a>
+        
+            <a href="/tags/humongous/">Humongous</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            最后更新于 2024/12/20 13:30 CST
+        </span>
+    </section></footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="">
+    <a href="/2023/04/java-class-conflict-and-solutions/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java 类冲突问题及其解决方案</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2024/07/in-depth-jvm-performance-tuning-guide/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JVM性能调优实战分享</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/09/root-cause-jvm-deoptimization-storm/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JIT deoptimization 风暴导致 CPU 使用率飙升</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2023/07/memory-leak-issue-in-a-service/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">服务内存泄露问题排查记录</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2024 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了18篇文章 ·
+        总计29.50k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

@@ -7,6 +7,145 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright><atom:link href="https://zhumengzhu.github.io/categories/database/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>『Locks Set by Different SQL Statements in InnoDB』翻译&amp;笔记</title>
+        <link>https://zhumengzhu.github.io/2023/01/locks-set-by-different-sql-statements-in-innodb/</link>
+        <pubDate>Mon, 16 Jan 2023 11:07:26 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/01/locks-set-by-different-sql-statements-in-innodb/</guid>
+        <description>&lt;h2 id=&#34;说明&#34;&gt;说明
+&lt;/h2&gt;&lt;p&gt;说明&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;原文：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html&lt;/li&gt;
+&lt;li&gt;下文黑色字体原文，&lt;font color=Orange&gt;黄色字体是翻译&lt;/font&gt;，&lt;font color=Red&gt;红色是自己加的标注，记录自己对原文的理解&lt;/font&gt;。&lt;/li&gt;
+&lt;li&gt;测试表结构：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-mysql&#34; data-lang=&#34;mysql&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;CREATE&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;TABLE&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;t&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;  &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;bigint&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;NOT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;no&#34;&gt;NULL&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;AUTO_INCREMENT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMENT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;主键 ID&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;  &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;version&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;bigint&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;NOT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;no&#34;&gt;NULL&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;DEFAULT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;0&amp;#39;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMENT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;版本号&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;  &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;PRIMARY&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;KEY&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;  &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;UNIQUE&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;KEY&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;uk_version&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;version&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;`&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;w&#34;&gt;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;ENGINE&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;InnoDB&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;DEFAULT&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;CHARSET&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;utf8mb4&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;k&#34;&gt;COLLATE&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;utf8mb4_0900_ai_ci&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMENT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;版本表&amp;#39;&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;；&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;表里的初始数据为：&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;1&lt;/th&gt;
+          &lt;th&gt;1&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td&gt;5&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;3&lt;/td&gt;
+          &lt;td&gt;10&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;15&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;翻译笔记&#34;&gt;翻译&amp;amp;笔记
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;『A locking read, an UPDATE, or a DELETE generally set record locks on every index record that is scanned in the processing of an SQL statement. It does not matter whether there are WHERE conditions in the statement that would exclude the row. InnoDB does not remember the exact WHERE condition, but only knows which index ranges were scanned. The locks are normally next-key locks that also block inserts into the “gap” immediately before the record. However, gap locking can be disabled explicitly, which causes next-key locking not to be used. For more information, see Section 15.7.1, “InnoDB Locking”. The transaction isolation level can also affect which locks are set; see Section 15.7.2.1, “Transaction Isolation Levels”.』&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Orange&gt;一次加锁的读、更新或删除通常在 SQL 语句处理过程中扫描的每个索引记录上设置记录锁。 语句中是否使用 WHERE 条件排除了某些行并不关键。InnoDB 不会记住准确的 WHERE 条件，而是只关心索引的扫描范围。锁通常是临键锁，用来组织在记录之前的『间隙』插入记录。但是，间隙锁可以被禁用，此时不会使用临键锁。更多信息，见第15.7.1，『InnoDB Locking』。事务隔离级别也会影响锁的设置，详情见15.7.2.1，『Transaction Isolation Levels』&lt;/font&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;font color=red&gt;锁是设置在索引记录上的&lt;/font&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;『If a secondary index is used in a search and the index record locks to be set are exclusive, InnoDB also retrieves the corresponding clustered index records and sets locks on them.』&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Orange&gt;如果在搜索中使用了二级索引，并且要设置的索引记录锁是排他的，InnoDB也会检索相应的聚集索引记录并对其设置锁。&lt;/font&gt;&lt;/li&gt;
+&lt;li&gt;&lt;font color=red&gt;怎么理解？
+&lt;ul&gt;
+&lt;li&gt;『在搜索中使用二级索引』，InnoDB 在执行时是通过扫描二级索引来查找记录的，举个例子：&lt;/li&gt;
+&lt;li&gt;事务一，执行  begin; select * from t where version = 1 for update;&lt;/li&gt;
+&lt;li&gt;事务二，执行 select id from t where id = 1 for update; 会被阻塞；此时查询data_locks 表，会发现事务一在聚簇索引上设置了记录锁：&lt;/font&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/myslql_1_2023-2-9_20-39-40.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;『If you have no indexes suitable for your statement and MySQL must scan the entire table to process the statement, every row of the table becomes locked, which in turn blocks all inserts by other users to the table. It is important to create good indexes so that your queries do not scan more rows than necessary.』&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Orange&gt;如果没有适合语句的索引，MySQL必须扫描整个表来处理语句，此时表的每一行都被锁定，从而阻止其他用户对表的所有插入。 创建良好的索引非常重要，这样查询就不会扫描不必要的行。” &lt;/font&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;『InnoDB sets specific types of locks as follows.』&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Orange&gt;InnoDB设置锁的具体类型如下。&lt;/font&gt;&lt;/li&gt;
+&lt;li&gt;『SELECT &amp;hellip; FROM is a consistent read, reading a snapshot of the database and setting no locks unless the transaction isolation level is set to SERIALIZABLE. For SERIALIZABLE level, the search sets shared next-key locks on the index records it encounters. However, only an index record lock is required for statements that lock rows using a unique index to search for a unique row.』&lt;/li&gt;
+&lt;li&gt;『When UPDATE modifies a clustered index record, implicit locks are taken on affected secondary index records. The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.』
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Orange&gt;当 Update 修改聚簇索引记录时，会隐式的对受影响的次级索引加锁。在插入新的次级索引记录之前执行重复检查扫描时，以及在插入新的次级索引记录时，UPDATE 操作还对受影响的次级索引记录加共享锁。&lt;/font&gt;&lt;/li&gt;
+&lt;li&gt;&lt;font color=Red&gt;怎么理解 &lt;strong&gt;『隐式加锁』&lt;/strong&gt;？&lt;/font&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;font color=Red&gt;事务一，执行 begin; update t set version = -1 where id = 1; 然后查 data_locks 表，会发现没有对 uk_version  加锁；&lt;/li&gt;
+&lt;li&gt;事务二，执行 update t set version = -2 where version = 1; 会被阻塞，此时再次查看 data_locks 表，会发现事务一获取了 uk_version 的记录锁：&lt;/li&gt;
+&lt;li&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/myslql_2_2023-2-9_20-39-40.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;li&gt;这说明，事务一确实会对次级索引加锁，只是&lt;strong&gt;不知道什么原因&lt;/strong&gt;，没有锁&lt;code&gt;冲突&lt;/code&gt;是，在 data_locks 表中查不到锁记录；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;怎么理解『进行重复性检查扫描时，&lt;strong&gt;会对受影响的次级索引加共享锁&lt;/strong&gt;』？
+&lt;ul&gt;
+&lt;li&gt;执行 begin; insert into t (version) value (1); 然后查 data_locks 表，会发现事务持有了 uk_version 上的 S 锁；&lt;/li&gt;
+&lt;li&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/myslql_3_2023-2-9_20-39-40.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;li&gt;由于表中已经有一条 version=1 的记录，当在插入 version=1 的记录时，会加一个 S 锁以进行重复检查；&lt;/font&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</description>
+        </item>
+        <item>
         <title>INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</title>
         <link>https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/</link>
         <pubDate>Mon, 26 Dec 2022 11:47:21 +0800</pubDate>

@@ -7,7 +7,7 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Mon, 16 Dec 2024 11:57:29 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/gc/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Fri, 20 Dec 2024 13:30:37 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/gc/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>JVM性能调优实战分享</title>
         <link>https://zhumengzhu.github.io/2024/07/in-depth-jvm-performance-tuning-guide/</link>
         <pubDate>Fri, 19 Jul 2024 11:30:00 +0800</pubDate>
@@ -267,6 +267,196 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
     });
     })();
 &lt;/script&gt;</description>
+        </item>
+        <item>
+        <title>Java 服务老年代内存异常：大对象的影响与解决方案</title>
+        <link>https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/</link>
+        <pubDate>Mon, 26 Jun 2023 13:30:37 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/</guid>
+        <description>&lt;h2 id=&#34;背景&#34;&gt;背景
+&lt;/h2&gt;&lt;p&gt;某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_1_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;排查记录&#34;&gt;排查记录
+&lt;/h2&gt;&lt;h3 id=&#34;分析堆内存-dump&#34;&gt;分析堆内存 dump
+&lt;/h3&gt;&lt;h4 id=&#34;dump分析&#34;&gt;dump&amp;amp;&amp;amp;分析
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;jmap -dump:[live],format=b,file=&amp;lt;file-path&amp;gt; &amp;lt;pid&amp;gt;&lt;/code&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;live&lt;/code&gt;: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;format=b&lt;/code&gt;: specifies that the dump file will be in binary format. If not set, the result is the same.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;file&lt;/code&gt;: the file where the dump will be written to&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;pid&lt;/code&gt;: id of the Java process&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;1、不进行 FullGC 直接 dump 内存&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;jmap -dump:format=b,file=dump.hprof 1
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -cvzf dump.zip dump.hprof # 压缩，以方便下载
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Leak Suspects 显示主要疑点全部与 &lt;code&gt;com.ecwid.consul.v1.Response&lt;/code&gt; 有关。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_2_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_3_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_4_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;2、强制 FullGC 然后 dump 内存
+依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;jmap -dump:live,format=b,file=dump.hprof 1
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -cvzf dump.zip dump.hprof
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id=&#34;结论&#34;&gt;结论
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露；&lt;/li&gt;
+&lt;li&gt;根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类；
+&lt;ul&gt;
+&lt;li&gt;CustomConfigWatch（javakit）获取的数据大小约 2MB；&lt;/li&gt;
+&lt;li&gt;ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB；&lt;/li&gt;
+&lt;li&gt;这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_5_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_6_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image6&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;分析-gc-日志&#34;&gt;分析 GC 日志
+&lt;/h3&gt;&lt;h4 id=&#34;结论-1&#34;&gt;结论
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&amp;mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长；&lt;/li&gt;
+&lt;li&gt;每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次；&lt;/li&gt;
+&lt;li&gt;由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）；&lt;/li&gt;
+&lt;li&gt;在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理；&lt;/li&gt;
+&lt;li&gt;虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小；&lt;/li&gt;
+&lt;li&gt;dev &amp;amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 2023-06-30T07:10:32.869+0000: 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;GC pause &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;G1 Humongous Allocation&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;mixed&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; add young regions to CSet, eden: &lt;span class=&#34;m&#34;&gt;384&lt;/span&gt; regions, survivors: &lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; regions, predicted young region time: 3.51 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; finish adding old regions to CSet, reason: predicted &lt;span class=&#34;nb&#34;&gt;time&lt;/span&gt; is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: &lt;span class=&#34;m&#34;&gt;153&lt;/span&gt; regions, min: &lt;span class=&#34;m&#34;&gt;83&lt;/span&gt; regions&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; finish choosing CSet, eden: &lt;span class=&#34;m&#34;&gt;384&lt;/span&gt; regions, survivors: &lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; regions, old: &lt;span class=&#34;m&#34;&gt;153&lt;/span&gt; regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象；
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        - 根据 jdk8u  的源码，此预测似乎基于对先前若干次回收时间的统计；
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;整体结论&#34;&gt;整体结论
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个:
+&lt;ul&gt;
+&lt;li&gt;ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次；&lt;/li&gt;
+&lt;li&gt;CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次；&lt;/li&gt;
+&lt;li&gt;Prometheus&amp;amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率；&lt;/li&gt;
+&lt;li&gt;但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）；
+&lt;ul&gt;
+&lt;li&gt;问题在于预测时间为什么会这么短？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;优化方案&#34;&gt;优化方案
+&lt;/h2&gt;&lt;h3 id=&#34;优化-prometheusscrapeendpoint&#34;&gt;优化 PrometheusScrapeEndpoint
+&lt;/h3&gt;&lt;p&gt;相关讨论：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/spring-projects/spring-framework/issues/25645&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;StringHttpMessageConverter may trigger humongous allocations (G1GC) #25645&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/spring-projects/spring-boot/issues/21308&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Add support for streaming responses from actuator web endpoints #21308&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;思路？&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？&lt;/li&gt;
+&lt;li&gt;减少 tag 数量？
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_7_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image7&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ol&gt;</description>
         </item>
         
     </channel>

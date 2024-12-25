@@ -233,7 +233,7 @@
 &lt;/div&gt;</description>
         </item>
         <item>
-        <title>记一次某服务内存泄露问题</title>
+        <title>服务内存泄露问题排查记录</title>
         <link>https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/</link>
         <pubDate>Mon, 17 Jul 2023 11:46:30 +0800</pubDate>
         
@@ -394,6 +394,355 @@
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/redisson/redisson/issues/4294&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://github.com/redisson/redisson/issues/4294&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
+        </item>
+        <item>
+        <title>Java 服务老年代内存异常：大对象的影响与解决方案</title>
+        <link>https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/</link>
+        <pubDate>Mon, 26 Jun 2023 13:30:37 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/</guid>
+        <description>&lt;h2 id=&#34;背景&#34;&gt;背景
+&lt;/h2&gt;&lt;p&gt;某 Java 服务的老年代内存占用持续高位，怀疑可能存在内存泄漏的风险。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_1_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;排查记录&#34;&gt;排查记录
+&lt;/h2&gt;&lt;h3 id=&#34;分析堆内存-dump&#34;&gt;分析堆内存 dump
+&lt;/h3&gt;&lt;h4 id=&#34;dump分析&#34;&gt;dump&amp;amp;&amp;amp;分析
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;jmap -dump:[live],format=b,file=&amp;lt;file-path&amp;gt; &amp;lt;pid&amp;gt;&lt;/code&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;live&lt;/code&gt;: if set, it only prints objects which have active references and discards the ones that are ready to be garbage collected. This parameter is optional.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;format=b&lt;/code&gt;: specifies that the dump file will be in binary format. If not set, the result is the same.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;file&lt;/code&gt;: the file where the dump will be written to&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;pid&lt;/code&gt;: id of the Java process&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;1、不进行 FullGC 直接 dump 内存&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;jmap -dump:format=b,file=dump.hprof 1
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -cvzf dump.zip dump.hprof # 压缩，以方便下载
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Leak Suspects 显示主要疑点全部与 &lt;code&gt;com.ecwid.consul.v1.Response&lt;/code&gt; 有关。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_2_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_3_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_4_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;2、强制 FullGC 然后 dump 内存
+依次执行以下命令，获取内存 dump 然后进行压缩（提高文件下载速度），然后通过服务治理平台-文件下载功能下载到本地，使用 eclipse mat 或者 VisualVM 进行分析。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;jmap -dump:live,format=b,file=dump.hprof 1
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -cvzf dump.zip dump.hprof
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id=&#34;结论&#34;&gt;结论
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 虽然会达到很高占比，但总是能最终下降到低位，说明不存在严格意义上的内存泄露；&lt;/li&gt;
+&lt;li&gt;根据 Leak Suspects 报告，Old Gen 占用高主要是类 com.ecwid.consul.v1.Response 导致，它代表从 consul 拉取的数据，包括两类；
+&lt;ul&gt;
+&lt;li&gt;CustomConfigWatch（javakit）获取的数据大小约 2MB；&lt;/li&gt;
+&lt;li&gt;ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB；&lt;/li&gt;
+&lt;li&gt;这些数据会导致产生 Humongous 对象：比如网络层面接收这些数据时需要分配大的 byte 数组，转为 HttpResponse 时分配 char 数组（CharArrayBuffer）；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;根据 Dominator Tree，除了 consul 数据，监控数据占内存同样很高
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_5_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_6_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image6&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;分析-gc-日志&#34;&gt;分析 GC 日志
+&lt;/h3&gt;&lt;h4 id=&#34;结论-1&#34;&gt;结论
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 占比高并不是因为长生命周期对象晋升，而是大量分配 Humongous 对象（简称 H-Obj）&amp;mdash;-因为根据监控，在没有 GC 时，Old Gen 的却一直在增长；&lt;/li&gt;
+&lt;li&gt;每当进行 H-obj 分配时，就会触发 Mixed GC 的并发标记循环，进而导致一次 YGC（inital mark），回收死亡的 H-Obj；但如果当前处于 Mixed GC 阶段，则不会再触发一次；&lt;/li&gt;
+&lt;li&gt;由于 H-obj 的分配频率非常高，因此实际会一直处于 Mixed GC 阶段（中间可以夹杂多次 YGC）；&lt;/li&gt;
+&lt;li&gt;在 YGC 以及 Mixed GC 的 cleanup 阶段，Old Gen 会大幅下降，因为此阶段会对 H-Obj 对象进行清理；&lt;/li&gt;
+&lt;li&gt;虽然强制指定 -Xmn1g，但实际 Young 区还是会缩小；&lt;/li&gt;
+&lt;li&gt;dev &amp;amp; test 环境，在出现如下 GC 日志时，Old Gen 只有小幅下降：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 2023-06-30T07:10:32.869+0000: 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;GC pause &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;G1 Humongous Allocation&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;mixed&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; start choosing CSet, _pending_cards: 26151, predicted base time: 42.80 ms, remaining time: 157.20 ms, target pause time: 200.00 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; add young regions to CSet, eden: &lt;span class=&#34;m&#34;&gt;384&lt;/span&gt; regions, survivors: &lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; regions, predicted young region time: 3.51 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; finish adding old regions to CSet, reason: predicted &lt;span class=&#34;nb&#34;&gt;time&lt;/span&gt; is too high, predicted time: 1.00 ms, remaining time: 0.60 ms, old: &lt;span class=&#34;m&#34;&gt;153&lt;/span&gt; regions, min: &lt;span class=&#34;m&#34;&gt;83&lt;/span&gt; regions&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - 3600.316: &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;G1Ergonomics &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;CSet Construction&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; finish choosing CSet, eden: &lt;span class=&#34;m&#34;&gt;384&lt;/span&gt; regions, survivors: &lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; regions, old: &lt;span class=&#34;m&#34;&gt;153&lt;/span&gt; regions, predicted pause time: 199.40 ms, target pause time: 200.00 ms&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    - G1 预测回收 Old Gen 时只剩余 0.6 ms，因此进行回收时只选取了少量的 Old Gen，且没有回收 Humongous 对象；
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        - 根据 jdk8u  的源码，此预测似乎基于对先前若干次回收时间的统计；
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;整体结论&#34;&gt;整体结论
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Old Gen 的快速上升主要是由于大量的 H-obj 分配，大对象的来源按频率排序，目前主要有 3 个:
+&lt;ul&gt;
+&lt;li&gt;ConsulCatalogWatch（SpringBoot）获取的数据大小约 170KB，约每 2 秒一次；&lt;/li&gt;
+&lt;li&gt;CustomConfigWatch（javakit）获取的数据大小约 2MB，约每 27 秒一次；&lt;/li&gt;
+&lt;li&gt;Prometheus&amp;amp;Metrics 监控数据，小于等于 1.3 MB，约 1 分钟一次？？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;H-obj 的分配速率与年轻代对象的增长速率大约成正比，且往往小于年轻代的增长速率；&lt;/li&gt;
+&lt;li&gt;但存在一些特殊情况，在 mixed 回收阶段，由于 Old Gen 中可回收的 region 大于 5% 阈值，需要触发混合回收；且根据预测，可以留给 Old Gen 的回收时间非常短（不足 1ms），导致选择选择 CSet 时 Old Gen region 特别少，剩余 region 仍然大于 5%阈值，因此 mixed 阶段将持续，然后恶性循环（最多 8 次 mixed gc）；中间如果出发 YGC，则 humongous 对象会被清除，Old Gen 占用会大幅下降（真正的老年代对象并不会清除）；
+&lt;ul&gt;
+&lt;li&gt;问题在于预测时间为什么会这么短？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;优化方案&#34;&gt;优化方案
+&lt;/h2&gt;&lt;h3 id=&#34;优化-prometheusscrapeendpoint&#34;&gt;优化 PrometheusScrapeEndpoint
+&lt;/h3&gt;&lt;p&gt;相关讨论：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/spring-projects/spring-framework/issues/25645&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;StringHttpMessageConverter may trigger humongous allocations (G1GC) #25645&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/spring-projects/spring-boot/issues/21308&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Add support for streaming responses from actuator web endpoints #21308&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;思路？&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;使用一个 char[] 内存池，scrape 时从内存池获取一个足够大的 char 数组用于生成数据，完成后，将数组归还内存池？&lt;/li&gt;
+&lt;li&gt;减少 tag 数量？
+&lt;img src=&#34;https://zhumengzhu.github.io/images/old_gen_7_2023-6-26_19-48-46.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image7&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ol&gt;</description>
+        </item>
+        <item>
+        <title>Java 类冲突问题及其解决方案</title>
+        <link>https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/</link>
+        <pubDate>Mon, 03 Apr 2023 18:26:48 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/</guid>
+        <description>&lt;h2 id=&#34;引子&#34;&gt;引子
+&lt;/h2&gt;&lt;p&gt;在启动 Java 项时，可能会出现这种&lt;strong&gt;诡异&lt;/strong&gt;的现象：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在本地可以启动，但部署到服务器上却不能启动；&lt;/li&gt;
+&lt;li&gt;或者，在服务器可以启动，但本地不可以启动；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;此时如果去查看错误日志，往往可以看到诸如 ClassNotFoundException、NoClassDefFoundError 等异常信息，接着很容易就会想到很可能是发生了类冲突。
+然后你会结合异常日志即依赖变更情况，定位到冲突的类及其所在的 jar 包，然后用 dependecy-exclude 等手段将冲突解决掉，最终使得服务可以正常启动。一般我们处理问题就到此为止了。
+本文试图更近一步，&lt;strong&gt;深入分析本地与远程服务器行为不一致的原因&lt;/strong&gt;，并简单介绍&lt;strong&gt;业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧&lt;/strong&gt;。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;背景知识&#34;&gt;背景知识
+&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Java Classpath&lt;/strong&gt;:
+&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_1_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;本地启动的-classpath-顺序&#34;&gt;本地启动的 Classpath 顺序
+&lt;/h2&gt;&lt;p&gt;本地一般都是在 IDEA 中启动；IDEA 启动服务时，会在 Console 打印启动参数：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_2_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;那么 IDEA 是以怎样的顺序将 jar 包添加到 classpath 中呢？&lt;/p&gt;
+&lt;p&gt;答案：是按 Maven 依赖解析的方式进行加载的。通过执行 &lt;code&gt;mvn dependency:list&lt;/code&gt; 可以看到 Maven 依赖解析的结果，这个顺序，就是 classpath 中 jar 的添加顺序：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_3_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;通过对比可以发现，两者顺序一致。&lt;/p&gt;
+&lt;h2 id=&#34;远程启动的-classpath-顺序&#34;&gt;远程启动的 Classpath 顺序
+&lt;/h2&gt;&lt;p&gt;登录服务器，使用 &lt;code&gt;ps aux | grep java&lt;/code&gt; 查看启动参数，会发现，&lt;strong&gt;远程服务器没有加 &lt;code&gt;-classpath&lt;/code&gt;  参数！！！相关的依赖在哪里？？？&lt;/strong&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_4_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;实际上，在构建项目时，Maven 会将所有的依赖都添加到 xx-server.jar 中的 BOOT-INF/lib 目录下。&lt;/p&gt;
+&lt;p&gt;&lt;font color=Orange&gt;&lt;strong&gt;JVM 在启动时，会根据 Jar 包中的另一个元数据文件&amp;ndash;&lt;code&gt;META-INF/MANIFEST.MF&lt;/code&gt;，来决定类的加载顺序。&lt;/strong&gt;&lt;/font&gt;&lt;/p&gt;
+&lt;h3 id=&#34;meta-infmanifestmf&#34;&gt;META-INF/MANIFEST.MF
+&lt;/h3&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_5_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;默认情况下，JVM 在加载类的顺序依赖 OS 时，对于 Linux 来说，最底层是 &lt;a class=&#34;link&#34; href=&#34;https://www.jianshu.com/p/dcad5330b06f&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;opendir&lt;/a&gt; 函数，这个函数返回的顺序，又与文件系统有关。『对于 CentOS 6，它使用的是Ext4，文件顺序与目录文件的大小是否超过一个磁盘块和文件系统计算的Hash值有关。』&lt;/p&gt;
+&lt;p&gt;简单说，先加载完全是哪个看运气！远程服务器的版本不同，加载的顺序就可能不一样。这就是文章开头诡异问题的根源。&lt;/p&gt;
+&lt;p&gt;看运气怎么行？！&lt;/p&gt;
+&lt;h3 id=&#34;spring-boot-maven-plugin&#34;&gt;spring-boot-maven-plugin
+&lt;/h3&gt;&lt;p&gt;这个插件使用了 &lt;a class=&#34;link&#34; href=&#34;https://docs.spring.io/spring-boot/redirect.html?page=executable-jar&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;The Executable Jar Format&lt;/a&gt;，支持一种称之为 Classpath Index 的索引文件，负责指定 jar 被添加到 classpath 中的顺序。很明显，通过这个插件可以保证 jar 的扫描顺序在不同的环境下是一致的。完美解决上面的问题。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_6_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image6&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;小节&#34;&gt;小节
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;类的加载顺序取决于 classpath；&lt;/li&gt;
+&lt;li&gt;嵌套的 JARS 中的加载顺序，在默认情况取决于 OS，对于 Linux 来说取决于文件系统；&lt;/li&gt;
+&lt;li&gt;Spring Boot 提供了一个插件，利用 The Executable Jar Format 完美解决了加载顺序错乱问题；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;其它&#34;&gt;其它
+&lt;/h2&gt;&lt;h3 id=&#34;业界的一些其他解决方案&#34;&gt;业界的一些其他解决方案
+&lt;/h3&gt;&lt;p&gt;Spring Boot 的方案可以解决拥有 main 方法的服务的冲突问题，解决方法依赖一个 Maven 差距。&lt;/p&gt;
+&lt;p&gt;对于开发或扩展类库(比如 guava/hadoop)，或者 Java Agent 的开发时，有时候面临的问题更复杂，甚至要解决 classloader 冲突的问题。&lt;/p&gt;
+&lt;h4 id=&#34;maven-plugin-shade&#34;&gt;maven-plugin-shade
+&lt;/h4&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.cnblogs.com/lkxed/p/maven-plugin-shade.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;maven-plugin-shade 详解&lt;/a&gt;&lt;/p&gt;
+&lt;h4 id=&#34;自定义类加载器&#34;&gt;自定义类加载器
+&lt;/h4&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://tianshuang.me/2021/10/Java-Agent-%E7%9A%84%E7%B1%BB%E5%8A%A0%E8%BD%BD%E9%9A%94%E7%A6%BB%E5%AE%9E%E7%8E%B0/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Java Agent 的类加载隔离实现&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;思路：『使用独立的类加载器去加载 Java Agent 依赖的类，该独立的类加载器的 parent 指向 Bootstrap ClassLoader，且&lt;strong&gt;将 Java Agent 依赖的类的默认后缀 .class 进行调整&lt;/strong&gt;，以避免系统类加载器加载到这些类，以实现类的隔离。』&lt;/p&gt;
+&lt;h3 id=&#34;类冲突问题排查小技巧&#34;&gt;类冲突问题排查小技巧
+&lt;/h3&gt;&lt;h4 id=&#34;加启动参数--verboseclasspath&#34;&gt;加启动参数 -verbose:classpath
+&lt;/h4&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_7_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image7&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;加上这个参数， JVM 会将『哪个类是从哪个 jar中被加载』的信息输出到 console 中。&lt;/p&gt;
+&lt;p&gt;&lt;font color=Orange&gt;这个方法需要你能控制启动参数，适合在本地，不确定哪个类冲突的时候使用。&lt;/font&gt;&lt;/p&gt;
+&lt;h4 id=&#34;使用-arthas-的-jad-功能&#34;&gt;使用 arthas 的 Jad 功能
+&lt;/h4&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_8_2023-4-3_17-35-53.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image8&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;arthas 输出的信息更全面，出了现实加载的位置，还会告诉你 ClassLoader 是哪一个，并且自动反编译(&lt;font color=Orange&gt;jad 命令本来就是干这个的！&lt;/font&gt;)&lt;/p&gt;
+&lt;p&gt;&lt;font color=Orange&gt;这个方法需要你安装 arthas，适合本地和 dev、test 环境，在你有了明确的怀疑对象时，优先使用这个命令。&lt;/font&gt;&lt;/p&gt;
+&lt;h4 id=&#34;如何安装-arthas&#34;&gt;如何安装 arthas
+&lt;/h4&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# https://arthas.aliyun.com/doc/install-detail.html&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;curl -O https://arthas.aliyun.com/arthas-boot.jar
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;java -jar arthas-boot.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
         </item>
         
     </channel>

@@ -305,7 +305,7 @@
                     <a href="/archives/#2023">
                         
                             <span class="year">2023</span>
-                            <span class="count">5</span>
+                            <span class="count">8</span>
                         
                     </a> 
                 </div>
@@ -313,7 +313,7 @@
                     <a href="/archives/#2022">
                         
                             <span class="year">2022</span>
-                            <span class="count">8</span>
+                            <span class="count">9</span>
                         
                     </a> 
                 </div>
@@ -340,19 +340,19 @@
 
     <div class="tagCloud-tags">
         
-            <a href="/categories/database/" class="font_size_4">
+            <a href="/categories/database/" class="font_size_5">
                 Database
+            </a>
+        
+            <a href="/categories/learning-journal/" class="font_size_5">
+                Learning Journal
             </a>
         
             <a href="/categories/java/" class="font_size_4">
                 Java
             </a>
         
-            <a href="/categories/learning-journal/" class="font_size_4">
-                Learning Journal
-            </a>
-        
-            <a href="/categories/trouble-shooting/" class="font_size_2">
+            <a href="/categories/trouble-shooting/" class="font_size_4">
                 Trouble Shooting
             </a>
         
@@ -377,20 +377,28 @@
 
     <div class="tagCloud-tags">
         
-            <a href="/tags/mysql/" class="font_size_4">
-                MySQL
+            <a href="/tags/java/" class="font_size_5">
+                Java
             </a>
         
-            <a href="/tags/java/" class="font_size_3">
-                Java
+            <a href="/tags/mysql/" class="font_size_5">
+                MySQL
             </a>
         
             <a href="/tags/jvm/" class="font_size_3">
                 JVM
             </a>
         
+            <a href="/tags/gc/" class="font_size_2">
+                GC
+            </a>
+        
             <a href="/tags/innodb/" class="font_size_2">
                 InnoDB
+            </a>
+        
+            <a href="/tags/lock/" class="font_size_2">
+                Lock
             </a>
         
             <a href="/tags/notes/" class="font_size_2">
@@ -407,14 +415,6 @@
         
             <a href="/tags/blog/" class="font_size_1">
                 Blog
-            </a>
-        
-            <a href="/tags/database/" class="font_size_1">
-                Database
-            </a>
-        
-            <a href="/tags/deopt/" class="font_size_1">
-                Deopt
             </a>
         
     </div>
@@ -449,6 +449,234 @@
 </div>
 
 <section class="article-list">
+    
+    
+<article class="">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/database/" style="background-color: #2a9d8f; color: #fff;">
+                Database
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2022/11/mysql-update-just-one-unused-row/">MySQL 中如何实现只更新未使用的一行数据</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2022/11/20</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2022-11-20 17:21:39 &#43;0800 CST" title="2022-11-20 17:21:39 &#43;0800 CST">
+                            2022/11/20 17:21 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 7 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+</article>
+    
+    
+<article class="">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/database/" style="background-color: #2a9d8f; color: #fff;">
+                Database
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2022/11/late-row-lookups-innodb/">Late Row Lookups: InnoDB</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            博客『Late Row Lookups: InnoDB』的阅读笔记
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2022/11/14</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2022-11-14 19:12:47 &#43;0800 CST" title="2022-11-14 19:12:47 &#43;0800 CST">
+                            2022/11/14 19:12 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 5 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+</article>
+    
+    
+<article class="">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/database/" style="background-color: #2a9d8f; color: #fff;">
+                Database
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2022/11/mysql-order-by-limit-performance-optimization/">Mysql 的深分页问题及优化方法</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            讨论 MySQL 深分页查询为什么慢，及如何优化
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2022/11/05</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2022-11-05 12:36:01 &#43;0800 CST" title="2022-11-05 12:36:01 &#43;0800 CST">
+                            2022/11/05 12:36 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 5 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+</article>
     
     
 <article class="">
@@ -589,6 +817,78 @@
 
                     <time class="article-time--reading">
                         阅读时长: 1 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+</article>
+    
+    
+<article class="">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/learning-journal/" >
+                Learning Journal
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2022/10/prometheus-and-grafana-learning-notes/">Prometheus &amp; Grafana 学习记录</a>
+        </h2>
+    
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2022/10/11</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-10 22:09:19 &#43;0800 CST" title="2024-12-10 22:09:19 &#43;0800 CST">
+                            2024/12/10 22:09 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 12 分钟
                     </time>
                 </div>
             
@@ -828,8 +1128,16 @@
         
         
         
-        发表了14篇文章 ·
-        总计19.24k字
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了18篇文章 ·
+        总计29.50k字
 
     </section>
     
