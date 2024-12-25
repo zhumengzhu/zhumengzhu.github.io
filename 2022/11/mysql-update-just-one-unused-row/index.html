@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的`update just one unused row`模式，最后聊一下 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
-<meta name="keywords" content="MySQL, InnoDB, Select for update, LAST_INSERT_ID, SKIP LOCKED, NOWAIT"><title>Mysql 只更新未使用的一行数据问题</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
+<meta name="keywords" content="MySQL, InnoDB, Select for update, LAST_INSERT_ID, SKIP LOCKED, NOWAIT"><title>MySQL 中如何实现只更新未使用的一行数据</title>
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Mysql 只更新未使用的一行数据问题">
-<meta property='og:description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的`update just one unused row`模式，最后聊一下 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="MySQL 中如何实现只更新未使用的一行数据">
+<meta property='og:description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/'>
 <meta property='og:site_name' content='Somnus'>
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='MySQL' /><meta property='article:tag' content='InnoDB' /><meta property='article:tag' content='Select for update' /><meta property='article:tag' content='LAST_INSERT_ID' /><meta property='article:tag' content='SKIP LOCKED' /><meta property='article:tag' content='NOWAIT' /><meta property='article:published_time' content='2022-11-20T17:21:39&#43;08:00'/><meta property='article:modified_time' content='2022-11-20T17:21:39&#43;08:00'/>
-<meta name="twitter:title" content="Mysql 只更新未使用的一行数据问题">
-<meta name="twitter:description" content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的`update just one unused row`模式，最后聊一下 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
+<meta name="twitter:title" content="MySQL 中如何实现只更新未使用的一行数据">
+<meta name="twitter:description" content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -309,12 +309,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/2022/11/mysql-update-just-one-unused-row/">Mysql 只更新未使用的一行数据问题</a>
+            <a href="/2022/11/mysql-update-just-one-unused-row/">MySQL 中如何实现只更新未使用的一行数据</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后讨论一下常见的`update just one unused row`模式，最后聊一下 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。
+            本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。
         </h3>
         
     </div>
@@ -1034,6 +1034,19 @@ SELECT @update_id;</p>
             
                 
 <article class="">
+    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
     <a href="/2022/11/mysql-order-by-limit-performance-optimization/">
         
         
@@ -1154,8 +1167,14 @@ SELECT @update_id;</p>
         
         
         
-        发表了11篇文章 ·
-        总计15.82k字
+        
+        
+        
+        
+        
+        
+        发表了14篇文章 ·
+        总计19.24k字
 
     </section>
     

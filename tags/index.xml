@@ -7,7 +7,7 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Fri, 20 Dec 2024 12:35:11 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Fri, 20 Dec 2024 14:14:52 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>GC</title>
         <link>https://zhumengzhu.github.io/tags/gc/</link>
         <pubDate>Fri, 19 Jul 2024 11:30:00 +0800</pubDate>
@@ -29,6 +29,38 @@
         <pubDate>Fri, 19 Jul 2024 11:30:00 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/tags/jvm/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Deopt</title>
+        <link>https://zhumengzhu.github.io/tags/deopt/</link>
+        <pubDate>Sat, 23 Sep 2023 14:14:52 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/deopt/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>JIT</title>
+        <link>https://zhumengzhu.github.io/tags/jit/</link>
+        <pubDate>Sat, 23 Sep 2023 14:14:52 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/jit/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Recompile</title>
+        <link>https://zhumengzhu.github.io/tags/recompile/</link>
+        <pubDate>Sat, 23 Sep 2023 14:14:52 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/recompile/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Uncommon Traps</title>
+        <link>https://zhumengzhu.github.io/tags/uncommon-traps/</link>
+        <pubDate>Sat, 23 Sep 2023 14:14:52 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/uncommon-traps/</guid>
         <description></description>
         </item>
         <item>
@@ -72,6 +104,30 @@
         <description></description>
         </item>
         <item>
+        <title>Database</title>
+        <link>https://zhumengzhu.github.io/tags/database/</link>
+        <pubDate>Mon, 26 Dec 2022 11:47:21 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/database/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Lock</title>
+        <link>https://zhumengzhu.github.io/tags/lock/</link>
+        <pubDate>Mon, 26 Dec 2022 11:47:21 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/lock/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>MySQL</title>
+        <link>https://zhumengzhu.github.io/tags/mysql/</link>
+        <pubDate>Mon, 26 Dec 2022 11:47:21 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/mysql/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>InnoDB</title>
         <link>https://zhumengzhu.github.io/tags/innodb/</link>
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
@@ -85,14 +141,6 @@
         <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/tags/last_insert_id/</guid>
-        <description></description>
-        </item>
-        <item>
-        <title>MySQL</title>
-        <link>https://zhumengzhu.github.io/tags/mysql/</link>
-        <pubDate>Sun, 20 Nov 2022 17:21:39 +0800</pubDate>
-        
-        <guid>https://zhumengzhu.github.io/tags/mysql/</guid>
         <description></description>
         </item>
         <item>
@@ -221,6 +269,14 @@
         <pubDate>Sun, 16 Oct 2022 19:09:32 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/tags/%E6%9D%82%E8%B0%88/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>R树</title>
+        <link>https://zhumengzhu.github.io/tags/r%E6%A0%91/</link>
+        <pubDate>Wed, 28 Sep 2022 21:52:53 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/r%E6%A0%91/</guid>
         <description></description>
         </item>
         <item>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>R树 on Somnus</title>
+        <link>https://zhumengzhu.github.io/tags/r%E6%A0%91/</link>
+        <description>Recent content in R树 on Somnus</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>All Rights Reserved</copyright>
+        <lastBuildDate>Tue, 10 Dec 2024 21:52:53 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/r%E6%A0%91/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>R树及其家族</title>
+        <link>https://zhumengzhu.github.io/2022/09/r-tree-and-its-family/</link>
+        <pubDate>Wed, 28 Sep 2022 21:52:53 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2022/09/r-tree-and-its-family/</guid>
+        <description>&lt;p&gt;资料：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;R 树基础：&lt;a class=&#34;link&#34; href=&#34;https://www.cnblogs.com/cmi-sh-love/p/kong-jian-shud-ju-suo-yinRTree-wan-quan-jie-xi-jiJa.html#toc_0&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;空间数据索引RTree（R树）完全解析及Java实现
+&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;实用场景 &lt;a class=&#34;link&#34; href=&#34;https://www.zjujournals.com/sci/fileup/1008-9497/HTML/20180512.htm&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;基于HBase与静态多级格网索引的地表覆盖数据高效检索方法&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;如何理解-r-树&#34;&gt;如何理解 R 树
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;R 树是平衡树；&lt;/li&gt;
+&lt;li&gt;平衡树要求节点有序；&lt;/li&gt;
+&lt;li&gt;R 树的节点是高维数据，比如对于二维来说，存储的是 MBR(最小限定矩形)；&lt;/li&gt;
+&lt;li&gt;高维数据的顺序如何定义？
+&lt;ul&gt;
+&lt;li&gt;对一维的线段来说，定义一个坐标系，存在一个原点，线段左端点距原点的距离作为排序的依据；&lt;/li&gt;
+&lt;li&gt;对二维的MBR来说(可以用左下，右上两个点的坐标表示一个矩形)，怎么定义？
+&lt;ul&gt;
+&lt;li&gt;猜想，定义平面直角坐标系，以左下点的坐标(x,y)作为排序的依据：比如(1,2)&amp;lt;(1,3)&amp;lt;(2,1)；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;基本概念&#34;&gt;基本概念
+&lt;/h2&gt;&lt;h3 id=&#34;mbr&#34;&gt;MBR
+&lt;/h3&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/MBR.jpeg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h3 id=&#34;packed-1-d-r-tree&#34;&gt;Packed 1-D R-Tree
+&lt;/h3&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/1-D_R-Tree.jpeg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h3 id=&#34;2-d-r-tree&#34;&gt;2-D R-Tree
+&lt;/h3&gt;&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/2-D_R-Tree.jpeg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;上图中，总计 12 个实线框，正好对应 R 树中 12 个叶子节点 R8~R19;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/2-D_R-Tree-Search.jpeg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;实际应用&#34;&gt;实际应用
+&lt;/h2&gt;&lt;h3 id=&#34;道路索引&#34;&gt;道路索引
+&lt;/h3&gt;&lt;p&gt;每一条路使用一个最小MBB来进行包裹，使它成为R树的叶子结点（也就是那些数据结点）&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/road_MBR.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;将每一条路的最小MBB作为R树的数据单元来进行构建R树(这里采用的是R树的改进版本R*树)&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://zhumengzhu.github.io/images/origin_road.jpeg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;&lt;/p&gt;</description>
+        </item>
+        
+    </channel>
+</rss>

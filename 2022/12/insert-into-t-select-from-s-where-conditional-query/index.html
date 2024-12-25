@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="分析 INSERT INTO T SELECT ... FROM S WHERE ... 语句执行时，会加哪些锁，以及为什么加这些锁。">
+<meta name="keywords" content="MySQL, Database, Lock"><title>INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析">
+<meta property='og:description' content="分析 INSERT INTO T SELECT ... FROM S WHERE ... 语句执行时，会加哪些锁，以及为什么加这些锁。">
+<meta property='og:url' content='https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='MySQL' /><meta property='article:tag' content='Database' /><meta property='article:tag' content='Lock' /><meta property='article:published_time' content='2022-12-26T11:47:21&#43;08:00'/><meta property='article:modified_time' content='2024-12-10T22:57:21&#43;08:00'/>
+<meta name="twitter:title" content="INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析">
+<meta name="twitter:description" content="分析 INSERT INTO T SELECT ... FROM S WHERE ... 语句执行时，会加哪些锁，以及为什么加这些锁。">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#目标">目标</a></li>
+    <li><a href="#结论">结论</a></li>
+    <li><a href="#验证">验证</a>
+      <ol>
+        <li><a href="#数据库版本">数据库版本</a></li>
+        <li><a href="#库表准备">库表准备</a></li>
+        <li><a href="#实验">实验</a>
+          <ol>
+            <li><a href="#实验一">实验一</a></li>
+            <li><a href="#实验二">实验二</a></li>
+            <li><a href="#实验三">实验三</a></li>
+          </ol>
+        </li>
+        <li><a href="#加锁分析">加锁分析</a></li>
+        <li><a href="#小节">小节</a></li>
+      </ol>
+    </li>
+    <li><a href="#理论">理论</a>
+      <ol>
+        <li><a href="#锁分类">锁分类</a></li>
+        <li><a href="#data_locks-表">data_locks 表</a>
+          <ol>
+            <li><a href="#示例">示例</a></li>
+            <li><a href="#字段说明">字段说明</a></li>
+          </ol>
+        </li>
+        <li><a href="#为什么-insert-into-t-select--from-s-where--需要加共享锁">为什么 INSERT INTO T SELECT &hellip; FROM S WHERE &hellip; 需要加共享锁</a></li>
+      </ol>
+    </li>
+    <li><a href="#reference">Reference</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/database/" style="background-color: #2a9d8f; color: #fff;">
+                Database
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            分析 INSERT INTO T SELECT ... FROM S WHERE ... 语句执行时，会加哪些锁，以及为什么加这些锁。
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2022/12/26</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2024-12-10 22:57:21 &#43;0800 CST" title="2024-12-10 22:57:21 &#43;0800 CST">
+                            2024/12/10 22:57 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 5 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="目标">目标
+</h2><p>一：分析下面这条语句执行时，会加哪些锁、为什么加这些锁，以及可能会存在什么问题：</p>
+<ul>
+<li><code>INSERT INTO </code>t<code> (</code>version<code>) SELECT IFNULL(MAX(version) + 1, 1) FROM </code>t<code>;</code></li>
+</ul>
+<p>二：掌握基本的分析 MySQL 加锁情况的技能；</p>
+<h2 id="结论">结论
+</h2><p>加的锁包括：</p>
+<ul>
+<li>两个意向锁
+<ul>
+<li>意向排他锁( IX 锁)： 事务想要获得一张表中某几行的排他锁</li>
+<li>意向共享锁( IS 锁)：事务想要获得一张表中某几行的共享锁</li>
+</ul>
+</li>
+<li>三个共享锁
+<ul>
+<li>一个对 “上确界伪纪录”的共享临键锁；</li>
+<li>一个对 “version值最大的那条uk_version索引记录”的共享临键锁；</li>
+<li>一个对&quot;待插入的数据的uk_version索引记录&quot;的间隙锁；</li>
+</ul>
+</li>
+</ul>
+<p>下表是从 performance_schema.data_locks 表中截取的真实数据(省略了不相关的字段)：</p>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>INDEX_NAME</th>
+          <th>LOCK_TYPE</th>
+          <th>LOCK_MODE</th>
+          <th>LOCK_DATA</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NULL</td>
+          <td>TABLE</td>
+          <td>IX</td>
+          <td>NULL</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>NULL</td>
+          <td>TABLE</td>
+          <td>IS</td>
+          <td>NULL</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>uk_version</td>
+          <td>RECORD</td>
+          <td>S</td>
+          <td>supremum pseudo-record</td>
+          <td>对“上确界伪纪录”加 shared next-key locks</td>
+      </tr>
+      <tr>
+          <td>uk_version</td>
+          <td>RECORD</td>
+          <td>S</td>
+          <td>15,4</td>
+          <td>对 version 最大的那条记录加 next-key locks</td>
+      </tr>
+      <tr>
+          <td>uk_version</td>
+          <td>RECORD</td>
+          <td>S,GAP</td>
+          <td>16, 5</td>
+          <td></td>
+      </tr>
+  </tbody>
+</table></div>
+<h2 id="验证">验证
+</h2><h3 id="数据库版本">数据库版本
+</h3><p>进行实验的 MySQL 版本为: 8.0.27 MySQL Community Server - GPL</p>
+<h3 id="库表准备">库表准备
+</h3><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-SQL" data-lang="SQL"><span class="line"><span class="cl"><span class="o">#</span><span class="w"> </span><span class="err">创建库</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="o">`</span><span class="n">test</span><span class="o">`</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">USE</span><span class="w"> </span><span class="o">`</span><span class="n">test</span><span class="o">`</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#</span><span class="w"> </span><span class="err">创建表</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="n">AUTO_INCREMENT</span><span class="w"> </span><span class="k">COMMENT</span><span class="w"> </span><span class="s1">&#39;主键 ID&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">COMMENT</span><span class="w"> </span><span class="s1">&#39;版本号&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="o">`</span><span class="n">uk_version</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="n">ENGINE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InnoDB</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">CHARSET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">utf8mb4</span><span class="w"> </span><span class="k">COMMENT</span><span class="w"> </span><span class="s1">&#39;版本表&#39;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#</span><span class="w"> </span><span class="err">初始化数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="mi">5</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="k">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="mi">15</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="实验">实验
+</h3><h4 id="实验一">实验一
+</h4><p><code>INSERT INTO </code>t<code> (</code>version<code>) SELECT IFNULL(MAX(version) + 1, 1) FROM </code>t``
+直接执行 INSERTO &hellip; SELECT 然后看加锁情况。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-mysql" data-lang="mysql"><span class="line"><span class="cl"><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">BEGIN</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="nf">IFNULL</span><span class="p">(</span><span class="nf">MAX</span><span class="p">(</span><span class="n">version</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="kp">ENGINE</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_LOCK_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_TRANSACTION_ID</span><span class="p">,</span><span class="w"> </span><span class="n">THREAD_ID</span><span class="p">,</span><span class="w"> </span><span class="n">INDEX_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">OBJECT_INSTANCE_BEGIN</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_DATA</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">performance_schema</span><span class="p">.</span><span class="n">data_locks</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">ROLLBACK</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><img src="/images/mysql_lock_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image1"
+	
+	
+></p>
+<p>MySQL 官方文档中，大概解释了为什么加这些锁：</p>
+<blockquote>
+<blockquote>
+<p><a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html"  target="_blank" rel="noopener"
+    >https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html</a>
+INSERT INTO T SELECT &hellip; FROM S WHERE &hellip; sets an exclusive index record lock (without a gap lock) on each row inserted into T. If the transaction isolation level is READ COMMITTED, InnoDB does the search on S as a consistent read (no locks). Otherwise, InnoDB sets shared next-key locks on rows from S. InnoDB has to set locks in the latter case: During roll-forward recovery using a statement-based binary log, every SQL statement must be executed in exactly the same way it was done originally.
+CREATE TABLE &hellip; SELECT &hellip; performs the SELECT with shared next-key locks or as a consistent read, as for INSERT &hellip; SELECT.
+When a SELECT is used in the constructs REPLACE INTO t SELECT &hellip; FROM s WHERE &hellip; or UPDATE t &hellip; WHERE col IN (SELECT &hellip; FROM s &hellip;), InnoDB sets shared next-key locks on rows from table s.</p>
+</blockquote>
+</blockquote>
+<h4 id="实验二">实验二
+</h4><p><code>SELECT IFNULL(MAX(version) + 1, 1) AS version FROM </code>t<code> FOR SHARE;</code>
+单独执行 SELECT FOR SHARE 然后查看加锁情况：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-mysql" data-lang="mysql"><span class="line"><span class="cl"><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">BEGIN</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">IFNULL</span><span class="p">(</span><span class="nf">MAX</span><span class="p">(</span><span class="n">version</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="n">SHARE</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="kp">ENGINE</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_LOCK_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_TRANSACTION_ID</span><span class="p">,</span><span class="w"> </span><span class="n">THREAD_ID</span><span class="p">,</span><span class="w"> </span><span class="n">INDEX_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">OBJECT_INSTANCE_BEGIN</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_DATA</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">performance_schema</span><span class="p">.</span><span class="n">data_locks</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">ROLLBACK</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><img src="/images/mysql_lock_2_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+></p>
+<h4 id="实验三">实验三
+</h4><p>先 SELECT FOR SHARE 然后执行 INSERT.</p>
+<p>可以看到，在执行完 INSERT 后， 获取的锁与实验一相同。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-mysql" data-lang="mysql"><span class="line"><span class="cl"><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">BEGIN</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">IFNULL</span><span class="p">(</span><span class="nf">MAX</span><span class="p">(</span><span class="n">version</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="n">SHARE</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="kp">ENGINE</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_LOCK_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_TRANSACTION_ID</span><span class="p">,</span><span class="w"> </span><span class="n">THREAD_ID</span><span class="p">,</span><span class="w"> </span><span class="n">INDEX_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">OBJECT_INSTANCE_BEGIN</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_DATA</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">performance_schema</span><span class="p">.</span><span class="n">data_locks</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">version</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="nf">VALUE</span><span class="w"> </span><span class="p">(</span><span class="mi">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="kp">ENGINE</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_LOCK_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ENGINE_TRANSACTION_ID</span><span class="p">,</span><span class="w"> </span><span class="n">THREAD_ID</span><span class="p">,</span><span class="w"> </span><span class="n">INDEX_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">OBJECT_INSTANCE_BEGIN</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">LOCK_DATA</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">performance_schema</span><span class="p">.</span><span class="n">data_locks</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1"># session 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">ROLLBACK</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><img src="/images/mysql_lock_3_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image3"
+	
+	
+></p>
+<h3 id="加锁分析">加锁分析
+</h3><p>对于上面的数据，其uk_version的结构大概如下：</p>
+<p><img src="/images/mysql_lock_4_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="INNODB 二级索引示意图"
+	
+	
+></p>
+<p>在执行 <code>SELECT IFNULL(MAX(version) + 1, 1) AS version FROM </code>t<code> FOR SHARE</code> 时：</p>
+<p>首先会先扫描到 (version=15, id=4) 这条记录，然后对其加 next-key lock；然后继续向后扫描，对 supremum pseudo-record 这条伪记录加 next-key lock。</p>
+<h3 id="小节">小节
+</h3><ul>
+<li>结论一：INSERT INTO &hellip; SELECT FROM 等价于先执行 SELECT FROM FOR SHARE 然后再 INSERT INTO；</li>
+<li>结论二：SELECT MAX(&hellip;) FROM &hellip; 是范围查询，因此会加间隙锁；</li>
+<li>结论三：结论二对唯一索引同样适用；</li>
+</ul>
+<h2 id="理论">理论
+</h2><h3 id="锁分类">锁分类
+</h3><p><img src="/images/mysql_lock_5_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="锁分类"
+	
+	
+></p>
+<h3 id="data_locks-表">data_locks 表
+</h3><p>官方文档：https://dev.mysql.com/doc/mysql-perfschema-excerpt/8.0/en/performance-schema-data-locks-table.html</p>
+<h4 id="示例">示例
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MySQL [test]&gt; SELECT * FROM performance_schema.data_locks\G
+</span></span><span class="line"><span class="cl">*************************** 1. row ***************************
+</span></span><span class="line"><span class="cl">               ENGINE: INNODB
+</span></span><span class="line"><span class="cl">       ENGINE_LOCK_ID: 281472727006424:1069:281472627977064
+</span></span><span class="line"><span class="cl">ENGINE_TRANSACTION_ID: 2423
+</span></span><span class="line"><span class="cl">            THREAD_ID: 53
+</span></span><span class="line"><span class="cl">             EVENT_ID: 129
+</span></span><span class="line"><span class="cl">        OBJECT_SCHEMA: test
+</span></span><span class="line"><span class="cl">          OBJECT_NAME: t
+</span></span><span class="line"><span class="cl">       PARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">    SUBPARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">           INDEX_NAME: NULL
+</span></span><span class="line"><span class="cl">OBJECT_INSTANCE_BEGIN: 281472627977064
+</span></span><span class="line"><span class="cl">            LOCK_TYPE: TABLE
+</span></span><span class="line"><span class="cl">            LOCK_MODE: IX
+</span></span><span class="line"><span class="cl">          LOCK_STATUS: GRANTED
+</span></span><span class="line"><span class="cl">            LOCK_DATA: NULL
+</span></span><span class="line"><span class="cl">*************************** 2. row ***************************
+</span></span><span class="line"><span class="cl">               ENGINE: INNODB
+</span></span><span class="line"><span class="cl">       ENGINE_LOCK_ID: 281472727006424:1069:281472627976976
+</span></span><span class="line"><span class="cl">ENGINE_TRANSACTION_ID: 2423
+</span></span><span class="line"><span class="cl">            THREAD_ID: 53
+</span></span><span class="line"><span class="cl">             EVENT_ID: 128
+</span></span><span class="line"><span class="cl">        OBJECT_SCHEMA: test
+</span></span><span class="line"><span class="cl">          OBJECT_NAME: t
+</span></span><span class="line"><span class="cl">       PARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">    SUBPARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">           INDEX_NAME: NULL
+</span></span><span class="line"><span class="cl">OBJECT_INSTANCE_BEGIN: 281472627976976
+</span></span><span class="line"><span class="cl">            LOCK_TYPE: TABLE
+</span></span><span class="line"><span class="cl">            LOCK_MODE: IS
+</span></span><span class="line"><span class="cl">          LOCK_STATUS: GRANTED
+</span></span><span class="line"><span class="cl">            LOCK_DATA: NULL
+</span></span><span class="line"><span class="cl">*************************** 3. row ***************************
+</span></span><span class="line"><span class="cl">               ENGINE: INNODB
+</span></span><span class="line"><span class="cl">       ENGINE_LOCK_ID: 281472727006424:4:5:1:281472627973984
+</span></span><span class="line"><span class="cl">ENGINE_TRANSACTION_ID: 2423
+</span></span><span class="line"><span class="cl">            THREAD_ID: 53
+</span></span><span class="line"><span class="cl">             EVENT_ID: 128
+</span></span><span class="line"><span class="cl">        OBJECT_SCHEMA: test
+</span></span><span class="line"><span class="cl">          OBJECT_NAME: t
+</span></span><span class="line"><span class="cl">       PARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">    SUBPARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">           INDEX_NAME: uk_version
+</span></span><span class="line"><span class="cl">OBJECT_INSTANCE_BEGIN: 281472627973984
+</span></span><span class="line"><span class="cl">            LOCK_TYPE: RECORD
+</span></span><span class="line"><span class="cl">            LOCK_MODE: S
+</span></span><span class="line"><span class="cl">          LOCK_STATUS: GRANTED
+</span></span><span class="line"><span class="cl">            LOCK_DATA: supremum pseudo-record
+</span></span><span class="line"><span class="cl">*************************** 4. row ***************************
+</span></span><span class="line"><span class="cl">               ENGINE: INNODB
+</span></span><span class="line"><span class="cl">       ENGINE_LOCK_ID: 281472727006424:4:5:5:281472627973984
+</span></span><span class="line"><span class="cl">ENGINE_TRANSACTION_ID: 2423
+</span></span><span class="line"><span class="cl">            THREAD_ID: 53
+</span></span><span class="line"><span class="cl">             EVENT_ID: 128
+</span></span><span class="line"><span class="cl">        OBJECT_SCHEMA: test
+</span></span><span class="line"><span class="cl">          OBJECT_NAME: t
+</span></span><span class="line"><span class="cl">       PARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">    SUBPARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">           INDEX_NAME: uk_version
+</span></span><span class="line"><span class="cl">OBJECT_INSTANCE_BEGIN: 281472627973984
+</span></span><span class="line"><span class="cl">            LOCK_TYPE: RECORD
+</span></span><span class="line"><span class="cl">            LOCK_MODE: S
+</span></span><span class="line"><span class="cl">          LOCK_STATUS: GRANTED
+</span></span><span class="line"><span class="cl">            LOCK_DATA: 15, 4
+</span></span><span class="line"><span class="cl">*************************** 5. row ***************************
+</span></span><span class="line"><span class="cl">               ENGINE: INNODB
+</span></span><span class="line"><span class="cl">       ENGINE_LOCK_ID: 281472727006424:4:5:6:281472627974328
+</span></span><span class="line"><span class="cl">ENGINE_TRANSACTION_ID: 2423
+</span></span><span class="line"><span class="cl">            THREAD_ID: 53
+</span></span><span class="line"><span class="cl">             EVENT_ID: 129
+</span></span><span class="line"><span class="cl">        OBJECT_SCHEMA: test
+</span></span><span class="line"><span class="cl">          OBJECT_NAME: t
+</span></span><span class="line"><span class="cl">       PARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">    SUBPARTITION_NAME: NULL
+</span></span><span class="line"><span class="cl">           INDEX_NAME: uk_version
+</span></span><span class="line"><span class="cl">OBJECT_INSTANCE_BEGIN: 281472627974328
+</span></span><span class="line"><span class="cl">            LOCK_TYPE: RECORD
+</span></span><span class="line"><span class="cl">            LOCK_MODE: S,GAP
+</span></span><span class="line"><span class="cl">          LOCK_STATUS: GRANTED
+</span></span><span class="line"><span class="cl">            LOCK_DATA: 16, 7
+</span></span><span class="line"><span class="cl">5 rows in set (0.004 sec)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="字段说明">字段说明
+</h4><p><img src="/images/mysql_lock_4_2022-12-26_15-43-16.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="字段说明"
+	
+	
+></p>
+<blockquote>
+<p>意向锁的作用</p>
+<blockquote>
+<p>当我们准备给一张表加上表锁的时候，我们首先要去 判断有没其他的事务锁定了其中了某些行？如果有的话，肯定不能加上表锁。那么这个时候我们就要去扫描整张表才能确定能不能成功加上一个表锁，如果数据量特别大，比如有上千万的数据的时候，加表锁的效率会很低。当我们在使用共享行锁时，Innodb 会自动给我们加上IS，使用排他行锁时自动加上IX ，用来表示改表中已经存在那些锁
+参考：https://www.jianshu.com/p/ae91c63e7257</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>插入意向锁的作用</p>
+<blockquote>
+<p>插入意向锁是在插入之前，先判断插入的间隙是否存在间隙锁，如果存在则产生一个插入意向锁，去等待间隙锁的释放。
+多个事务插入同一个间隙的不同位置，他们并不会冲突。假设存在索引记录，其值分别为5和9。单独的事务分别尝试插入值6和7，在获得插入行的排他锁之前，每个事务都使用插入意图锁来锁定5和9之间的间隙，但他们不会互相阻塞。
+参考官方说明：https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html
+An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap need not wait for each other if they are not inserting at the same position within the gap. Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row, but do not block each other because the rows are nonconflicting.</p>
+</blockquote>
+</blockquote>
+<h3 id="为什么-insert-into-t-select--from-s-where--需要加共享锁">为什么 INSERT INTO T SELECT &hellip; FROM S WHERE &hellip; 需要加共享锁
+</h3><p>考虑下面的情况：</p>
+<ul>
+<li>初始时，表中的 version 的最大值是 15；
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>时间</th>
+          <th>事务一</th>
+          <th>事务二</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>T1</td>
+          <td>BEGIN;</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>T2</td>
+          <td>INSERT INTO <code>t</code> (<code>version</code>) SELECT IFNULL(MAX(version) + 1, 1) FROM <code>t</code>;</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>T3</td>
+          <td>(成功，写入一条 version=16 的数据)</td>
+          <td>BEGIN;</td>
+      </tr>
+      <tr>
+          <td>T4</td>
+          <td></td>
+          <td>INSERT INTO <code>t</code> (<code>version</code>) VALUE (10000);</td>
+      </tr>
+      <tr>
+          <td>T5</td>
+          <td></td>
+          <td>COMMIT;</td>
+      </tr>
+      <tr>
+          <td>T6</td>
+          <td>COMMIT;</td>
+          <td></td>
+      </tr>
+  </tbody>
+</table></div>
+</li>
+</ul>
+<p>在基于 <strong>statement-based</strong> binary log 的主从同步模式下，如果不加共享锁，由于事务二是先提交的，因此，bin log 在从库执行的时候，可能出现下面的情况：</p>
+<ul>
+<li>对于主库：事务一先写入一条 version=16的记录，事务二后写入一条 version=10000 的记录；</li>
+<li>对于从库：事务二先写入一条 version=10000 的记录，事务一后写入一条 version=10001 的记录；✘</li>
+</ul>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>库</th>
+          <th>记录</th>
+          <th>预期结果</th>
+          <th>实际结果</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>主库</td>
+          <td>记录一</td>
+          <td>version=16</td>
+          <td>version=16</td>
+      </tr>
+      <tr>
+          <td>主库</td>
+          <td>记录二</td>
+          <td>version=10000</td>
+          <td>version=10000</td>
+      </tr>
+      <tr>
+          <td>从库</td>
+          <td>记录一</td>
+          <td>version=16</td>
+          <td>version=10000</td>
+      </tr>
+      <tr>
+          <td>从库</td>
+          <td>记录二</td>
+          <td>version=10000</td>
+          <td>version=10001</td>
+      </tr>
+  </tbody>
+</table></div>
+<h2 id="reference">Reference
+</h2><ul>
+<li><a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html"  target="_blank" rel="noopener"
+    >https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html</a></li>
+<li><a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html"  target="_blank" rel="noopener"
+    >https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html</a></li>
+<li><a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html"  target="_blank" rel="noopener"
+    >https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html</a></li>
+<li><a class="link" href="https://forums.mysql.com/read.php?22,689892,689892#msg-689892"  target="_blank" rel="noopener"
+    >https://forums.mysql.com/read.php?22,689892,689892#msg-689892</a></li>
+<li><a class="link" href="https://blog.csdn.net/renpeng301/article/details/125335206"  target="_blank" rel="noopener"
+    >MySQL8.0之锁事</a></li>
+<li><a class="link" href="https://blog.csdn.net/qq624202120/article/details/108594107"  target="_blank" rel="noopener"
+    >MySQL锁的总结 和 一次插入意向锁的死锁还原分析</a></li>
+</ul>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/mysql/">MySQL</a>
+        
+            <a href="/tags/database/">Database</a>
+        
+            <a href="/tags/lock/">Lock</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            最后更新于 2024/12/10 22:57 CST
+        </span>
+    </section></footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="">
+    <a href="/2022/11/mysql-update-just-one-unused-row/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MySQL 中如何实现只更新未使用的一行数据</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2022/11/late-row-lookups-innodb/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Late Row Lookups: InnoDB</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
+    <a href="/2022/11/mysql-order-by-limit-performance-optimization/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Mysql 的深分页问题及优化方法</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2024 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了14篇文章 ·
+        总计19.24k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

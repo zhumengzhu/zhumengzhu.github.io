@@ -21,12 +21,27 @@
     <lastmod>2024-12-16T11:57:29+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/</loc>
-    <lastmod>2024-12-20T12:35:11+08:00</lastmod>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
   </url><url>
-    <loc>https://zhumengzhu.github.io/tags/memory-leak/</loc>
-    <lastmod>2024-12-20T11:46:30+08:00</lastmod>
+    <loc>https://zhumengzhu.github.io/tags/deopt/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/jit/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/2023/09/root-cause-jvm-deoptimization-storm/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/recompile/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/categories/trouble-shooting/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/uncommon-traps/</loc>
+    <lastmod>2024-12-20T14:14:52+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/memory-leak/</loc>
     <lastmod>2024-12-20T11:46:30+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/</loc>
@@ -53,13 +68,22 @@
     <loc>https://zhumengzhu.github.io/tags/random/</loc>
     <lastmod>2023-01-30T10:33:47+08:00</lastmod>
   </url><url>
+    <loc>https://zhumengzhu.github.io/tags/database/</loc>
+    <lastmod>2024-12-10T22:57:21+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/</loc>
+    <lastmod>2024-12-10T22:57:21+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/lock/</loc>
+    <lastmod>2024-12-10T22:57:21+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/mysql/</loc>
+    <lastmod>2024-12-10T22:57:21+08:00</lastmod>
+  </url><url>
     <loc>https://zhumengzhu.github.io/tags/innodb/</loc>
     <lastmod>2022-11-20T17:21:39+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/last_insert_id/</loc>
-    <lastmod>2022-11-20T17:21:39+08:00</lastmod>
-  </url><url>
-    <loc>https://zhumengzhu.github.io/tags/mysql/</loc>
     <lastmod>2022-11-20T17:21:39+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/</loc>
@@ -120,7 +144,7 @@
     <lastmod>2022-11-05T22:22:52+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/categories/learning-journal/</loc>
-    <lastmod>2024-12-10T21:31:50+08:00</lastmod>
+    <lastmod>2024-12-10T21:52:53+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/git/</loc>
     <lastmod>2022-10-30T00:00:00+00:00</lastmod>
@@ -136,6 +160,12 @@
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/%E6%9D%82%E8%B0%88/</loc>
     <lastmod>2022-10-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/r%E6%A0%91/</loc>
+    <lastmod>2024-12-10T21:52:53+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/2022/09/r-tree-and-its-family/</loc>
+    <lastmod>2024-12-10T21:52:53+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/spatial-index/</loc>
     <lastmod>2024-12-10T21:31:50+08:00</lastmod>
