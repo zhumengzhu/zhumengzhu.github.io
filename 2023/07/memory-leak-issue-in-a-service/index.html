@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="记录我的网络代理设置">
-<meta name="keywords" content="Network, Git, Proxy"><title>代理设置</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="背景 staging 环境，某个车联网服务内存出现了内存泄露，相关同学在 06-14 及 06-15 两天分别采集了两个 dump 文件，以下简单记录分析过程。\n内存泄露最常用的排查工具是 Eclipse Memory Analyzer (MAT)，使用 MAT 打开两个 dump 文件。\n首先看 Leak Suspects 疑点一：JarFile org.springframework.boot.loader.jar.JarFile 是 Spring Boot 的类加载器，用于加载 jar 包。\n猜测此问题与 Druid issue-3808 类似：\n所有 jar 包被加载的次数几乎相同； 内存 dump 中相关对象的数量只有几千个，和请求量无关，更像是某些定时任务在做类加载： 06-14 的 dump 中加载次数约为 3250； 06-15 的 dump 中加载次数约为 1260； 可以通过升级或降级 mysql-connector-java 版本进行验证。\n疑点二：LockPubSub org.redisson.pubsub.LockPubSub 是 Redisson 的分布式锁实现，用于分布式锁的订阅和消息通知：加锁对象如果已经被锁定需要等待的时候，通过 pubsub 订阅消息注册一个 listener 来等待锁资源。\n分析 06-14 的内存 dump，发现 key 7e5axxxc00:gateway:xx:zz:msg:task:lock:c53fxxxaa13a 的 listeners 达到 33206 个，内存占用达到 1.32 GB。\n此问题与 redisson-issues-3577有些相似，但我在日志中没有找到这个服务锁的 timeout 日志（可能因为业务代码没打印），而只有获取锁失败的日志。\n另外，业务日志中只有释放锁的日志，而没有加锁的日志(也可能因为业务代码没打印)。 进一步分析 1、对内存泄露部分的 char 数组进行聚合的结果（2.12 GB 的内存泄露，日志信息 1.66GB，占比接近 80%）： 2、其中一个 char 数组到 gc roots 的路径： 这也是内存泄露的路径：OpenTelemetry 在做链路追踪时，会将一次 gRPC、HTTP 调用或 MQ 消费过程中的 Metrics 以及日志信息都放到它的 Context 对象中，这次调用或消费不结束，这些内存就会被引用而释放；业务使用分布式锁的方式可能存在问题，导致很多请求无法结束，大量对象存活无法释放。\n3、以下为该服务打印日志的频率监控&mdash;-每分钟几千条日志。 4、另外通过Kibana 查询发现，有很多动辄几十 KB 的业务日志（敏感数据就不贴图了）。 5、服务的 GC 信息 综合上述信息，可以确定服务内存泄露，高概率是大日志导致的。\n解决方法 升级或降级 mysql-connector-java 版本 避免大日志 参考资料 Redis分布式锁-这一篇全了解(Redission实现分布式锁完美方案) https://github.com/redisson/redisson/issues/4216 https://github.com/redisson/redisson/issues/4294 ">
+<meta name="keywords" content="JVM, Memory Leak"><title>记一次某服务内存泄露问题</title>
 
-<link rel='canonical' href='https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/'>
+<link rel='canonical' href='https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="代理设置">
-<meta property='og:description' content="记录我的网络代理设置">
-<meta property='og:url' content='https://zhumengzhu.github.io/2022/10/how-to-set-network-proxy/'>
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="记一次某服务内存泄露问题">
+<meta property='og:description' content="背景 staging 环境，某个车联网服务内存出现了内存泄露，相关同学在 06-14 及 06-15 两天分别采集了两个 dump 文件，以下简单记录分析过程。\n内存泄露最常用的排查工具是 Eclipse Memory Analyzer (MAT)，使用 MAT 打开两个 dump 文件。\n首先看 Leak Suspects 疑点一：JarFile org.springframework.boot.loader.jar.JarFile 是 Spring Boot 的类加载器，用于加载 jar 包。\n猜测此问题与 Druid issue-3808 类似：\n所有 jar 包被加载的次数几乎相同； 内存 dump 中相关对象的数量只有几千个，和请求量无关，更像是某些定时任务在做类加载： 06-14 的 dump 中加载次数约为 3250； 06-15 的 dump 中加载次数约为 1260； 可以通过升级或降级 mysql-connector-java 版本进行验证。\n疑点二：LockPubSub org.redisson.pubsub.LockPubSub 是 Redisson 的分布式锁实现，用于分布式锁的订阅和消息通知：加锁对象如果已经被锁定需要等待的时候，通过 pubsub 订阅消息注册一个 listener 来等待锁资源。\n分析 06-14 的内存 dump，发现 key 7e5axxxc00:gateway:xx:zz:msg:task:lock:c53fxxxaa13a 的 listeners 达到 33206 个，内存占用达到 1.32 GB。\n此问题与 redisson-issues-3577有些相似，但我在日志中没有找到这个服务锁的 timeout 日志（可能因为业务代码没打印），而只有获取锁失败的日志。\n另外，业务日志中只有释放锁的日志，而没有加锁的日志(也可能因为业务代码没打印)。 进一步分析 1、对内存泄露部分的 char 数组进行聚合的结果（2.12 GB 的内存泄露，日志信息 1.66GB，占比接近 80%）： 2、其中一个 char 数组到 gc roots 的路径： 这也是内存泄露的路径：OpenTelemetry 在做链路追踪时，会将一次 gRPC、HTTP 调用或 MQ 消费过程中的 Metrics 以及日志信息都放到它的 Context 对象中，这次调用或消费不结束，这些内存就会被引用而释放；业务使用分布式锁的方式可能存在问题，导致很多请求无法结束，大量对象存活无法释放。\n3、以下为该服务打印日志的频率监控&mdash;-每分钟几千条日志。 4、另外通过Kibana 查询发现，有很多动辄几十 KB 的业务日志（敏感数据就不贴图了）。 5、服务的 GC 信息 综合上述信息，可以确定服务内存泄露，高概率是大日志导致的。\n解决方法 升级或降级 mysql-connector-java 版本 避免大日志 参考资料 Redis分布式锁-这一篇全了解(Redission实现分布式锁完美方案) https://github.com/redisson/redisson/issues/4216 https://github.com/redisson/redisson/issues/4294 ">
+<meta property='og:url' content='https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/'>
 <meta property='og:site_name' content='Somnus'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='杂谈' /><meta property='article:tag' content='Network' /><meta property='article:tag' content='Git' /><meta property='article:tag' content='Proxy' /><meta property='article:published_time' content='2022-10-16T19:09:32&#43;08:00'/><meta property='article:modified_time' content='2022-10-30T00:00:00&#43;00:00'/>
-<meta name="twitter:title" content="代理设置">
-<meta name="twitter:description" content="记录我的网络代理设置">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='JVM' /><meta property='article:tag' content='Memory Leak' /><meta property='article:published_time' content='2023-07-17T11:46:30&#43;08:00'/><meta property='article:modified_time' content='2024-12-20T11:46:30&#43;08:00'/>
+<meta name="twitter:title" content="记一次某服务内存泄露问题">
+<meta name="twitter:description" content="背景 staging 环境，某个车联网服务内存出现了内存泄露，相关同学在 06-14 及 06-15 两天分别采集了两个 dump 文件，以下简单记录分析过程。\n内存泄露最常用的排查工具是 Eclipse Memory Analyzer (MAT)，使用 MAT 打开两个 dump 文件。\n首先看 Leak Suspects 疑点一：JarFile org.springframework.boot.loader.jar.JarFile 是 Spring Boot 的类加载器，用于加载 jar 包。\n猜测此问题与 Druid issue-3808 类似：\n所有 jar 包被加载的次数几乎相同； 内存 dump 中相关对象的数量只有几千个，和请求量无关，更像是某些定时任务在做类加载： 06-14 的 dump 中加载次数约为 3250； 06-15 的 dump 中加载次数约为 1260； 可以通过升级或降级 mysql-connector-java 版本进行验证。\n疑点二：LockPubSub org.redisson.pubsub.LockPubSub 是 Redisson 的分布式锁实现，用于分布式锁的订阅和消息通知：加锁对象如果已经被锁定需要等待的时候，通过 pubsub 订阅消息注册一个 listener 来等待锁资源。\n分析 06-14 的内存 dump，发现 key 7e5axxxc00:gateway:xx:zz:msg:task:lock:c53fxxxaa13a 的 listeners 达到 33206 个，内存占用达到 1.32 GB。\n此问题与 redisson-issues-3577有些相似，但我在日志中没有找到这个服务锁的 timeout 日志（可能因为业务代码没打印），而只有获取锁失败的日志。\n另外，业务日志中只有释放锁的日志，而没有加锁的日志(也可能因为业务代码没打印)。 进一步分析 1、对内存泄露部分的 char 数组进行聚合的结果（2.12 GB 的内存泄露，日志信息 1.66GB，占比接近 80%）： 2、其中一个 char 数组到 gc roots 的路径： 这也是内存泄露的路径：OpenTelemetry 在做链路追踪时，会将一次 gRPC、HTTP 调用或 MQ 消费过程中的 Metrics 以及日志信息都放到它的 Context 对象中，这次调用或消费不结束，这些内存就会被引用而释放；业务使用分布式锁的方式可能存在问题，导致很多请求无法结束，大量对象存活无法释放。\n3、以下为该服务打印日志的频率监控&mdash;-每分钟几千条日志。 4、另外通过Kibana 查询发现，有很多动辄几十 KB 的业务日志（敏感数据就不贴图了）。 5、服务的 GC 信息 综合上述信息，可以确定服务内存泄露，高概率是大日志导致的。\n解决方法 升级或降级 mysql-connector-java 版本 避免大日志 参考资料 Redis分布式锁-这一篇全了解(Redission实现分布式锁完美方案) https://github.com/redisson/redisson/issues/4216 https://github.com/redisson/redisson/issues/4294 ">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -275,9 +275,16 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
-    <li><a href="#mac-客户端">Mac 客户端</a></li>
-    <li><a href="#terminal-代理">Terminal 代理</a></li>
-    <li><a href="#git-ssh-代理">git ssh 代理</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#首先看-leak-suspects">首先看 Leak Suspects</a>
+      <ol>
+        <li><a href="#疑点一jarfile">疑点一：JarFile</a></li>
+        <li><a href="#疑点二lockpubsub">疑点二：LockPubSub</a></li>
+      </ol>
+    </li>
+    <li><a href="#进一步分析">进一步分析</a></li>
+    <li><a href="#解决方法">解决方法</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
   </ol>
 </nav>
         </div>
@@ -297,8 +304,8 @@
     
     <header class="article-category">
         
-            <a href="/categories/learning-journal/" >
-                Learning Journal
+            <a href="/categories/trouble-shooting/" >
+                Trouble Shooting
             </a>
         
     </header>
@@ -306,13 +313,9 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/2022/10/how-to-set-network-proxy/">代理设置</a>
+            <a href="/2023/07/memory-leak-issue-in-a-service/">记一次某服务内存泄露问题</a>
         </h2>
     
-        
-        <h3 class="article-subtitle">
-            记录我的网络代理设置
-        </h3>
         
     </div>
 
@@ -329,15 +332,15 @@
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                    <time class="article-time--published">2022/10/16</time>
+                    <time class="article-time--published">2023/07/17</time>
                 </div>
             
 
             
             
                         最后修改于:
-                        <time class="article-time--updated" datetime="2022-10-30 00:00:00 &#43;0000 UTC" title="2022-10-30 00:00:00 &#43;0000 UTC">
-                            2022/10/30 00:00 UTC
+                        <time class="article-time--updated" datetime="2024-12-20 11:46:30 &#43;0800 CST" title="2024-12-20 11:46:30 &#43;0800 CST">
+                            2024/12/20 11:46 CST
                         </time>
 
             
@@ -351,7 +354,7 @@
 
 
                     <time class="article-time--reading">
-                        阅读时长: 1 分钟
+                        阅读时长: 2 分钟
                     </time>
                 </div>
             
@@ -367,38 +370,162 @@
     <section class="article-content">
     
     
-    <h2 id="mac-客户端">Mac 客户端
-</h2><ul>
-<li>推荐 <a class="link" href="https://github.com/yanue/V2rayU/releases"  target="_blank" rel="noopener"
-    >V2rayU</a></li>
+    <h2 id="背景">背景
+</h2><p>staging 环境，某个车联网服务内存出现了内存泄露，相关同学在 06-14 及 06-15 两天分别采集了两个 dump 文件，以下简单记录分析过程。</p>
+<p>内存泄露最常用的排查工具是 Eclipse Memory Analyzer (MAT)，使用 MAT 打开两个 dump 文件。</p>
+<h2 id="首先看-leak-suspects">首先看 Leak Suspects
+</h2><h3 id="疑点一jarfile">疑点一：JarFile
+</h3><p><code>org.springframework.boot.loader.jar.JarFile</code> 是 Spring Boot 的类加载器，用于加载 jar 包。</p>
+<p>猜测此问题与 Druid <a class="link" href="https://github.com/alibaba/druid/issues/3808"  target="_blank" rel="noopener"
+    >issue-3808</a> 类似：</p>
+<ul>
+<li>所有 jar 包被加载的次数几乎相同；</li>
+<li>内存 dump 中相关对象的数量只有几千个，和请求量无关，更像是某些定时任务在做类加载：
+<ul>
+<li>06-14 的 dump 中加载次数约为 3250；</li>
+<li>06-15 的 dump 中加载次数约为 1260；
+<img src="/images/memory_leak_1_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image1"
+	
+	
+>
+<img src="/images/memory_leak_2_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image2"
+	
+	
+>
+<img src="/images/memory_leak_3_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image3"
+	
+	
+></li>
 </ul>
-<h2 id="terminal-代理">Terminal 代理
-</h2><div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># .config/fish/config.fish</span>
-</span></span><span class="line"><span class="cl"><span class="nb">alias</span> <span class="nv">all_proxy</span><span class="o">=</span><span class="s1">&#39;export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;export ALL_PROXY=socks5://127.0.0.1:1080&#39;</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="git-ssh-代理">git ssh 代理
-</h2><div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># .ssh/config
-</span></span><span class="line"><span class="cl">Host github.com
-</span></span><span class="line"><span class="cl">    User git
-</span></span><span class="line"><span class="cl">    ProxyCommand nc -v -x 127.0.0.1:1080 %h %p
-</span></span></code></pre></td></tr></table>
-</div>
-</div>
+</li>
+</ul>
+<p>可以通过升级或降级 <code>mysql-connector-java</code> 版本进行验证。</p>
+<h3 id="疑点二lockpubsub">疑点二：LockPubSub
+</h3><p><code>org.redisson.pubsub.LockPubSub</code> 是 Redisson 的分布式锁实现，用于分布式锁的订阅和消息通知：加锁对象如果已经被锁定需要等待的时候，通过 pubsub 订阅消息注册一个 listener 来<strong>等待锁资源</strong>。</p>
+<p>分析 06-14 的内存 dump，发现 key <code>7e5axxxc00:gateway:xx:zz:msg:task:lock:c53fxxxaa13a</code> 的 listeners 达到 <strong>33206</strong> 个，内存占用达到 <strong>1.32 GB</strong>。</p>
+<p>此问题与 <a class="link" href="https://github.com/redisson/redisson/issues/3577"  target="_blank" rel="noopener"
+    >redisson-issues-3577</a>有些相似，但我在日志中没有找到这个服务锁的 timeout 日志（可能因为业务代码没打印），而只有获取锁失败的日志。</p>
+<p>另外，业务日志中只有释放锁的日志，而没有加锁的日志(也可能因为业务代码没打印)。 <br>
+<img src="/images/memory_leak_4_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image4"
+	
+	
+>
+<img src="/images/memory_leak_5_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image5"
+	
+	
+>
+<img src="/images/memory_leak_6_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image6"
+	
+	
+></p>
+<h2 id="进一步分析">进一步分析
+</h2><p>1、对内存泄露部分的 char 数组进行聚合的结果（<strong>2.12 GB 的内存泄露，日志信息 1.66GB，占比接近 80%</strong>）：
+<img src="/images/memory_leak_7_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image7"
+	
+	
+></p>
+<p>2、其中一个 char 数组到 gc roots 的路径：
+<img src="/images/memory_leak_8_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image8"
+	
+	
+>
+这也是内存泄露的路径：OpenTelemetry 在做链路追踪时，会将一次 gRPC、HTTP 调用或 MQ 消费过程中的 Metrics 以及日志信息都放到它的 Context 对象中，这次调用或消费不结束，这些内存就会被引用而释放；业务使用分布式锁的方式可能存在问题，导致很多请求无法结束，大量对象存活无法释放。</p>
+<p>3、以下为该服务打印日志的频率监控&mdash;-每分钟几千条日志。
+<img src="/images/memory_leak_9_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image9"
+	
+	
+></p>
+<p>4、另外通过Kibana 查询发现，有很多动辄几十 KB 的业务日志（敏感数据就不贴图了）。
+5、服务的 GC 信息
+<img src="/images/memory_leak_10_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image10"
+	
+	
+>
+<img src="/images/memory_leak_11_2023-6-17_19-7-33.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="image11"
+	
+	
+></p>
+<p>综合上述信息，可以确定服务内存泄露，高概率是大日志导致的。</p>
+<h2 id="解决方法">解决方法
+</h2><ul>
+<li>升级或降级 <code>mysql-connector-java</code> 版本</li>
+<li>避免大日志</li>
+</ul>
+<h2 id="参考资料">参考资料
+</h2><ul>
+<li><a class="link" href="https://www.cnblogs.com/huangwentian/p/14622441.html"  target="_blank" rel="noopener"
+    >Redis分布式锁-这一篇全了解(Redission实现分布式锁完美方案) </a></li>
+<li><a class="link" href="https://github.com/redisson/redisson/issues/4216"  target="_blank" rel="noopener"
+    >https://github.com/redisson/redisson/issues/4216</a></li>
+<li><a class="link" href="https://github.com/redisson/redisson/issues/4294"  target="_blank" rel="noopener"
+    >https://github.com/redisson/redisson/issues/4294</a></li>
+</ul>
 </section>
 
 
@@ -406,13 +533,9 @@
     
     <section class="article-tags">
         
-            <a href="/tags/%E6%9D%82%E8%B0%88/">杂谈</a>
+            <a href="/tags/jvm/">JVM</a>
         
-            <a href="/tags/network/">Network</a>
-        
-            <a href="/tags/git/">Git</a>
-        
-            <a href="/tags/proxy/">Proxy</a>
+            <a href="/tags/memory-leak/">Memory Leak</a>
         
     </section>
 
@@ -439,7 +562,7 @@
 
 
         <span>
-            最后更新于 2022/10/30 00:00 UTC
+            最后更新于 2024/12/20 11:46 CST
         </span>
     </section></footer>
 
@@ -474,28 +597,6 @@
     
 
     
-
-<aside class="related-content--wrapper">
-    <h2 class="section-title">相关文章</h2>
-    <div class="related-content">
-        <div class="flex article-list--tile">
-            
-                
-<article class="">
-    <a href="/2022/10/hugo-quick-start/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">Hugo 配置记录</h2>
-        </div>
-    </a>
-</article>
-
-            
-        </div>
-    </div>
-</aside>
 
      
     

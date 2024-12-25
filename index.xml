@@ -268,6 +268,169 @@ View the PDF file &lt;a class=&#34;pdf-source&#34; id=&#34;pdf-source-noscript-f
 &lt;/script&gt;</description>
         </item>
         <item>
+        <title>记一次某服务内存泄露问题</title>
+        <link>https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/</link>
+        <pubDate>Mon, 17 Jul 2023 11:46:30 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2023/07/memory-leak-issue-in-a-service/</guid>
+        <description>&lt;h2 id=&#34;背景&#34;&gt;背景
+&lt;/h2&gt;&lt;p&gt;staging 环境，某个车联网服务内存出现了内存泄露，相关同学在 06-14 及 06-15 两天分别采集了两个 dump 文件，以下简单记录分析过程。&lt;/p&gt;
+&lt;p&gt;内存泄露最常用的排查工具是 Eclipse Memory Analyzer (MAT)，使用 MAT 打开两个 dump 文件。&lt;/p&gt;
+&lt;h2 id=&#34;首先看-leak-suspects&#34;&gt;首先看 Leak Suspects
+&lt;/h2&gt;&lt;h3 id=&#34;疑点一jarfile&#34;&gt;疑点一：JarFile
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;org.springframework.boot.loader.jar.JarFile&lt;/code&gt; 是 Spring Boot 的类加载器，用于加载 jar 包。&lt;/p&gt;
+&lt;p&gt;猜测此问题与 Druid &lt;a class=&#34;link&#34; href=&#34;https://github.com/alibaba/druid/issues/3808&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;issue-3808&lt;/a&gt; 类似：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;所有 jar 包被加载的次数几乎相同；&lt;/li&gt;
+&lt;li&gt;内存 dump 中相关对象的数量只有几千个，和请求量无关，更像是某些定时任务在做类加载：
+&lt;ul&gt;
+&lt;li&gt;06-14 的 dump 中加载次数约为 3250；&lt;/li&gt;
+&lt;li&gt;06-15 的 dump 中加载次数约为 1260；
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_1_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image1&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_2_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image2&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_3_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image3&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;可以通过升级或降级 &lt;code&gt;mysql-connector-java&lt;/code&gt; 版本进行验证。&lt;/p&gt;
+&lt;h3 id=&#34;疑点二lockpubsub&#34;&gt;疑点二：LockPubSub
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;org.redisson.pubsub.LockPubSub&lt;/code&gt; 是 Redisson 的分布式锁实现，用于分布式锁的订阅和消息通知：加锁对象如果已经被锁定需要等待的时候，通过 pubsub 订阅消息注册一个 listener 来&lt;strong&gt;等待锁资源&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;分析 06-14 的内存 dump，发现 key &lt;code&gt;7e5axxxc00:gateway:xx:zz:msg:task:lock:c53fxxxaa13a&lt;/code&gt; 的 listeners 达到 &lt;strong&gt;33206&lt;/strong&gt; 个，内存占用达到 &lt;strong&gt;1.32 GB&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;此问题与 &lt;a class=&#34;link&#34; href=&#34;https://github.com/redisson/redisson/issues/3577&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;redisson-issues-3577&lt;/a&gt;有些相似，但我在日志中没有找到这个服务锁的 timeout 日志（可能因为业务代码没打印），而只有获取锁失败的日志。&lt;/p&gt;
+&lt;p&gt;另外，业务日志中只有释放锁的日志，而没有加锁的日志(也可能因为业务代码没打印)。 &lt;br&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_4_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image4&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_5_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image5&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_6_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image6&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;进一步分析&#34;&gt;进一步分析
+&lt;/h2&gt;&lt;p&gt;1、对内存泄露部分的 char 数组进行聚合的结果（&lt;strong&gt;2.12 GB 的内存泄露，日志信息 1.66GB，占比接近 80%&lt;/strong&gt;）：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_7_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image7&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;2、其中一个 char 数组到 gc roots 的路径：
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_8_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image8&#34;
+	
+	
+&gt;
+这也是内存泄露的路径：OpenTelemetry 在做链路追踪时，会将一次 gRPC、HTTP 调用或 MQ 消费过程中的 Metrics 以及日志信息都放到它的 Context 对象中，这次调用或消费不结束，这些内存就会被引用而释放；业务使用分布式锁的方式可能存在问题，导致很多请求无法结束，大量对象存活无法释放。&lt;/p&gt;
+&lt;p&gt;3、以下为该服务打印日志的频率监控&amp;mdash;-每分钟几千条日志。
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_9_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image9&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;4、另外通过Kibana 查询发现，有很多动辄几十 KB 的业务日志（敏感数据就不贴图了）。
+5、服务的 GC 信息
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_10_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image10&#34;
+	
+	
+&gt;
+&lt;img src=&#34;https://zhumengzhu.github.io/images/memory_leak_11_2023-6-17_19-7-33.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image11&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;综合上述信息，可以确定服务内存泄露，高概率是大日志导致的。&lt;/p&gt;
+&lt;h2 id=&#34;解决方法&#34;&gt;解决方法
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;升级或降级 &lt;code&gt;mysql-connector-java&lt;/code&gt; 版本&lt;/li&gt;
+&lt;li&gt;避免大日志&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考资料&#34;&gt;参考资料
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.cnblogs.com/huangwentian/p/14622441.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Redis分布式锁-这一篇全了解(Redission实现分布式锁完美方案) &lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/redisson/redisson/issues/4216&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://github.com/redisson/redisson/issues/4216&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/redisson/redisson/issues/4294&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://github.com/redisson/redisson/issues/4294&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+        </item>
+        <item>
         <title>JVM 参数建议及理由</title>
         <link>https://zhumengzhu.github.io/2023/06/jvm-parameter-recommendations-and-reasons/</link>
         <pubDate>Sun, 18 Jun 2023 12:18:18 +0800</pubDate>
