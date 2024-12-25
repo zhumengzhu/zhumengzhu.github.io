@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="一行代码的修复背后：一个耗时一周的性能问题分析全过程">
-<meta name="keywords" content="Java, JVM, GC"><title>JVM性能调优实战分享</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="初步了解一些常用的空间索引技术及具体实现，包括 GeoHash、Redis、Google S2、Uber H3 等。">
+<meta name="keywords" content="spatial-index"><title>空间索引技术初见</title>
 
-<link rel='canonical' href='https://zhumengzhu.github.io/2024/07/in-depth-jvm-performance-tuning-guide/'>
+<link rel='canonical' href='https://zhumengzhu.github.io/2022/09/spatial-index-technology-first-glimpse/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="JVM性能调优实战分享">
-<meta property='og:description' content="一行代码的修复背后：一个耗时一周的性能问题分析全过程">
-<meta property='og:url' content='https://zhumengzhu.github.io/2024/07/in-depth-jvm-performance-tuning-guide/'>
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="空间索引技术初见">
+<meta property='og:description' content="初步了解一些常用的空间索引技术及具体实现，包括 GeoHash、Redis、Google S2、Uber H3 等。">
+<meta property='og:url' content='https://zhumengzhu.github.io/2022/09/spatial-index-technology-first-glimpse/'>
 <meta property='og:site_name' content='Somnus'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Java' /><meta property='article:tag' content='JVM' /><meta property='article:tag' content='GC' /><meta property='article:published_time' content='2024-07-19T11:30:00&#43;08:00'/><meta property='article:modified_time' content='2024-12-16T11:57:29&#43;08:00'/>
-<meta name="twitter:title" content="JVM性能调优实战分享">
-<meta name="twitter:description" content="一行代码的修复背后：一个耗时一周的性能问题分析全过程">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='spatial-index' /><meta property='article:published_time' content='2022-09-22T21:31:50&#43;08:00'/><meta property='article:modified_time' content='2024-12-10T21:31:50&#43;08:00'/>
+<meta name="twitter:title" content="空间索引技术初见">
+<meta name="twitter:description" content="初步了解一些常用的空间索引技术及具体实现，包括 GeoHash、Redis、Google S2、Uber H3 等。">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -253,7 +253,54 @@
     </ol>
 </aside>
 
+    <aside class="sidebar right-sidebar sticky">
     
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#geohash-和-redis">GeoHash 和 Redis</a>
+      <ol>
+        <li><a href="#资料一">资料一</a></li>
+        <li><a href="#资料二">资料二</a></li>
+        <li><a href="#资料三">资料三</a></li>
+        <li><a href="#redis-的设计思路推演">Redis 的设计思路推演</a></li>
+      </ol>
+    </li>
+    <li><a href="#geohash-的缺陷及解决">GeoHash 的缺陷及解决</a></li>
+    <li><a href="#google-s2uber-h3">Google S2/Uber h3</a></li>
+    <li><a href="#其它">其它</a>
+      <ol>
+        <li><a href="#什么是wgs84坐标系">什么是WGS84坐标系</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
 
             <main class="main full-width">
     <article class="main-article">
@@ -263,8 +310,8 @@
     
     <header class="article-category">
         
-            <a href="/categories/java/" >
-                Java
+            <a href="/categories/learning-journal/" >
+                Learning Journal
             </a>
         
     </header>
@@ -272,12 +319,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/2024/07/in-depth-jvm-performance-tuning-guide/">JVM性能调优实战分享</a>
+            <a href="/2022/09/spatial-index-technology-first-glimpse/">空间索引技术初见</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            一行代码的修复背后：一个耗时一周的性能问题分析全过程
+            初步了解一些常用的空间索引技术及具体实现，包括 GeoHash、Redis、Google S2、Uber H3 等。
         </h3>
         
     </div>
@@ -295,15 +342,15 @@
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                    <time class="article-time--published">2024/07/19</time>
+                    <time class="article-time--published">2022/09/22</time>
                 </div>
             
 
             
             
                         最后修改于:
-                        <time class="article-time--updated" datetime="2024-12-16 11:57:29 &#43;0800 CST" title="2024-12-16 11:57:29 &#43;0800 CST">
-                            2024/12/16 11:57 CST
+                        <time class="article-time--updated" datetime="2024-12-10 21:31:50 &#43;0800 CST" title="2024-12-10 21:31:50 &#43;0800 CST">
+                            2024/12/10 21:31 CST
                         </time>
 
             
@@ -317,7 +364,7 @@
 
 
                     <time class="article-time--reading">
-                        阅读时长: 1 分钟
+                        阅读时长: 5 分钟
                     </time>
                 </div>
             
@@ -333,260 +380,154 @@
     <section class="article-content">
     
     
-    <p>要点简介：</p>
+    <h2 id="背景">背景
+</h2><p>为了向用户提供天气服务，计划接入三方天气 API，但有些三方的 API 按调用次数收费；为了节省成本，考虑使用缓存以减少调用次数。具体如何实现呢？</p>
+<p>考虑到用户的请求参数经度和纬度两个参数，直接使用经纬度作为缓存的 key 显然不合适，因为经纬度是连续的、无限的，因此需要使用空间索引技术。</p>
+<p>首先想到的自然是 GeoHash，它是空间索引的一种实现，将地球上的二维经纬度映射到一维的整数空间，然后使用整数空间进行索引。</p>
+<h2 id="geohash-和-redis">GeoHash 和 Redis
+</h2><h3 id="资料一">资料一
+</h3><p><a class="link" href="https://medium.com/groupon-eng/scaling-millions-of-geospatial-queries-per-minute-using-redis-7c05bcf6b4db"  target="_blank" rel="noopener"
+    >https://medium.com/groupon-eng/scaling-millions-of-geospatial-queries-per-minute-using-redis-7c05bcf6b4db</a></p>
+<blockquote>
+<p><a class="link" href="https://redis.io/commands/GEOADD"  target="_blank" rel="noopener"
+    >GEOADD</a> command can be used to index spatial entities in Redis.</p>
+<p>The time complexity for this command is <strong>O(log(N))</strong> for each item added, where N is the number of elements in the sorted set.</p>
+<p>To perform a spatial search of entities <a class="link" href="https://redis.io/docs/latest/commands/georadius/"  target="_blank" rel="noopener"
+    >GEORADIUS</a> or <a class="link" href="https://redis.io/docs/latest/commands/georadiusbymember/"  target="_blank" rel="noopener"
+    >GEORADIUSBYMEMBER</a> can be used in Redis 3.&gt; 2.0 (and above) and GEOSEARCH or GEOSEARCHSTORE can be used in Redis 6.2 (and above).</p>
+<p>The time complexity for these commands is approximately <strong>O(N+log(M))</strong> where N is the number of &gt; elements inside the bounding box of the circular area delimited by center and radius, and M is &gt; the number of items inside the index.</p>
+<p>There are plenty of solutions available for implementing spatial searches.</p>
+<p>Data structures like <strong>Quadtree, R-tree, and K-d tree</strong> can be used to index the entities.</p>
+<p>Geospatial indexers like S2 and H3 can be used for similar queries.</p>
+</blockquote>
+<p>疑问：</p>
 <ul>
-<li>服务规模：40台4C8G机器的生产级模型推理集群</li>
-<li>业务基准：稳定支撑1万QPS，服务SLA要求50ms@TP9999</li>
-<li>问题特征：无代码变更的情况下出现性能断崖</li>
-<li>引发思考：看似稳定的系统为何会突然性能劣化？</li>
+<li>为什么 GEOADD 复杂度是 O(log(N))，为什么 ZADD 复杂度是 O(log(N))，两者有什么关系？</li>
+<li>为什么 GEORADIUS 复杂度是 O(N + log(M)), 为什么 ZRANGE 复杂度是 O(N+log(M))，两者有什么关系？</li>
 </ul>
-<script type="text/javascript" src= '/js/pdf-js/build/pdf.js'></script>
-
-<style>
-  #embed-pdf-container {
-    position: relative;
-    width: 100%;
-    height: auto;
-    min-height: 20vh;
-     
-  }
-  
-  .pdf-canvas {
-    border: 1px solid black;
-    direction: ltr;
-    width: 100%;
-    height: auto;
-    display: none;
-  }
-  
-  #the-canvas {
-    border: 1px solid black;
-    direction: ltr;
-    width: 100%;
-    height: auto;
-    display: none;
-  }
-  
-  
-  .pdf-loadingWrapper {
-    display: none;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 350px;
-  }
-  
-  .pdf-loading {
-    display: inline-block;
-    width: 50px;
-    height: 50px;
-    border: 3px solid #d2d0d0;;
-    border-radius: 50%;
-    border-top-color: #383838;
-    animation: spin 1s ease-in-out infinite;
-    -webkit-animation: spin 1s ease-in-out infinite;
-  }
-  
-  
-  
-  
-  
-  #overlayText {
-    word-wrap: break-word;
-    display: grid;
-    justify-content: end;
-  }
-  
-  #overlayText a {
-    position: relative;
-    top: 10px;
-    right: 4px;
-    color: #000;
-    margin: auto;
-    background-color: #eeeeee;
-    padding: 0.3em 1em;
-    border: solid 2px;
-    border-radius: 12px;
-    border-color: #00000030;
-    text-decoration: none;
-  }
-  
-  #overlayText svg {
-    height: clamp(1em, 2vw, 1.4em);
-    width:  clamp(1em, 2vw, 1.4em);
-  }
-  
-  
-  
-  @keyframes spin {
-    to { -webkit-transform: rotate(360deg); }
-  }
-  @-webkit-keyframes spin {
-    to { -webkit-transform: rotate(360deg); }
-  }
-  </style><div class="embed-pdf-container" id="embed-pdf-container-fb7b182a">
-    <div class="pdf-loadingWrapper" id="pdf-loadingWrapper-fb7b182a">
-        <div class="pdf-loading" id="pdf-loading-fb7b182a"></div>
-    </div>
-    <div id="overlayText">
-      <a href="/pdfs/in-depth-jvm-performance-tuning-guide_v1.pdf" aria-label="Download" download>
-        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18">
-            <path d="M9 13c.3 0 .5-.1.7-.3L15.4 7 14 5.6l-4 4V1H8v8.6l-4-4L2.6 7l5.7 5.7c.2.2.4.3.7.3zm-7 2h14v2H2z" />
-        </svg>
-      </a>
-    </div>
-    <canvas class="pdf-canvas" id="pdf-canvas-fb7b182a"></canvas>
-</div>
-
-<div class="pdf-paginator" id="pdf-paginator-fb7b182a">
-    <button id="pdf-prev-fb7b182a">Previous</button>
-    <button id="pdf-next-fb7b182a">Next</button> &nbsp; &nbsp;
-    <span>
-      <span class="pdf-pagenum" id="pdf-pagenum-fb7b182a"></span> / <span class="pdf-pagecount" id="pdf-pagecount-fb7b182a"></span>
-    </span>
-    <a class="pdf-source" id="pdf-source-fb7b182a" href="/pdfs/in-depth-jvm-performance-tuning-guide_v1.pdf">[pdf]</a>
-</div>
-
-<noscript>
-View the PDF file <a class="pdf-source" id="pdf-source-noscript-fb7b182a" href="/pdfs/in-depth-jvm-performance-tuning-guide_v1.pdf">here</a>.
-</noscript>
-
-<script type="text/javascript">
-    (function(){
-    var url = '\/pdfs\/in-depth-jvm-performance-tuning-guide_v1.pdf';
-
-    var hidePaginator = "" === "true";
-    var hideLoader = "" === "true";
-    var selectedPageNum = parseInt("") || 1;
-
-    
-    var pdfjsLib = window['pdfjs-dist/build/pdf'];
-
-    
-    if (pdfjsLib.GlobalWorkerOptions.workerSrc == '')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https:\/\/zhumengzhu.github.io\/" + 'js/pdf-js/build/pdf.worker.js';
-
-    
-    var pdfDoc = null,
-        pageNum = selectedPageNum,
-        pageRendering = false,
-        pageNumPending = null,
-        scale = 3,
-        canvas = document.getElementById('pdf-canvas-fb7b182a'),
-        ctx = canvas.getContext('2d'),
-        paginator = document.getElementById("pdf-paginator-fb7b182a"),
-        loadingWrapper = document.getElementById('pdf-loadingWrapper-fb7b182a');
-
-
-    
-    showPaginator();
-    showLoader();
-
-    
-
-    function renderPage(num) {
-      pageRendering = true;
-      
-      pdfDoc.getPage(num).then(function(page) {
-        var viewport = page.getViewport({scale: scale});
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        
-        var renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-        var renderTask = page.render(renderContext);
-
-        
-        renderTask.promise.then(function() {
-          pageRendering = false;
-          showContent();
-
-          if (pageNumPending !== null) {
-            
-            renderPage(pageNumPending);
-            pageNumPending = null;
-          }
-        });
-      });
-
-      
-      document.getElementById('pdf-pagenum-fb7b182a').textContent = num;
-    }
-
-    
-
-    function showContent() {
-      loadingWrapper.style.display = 'none';
-      canvas.style.display = 'block';
-    }
-
-    
-
-    function showLoader() {
-      if(hideLoader) return
-      loadingWrapper.style.display = 'flex';
-      canvas.style.display = 'none';
-    }
-
-    
-
-    function showPaginator() {
-      if(hidePaginator) return
-      paginator.style.display = 'block';
-    }
-
-    
-
-    function queueRenderPage(num) {
-      if (pageRendering) {
-        pageNumPending = num;
-      } else {
-        renderPage(num);
-      }
-    }
-
-    
-
-    function onPrevPage() {
-      if (pageNum <= 1) {
-        return;
-      }
-      pageNum--;
-      queueRenderPage(pageNum);
-    }
-    document.getElementById('pdf-prev-fb7b182a').addEventListener('click', onPrevPage);
-
-    
-
-    function onNextPage() {
-      if (pageNum >= pdfDoc.numPages) {
-        return;
-      }
-      pageNum++;
-      queueRenderPage(pageNum);
-    }
-    document.getElementById('pdf-next-fb7b182a').addEventListener('click', onNextPage);
-
-    
-
-    pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
-      pdfDoc = pdfDoc_;
-      var numPages = pdfDoc.numPages;
-      document.getElementById('pdf-pagecount-fb7b182a').textContent = numPages;
-
-      
-      if(pageNum > numPages) {
-        pageNum = numPages
-      }
-
-      
-      renderPage(pageNum);
-    });
-    })();
-</script>
+<p>解答：</p>
+<ul>
+<li>ZADD 与 ZRANGE 的时间复杂度：<a class="link" href="https://blog.csdn.net/feeltouch/article/details/89007544"  target="_blank" rel="noopener"
+    >Redis中Sorted-Set时间复杂度和实战</a></li>
+<li>GEOADD 底层基于 ZADD，所以复杂度相同；</li>
+<li>GEORADIUS 底层基于 ZRANGE，但是更复杂，所以复杂度相同，但由于会搜索周边 9 个方格，因此系数更大；</li>
+</ul>
+<h3 id="资料二">资料二
+</h3><p><a class="link" href="https://www.memurai.com/blog/geospatial-queries-in-redis"  target="_blank" rel="noopener"
+    >https://www.memurai.com/blog/geospatial-queries-in-redis</a></p>
+<blockquote>
+<p><strong>Redis 不存储原始的坐标</strong></p>
+<p>GEOADD cities -122.34 47.61 Seattle
+ZRANGE cities 0 -1 WITHSCORES
+GEOHASH cities Seattle
+GEOPOS cities Seattle</p>
+<p>Notice that we provided –122.34 as longitude and 47.61 as latitude when calling GEOADD, but &gt; received –122.33999758958816528 and 47.61000085169597185, respectively, in return.</p>
+<p>This is an unfortunate consequence of Redis using a 52-bit geohash to store the coordinates:</p>
+<p><strong>Redis does not store the raw set of coordinates that we provide</strong>, but instead decodes the
+internally stored geohash to generate a GEOPOS response.</p>
+</blockquote>
+<h3 id="资料三">资料三
+</h3><ul>
+<li><a class="link" href="https://luoming1224.github.io/2019/04/08/%5Bredis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%5Dredis%E4%B8%ADGeo%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D/"  target="_blank" rel="noopener"
+    >https://luoming1224.github.io/2019/04/08/%5Bredis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%5Dredis%E4%B8%ADGeo%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D/</a></li>
+<li><a class="link" href="https://luoming1224.github.io/2019/04/04/[redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0]GeoHash%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%85%B6%E5%AE%9E%E7%8E%B0/"  target="_blank" rel="noopener"
+    >https://luoming1224.github.io/2019/04/04/[redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0]GeoHash%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%85%B6%E5%AE%9E%E7%8E%B0/</a></li>
+<li><a class="link" href="https://developer.aliyun.com/article/62844#slide-16"  target="_blank" rel="noopener"
+    >https://developer.aliyun.com/article/62844#slide-16</a></li>
+<li><a class="link" href="https://blog.huangz.me/diary/2015/annotated-redis-geo-source.html"  target="_blank" rel="noopener"
+    >https://blog.huangz.me/diary/2015/annotated-redis-geo-source.html</a></li>
+</ul>
+<blockquote>
+<p><strong>GeoSearch 原理</strong>
+geohash编码越长精度越高，相反编码越短，表示的范围越大，前缀相同的字符串表示的范围接近，根据中心点位置和搜索范围&gt; 距离计算geohash编码的长度和geohash编码，然后搜索以该geohash编码为前缀的点以及周边８个范围内的点，返回满足要求&gt; 的点。</p>
+<p>函数geohashGetAreasByRadiusWGS84根据中心点位置和搜索范围距离计算geohash编码的长度和geohash编码，以及在&gt; geohash长度编码的基础上，计算周边8个区块的geohash。</p>
+<p>函数membersOfAllNeighbors对中心点以及它周边八个方向进行查找，找出所有范围内的元素，返回满足搜索距离范围的点。&gt; 该函数中依次对中心点及周边8个区块调用membersOfGeoHashBox函数。</p>
+<p>long_range和lat_range为地球经纬度的范围；hash-&gt;bits用户保存最终二进制编码结果，hash-&gt;step是经纬度划分的次&gt; 数，在redis中该值为26，<strong>即经度/纬度的二进制编码长度为26</strong>，最终经交叉组合而成的地理位置的二进制编码为52位。Base32&gt; 编码为每5bits组成一个字符，所以<strong>最终的GeoHash字符串为11位</strong>。</p>
+<p>为什么是52位？因为在redis中是把地理位置编码后的二进制值存入zset数据结构中，<strong>double类型的尾数部分长度为52位</strong>。</p>
+</blockquote>
+<h3 id="redis-的设计思路推演">Redis 的设计思路推演
+</h3><p>GeoHash 除了可以对空间进行编码之外，还有两个关键特性，使得 Redis 可以通过组合 GeoHash 与 ZSET，实现空间索引功能，这两个特性是：</p>
+<ul>
+<li>
+<p>哈希可以有任意精度；</p>
+</li>
+<li>
+<p>相近点有相似的前缀，这使得可以通过比较 geohash 值查找附近的点；
+思路推演：</p>
+</li>
+<li>
+<p>当只使用 GeoHash 时，我们可以很方便的判定两个点是否在属于同一个区域：</p>
+<ul>
+<li>GeoHash(point1, precision=7) == GeoHash(point2, precision=7)</li>
+</ul>
+</li>
+<li>
+<p>如果将 hash 值相同的点放入 set，那么就可以实现“周边搜”：</p>
+<ul>
+<li>首先计算要搜索点都 geohash 值；</li>
+<li>然后以该值作为 key 去查找对应的 set；</li>
+</ul>
+</li>
+<li>
+<p>上述方法，需要预先指定 geohash 的精度，存储和查询时都必须以相同的精度进行，假如：</p>
+<ul>
+<li>存储时：sadd(GeoHash(point1, precision=7), point1);</li>
+<li>读取时：执行 smembers(GeoHash(point1, precision=6)), 由于精度不同，geohash 值不同，此时无法将 point1 查找出来;</li>
+</ul>
+</li>
+<li>
+<p>假如用上述方法实现地图搜索功能，意味着，如果以 3KM 的网格存储，那么查询也必须以 3KM 进行查，这样的限制太大；</p>
+</li>
+<li>
+<p>此时可以利用“相近点有相似前缀”特性，对 geohash 进行排序，也就是用 geohash 作为索引：</p>
+</li>
+<li>
+<p>此时，如果存储时精度为 7，那么搜索可以支持大于等 7 的任意精度；</p>
+</li>
+<li>
+<p>在 Redis 中，支持排序的显然是 ZSET，因此，Redis 最终在 3.2 版本选择了组合 GeoHash 和 ZSET 实现了相关的空间索引功能；
+看起来很完美，但是，GeoHash 只是<strong>对大部分点来说，编码相似距离也相近</strong>，实际它存在突变性，也就是编码相邻但距离可能很远：</p>
+</li>
+</ul>
+<p>GeoHash 存在缺陷：https://www.jianshu.com/p/1ecf03293b9a</p>
+<p><strong>疑问</strong>：</p>
+<ul>
+<li>怎么找周围 8 个区域的 GeoHash？</li>
+</ul>
+<h2 id="geohash-的缺陷及解决">GeoHash 的缺陷及解决
+</h2><ul>
+<li><a class="link" href="https://patents.google.com/patent/CN103383682A/zh"  target="_blank" rel="noopener"
+    >https://patents.google.com/patent/CN103383682A/zh</a></li>
+<li><a class="link" href="https://www.developers.pub/article/637"  target="_blank" rel="noopener"
+    >https://www.developers.pub/article/637</a></li>
+</ul>
+<h2 id="google-s2uber-h3">Google S2/Uber h3
+</h2><ul>
+<li><a class="link" href="https://juejin.cn/post/6921977063477870606"  target="_blank" rel="noopener"
+    >https://juejin.cn/post/6921977063477870606</a></li>
+<li><a class="link" href="https://github.com/halfrost/Halfrost-Field/blob/master/contents/Go/go_s2_CellID.md"  target="_blank" rel="noopener"
+    >https://github.com/halfrost/Halfrost-Field/blob/master/contents/Go/go_s2_CellID.md</a></li>
+<li><a class="link" href="https://www.jianshu.com/p/3dbaf73a09af"  target="_blank" rel="noopener"
+    >https://www.jianshu.com/p/3dbaf73a09af</a></li>
+<li><a class="link" href="https://blog.csdn.net/qq_43777978/article/details/116800460"  target="_blank" rel="noopener"
+    >https://blog.csdn.net/qq_43777978/article/details/116800460</a></li>
+<li><a class="link" href="https://blog.csdn.net/alinyua/article/details/105803546"  target="_blank" rel="noopener"
+    >https://blog.csdn.net/alinyua/article/details/105803546</a>
+为什么能够做网格空间索引的形状只有三角形、矩形和六边形(<a class="link" href="https://www.biaodianfu.com/uber-h3.html%29"  target="_blank" rel="noopener"
+    >https://www.biaodianfu.com/uber-h3.html)</a>:</li>
+</ul>
+<blockquote>
+<p>H3是一种基于网格的空间索引，但跟普通的矩形网格索引不同的是，他的每一个网格都是正六边形。为啥要选正六边形呢，因为在基于网格的空间索引中，使用的多边形的边数越多，则一个网格越近似圆形，做缓冲区查询、kNN查询什么的也就越方便。而做网格索引又要求空间能够被网格铺满，不能有缝隙。根据初中数学知识，我们知道一个多边形的内角和公式为：</p>
+<p>𝜃=(𝑥–2)∗180∘</p>
+<p>其中，x为多边形的边数，𝜃为多边形的内角和。则一个正多边形的每个角的角度为 𝜃𝑥=(𝑥–2)∗180∘𝑥，而如果需要多边形能够铺满空间，则在多边形的顶点相交处，设每个顶点有y个多边形相交，需要满足以下等式：</p>
+<p>360∘𝑦=(𝑥–2)∗180∘𝑥</p>
+<p>以上等式的求解过程我不再赘述，这个等式只有三组整数解：x=3,y=6；x=4,y=4；x=6,y=3。</p>
+<p>因此，能够做网格空间索引的形状只有三角形、矩形和六边形，而六边形因为边数最多，最接近圆，所以理论上来说在某些场景下是最优的选择。</p>
+</blockquote>
+<h2 id="其它">其它
+</h2><h3 id="什么是wgs84坐标系">什么是WGS84坐标系
+</h3><p><a class="link" href="https://zhuanlan.zhihu.com/p/97363931"  target="_blank" rel="noopener"
+    >https://zhuanlan.zhihu.com/p/97363931</a></p>
 </section>
 
 
@@ -594,11 +535,7 @@ View the PDF file <a class="pdf-source" id="pdf-source-noscript-fb7b182a" href="
     
     <section class="article-tags">
         
-            <a href="/tags/java/">Java</a>
-        
-            <a href="/tags/jvm/">JVM</a>
-        
-            <a href="/tags/gc/">GC</a>
+            <a href="/tags/spatial-index/">Spatial-Index</a>
         
     </section>
 
@@ -625,7 +562,7 @@ View the PDF file <a class="pdf-source" id="pdf-source-noscript-fb7b182a" href="
 
 
         <span>
-            最后更新于 2024/12/16 11:57 CST
+            最后更新于 2024/12/10 21:31 CST
         </span>
     </section></footer>
 
@@ -668,12 +605,12 @@ View the PDF file <a class="pdf-source" id="pdf-source-noscript-fb7b182a" href="
             
                 
 <article class="">
-    <a href="/2023/06/jvm-parameter-recommendations-and-reasons/">
+    <a href="/2022/10/hugo-quick-start/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">JVM 参数建议及理由</h2>
+            <h2 class="article-title">Hugo 配置记录</h2>
         </div>
     </a>
 </article>
@@ -681,25 +618,12 @@ View the PDF file <a class="pdf-source" id="pdf-source-noscript-fb7b182a" href="
             
                 
 <article class="">
-    <a href="/2023/01/java-random-number-issues-overview/">
+    <a href="/2022/10/how-to-set-network-proxy/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">Java 随机数问题综述</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="">
-    <a href="/2023/07/oracle-jdk-vs-openjdk-selection-guide/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">Oracle JDK 和 OpenJDK 如何选择？</h2>
+            <h2 class="article-title">代理设置</h2>
         </div>
     </a>
 </article>
