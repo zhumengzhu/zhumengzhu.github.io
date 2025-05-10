@@ -7,7 +7,15 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Fri, 20 Dec 2024 22:52:59 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/categories/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Sat, 10 May 2025 17:13:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/categories/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Deployment</title>
+        <link>https://zhumengzhu.github.io/categories/deployment/</link>
+        <pubDate>Sat, 10 May 2025 17:13:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/categories/deployment/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>Trouble Shooting</title>
         <link>https://zhumengzhu.github.io/categories/trouble-shooting/</link>
         <pubDate>Sat, 23 Sep 2023 14:14:52 +0800</pubDate>

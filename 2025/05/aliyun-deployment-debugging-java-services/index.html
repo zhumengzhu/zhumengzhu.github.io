@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="背景 最近在做一个 APP 的后端开发，为了方便和客户端同学联调，用了一台阿里云的机器来部署服务，本文简单记录相关部署和调试流程，以备查阅。\n服务环境准备 考虑到测试环境对性能和稳定性要求不高，为了节省成本，选择之间将 MySQL 和 Redis 都安装在同一台机器上，其中 Linux 版本为 CentOS Linux release 7.9。\n配置 SSH 密钥登录 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 # 1. 客户端生成密钥对，系统有提示，一路回车即可 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_aliyun -C &#34;your_email@example.com&#34; # 2. 将私钥添加到 ssh-agent eval (ssh-agent -c) # 启动 ssh-agent (fish 写法) ssh-add ~/.ssh/id_ed25519_aliyun ssh-add -l # 查看已添加的公钥 # 3. 将公钥添加到远程服务器 cat ~/.ssh/id_ed25519_aliyun.pub | ssh username@server_ip &#34;cat &gt;&gt; ~/.ssh/authorized_keys&#34; # 4. 配置 fish 自动启动 ssh-agent # 在 ~/.config/fish/config.fish 中添加 if status is-interactive # 检查 ssh-agent 是否已运行 if not test -e $SSH_AUTH_SOCK eval (ssh-agent -c) set -Ux SSH_AUTH_SOCK $SSH_AUTH_SOCK set -Ux SSH_AGENT_PID $SSH_AGENT_PID end # 添加密钥（如果未添加） ssh-add -l &gt;/dev/null 2&gt;&amp;1 if test $status -eq 1 ssh-add ~/.ssh/id_ed25519_aliyun ssh-add ~/.ssh/id_ed25519 end end # 5. 编辑 SSH 配置文件 # 在 ~/.ssh/config 添加主机配置(之后直接 ssh aliyun_test_server 就可以登录服务器了) Host aliyun_test_server HostName server_ip User root UseKeychain yes AddKeysToAgent yes PreferredAuthentications publickey IdentityFile ~/.ssh/id_ed25519_aliyun 安装 Java、MySQL、Redis 等 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 # 1. Java（如果安装的是 java-1.8.0-openjdk，则仅仅是 JRE，不包含额外的开发工具（如 javac、jps、jstack 等） sudo yum install java-1.8.0-openjdk-devel # 2. Redis # 安装 sudo yum install -y redis # 启动 Redis systemctl start redis # 设置开机启动 systemctl enable redis # 验证 Redis redis-cli ping # 3. MySQL sudo yum install -y mysql-community-server # 启动 MySQL 服务 sudo systemctl start mysqld # 设置开机启动 sudo systemctl enable mysqld # 查看默认的 root 用户密码 grep &#39;temporary password&#39; /var/log/mysqld.log # 登录 MySQL mysql -u root -p 部署 Java 服务 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 1. 本地构建得到 jar 包 mvn clean package 2. 打包本地 lib 包（其中包含所有 maven 依赖 jar） # 考虑使用 maven-assembly-plugin 插件生成包含所有依赖的 JAR 文件，省略该步骤 zip -r lib.zip lib/ 2. 使用 scp 传输到远程服务器 scp target/your-project-jar-with-dependencies.jar user@remote-server:/path/to/deploy scp target/lib.zip user@remote-server:/path/to/deploy unzip lib.zip -d lib/ # 登录远程服务器后解压 3. 编写启动脚本启动服务 # vim restart.sh #!/bin/bash echo &#34;************ 查找进程 **************&#34; str=`ps aux | grep &#34;biz-1.0.0.jar&#34; | grep -v grep | awk &#39;{print $2}&#39;` echo $str biz kill -9 $str if [ &#34;$?&#34; -eq 0 ]; then echo &#34;kill success&#34; else echo &#34;kill failed&#34; fi echo &#34;************ 杀掉进程 **************&#34; export SUPERVISOR_LOG_HOME=&#34;logs&#34; JAVA_OPTS=&#34;-server -Xmx512m -Xms512m -Xmn256m -Xss256k -XX:MetaspaceSize=96m&#34; JAVA_OPTS=&#34;$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+DisableExplicitGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseConcMarkSweepGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSMaxAbortablePrecleanTime=5000&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSClassUnloadingEnabled &#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSParallelRemarkEnabled&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseFastAccessorMethods&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseCMSInitiatingOccupancyOnly&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+ExplicitGCInvokesConcurrent&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSInitiatingOccupancyFraction=80&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:SurvivorRatio=8&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError -XX:+OmitStackTraceInFastThrow -XX:HeapDumpPath=$SUPERVISOR_LOG_HOME/java.hprof&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Xloggc:$SUPERVISOR_LOG_HOME/gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Dlog.path=$SUPERVISOR_LOG_HOME&#34; nohup java $JAVA_OPTS -Dspring.profiles.active=test -jar biz-1.0.0.jar 2&gt;&amp;1 &amp; echo &#34;************ 启动成功 **************&#34; 目前这个非自动化部署的流程，操作起来还是比较繁琐。\n使用 SSH 隧道进行远程调试 出于安全考虑，debug 绑定只绑定本地回环接口，然后通过 SSH 隧道进行连接。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 # 1. 在远程服务器上启动 Java 应用时添加调试参数 # 配置 Java 应用只监听 localhost java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005 YourApp # 2. 建立 SSH 隧道 # 语法：ssh -L 本地端口:远程主机:远程端口 用户名@远程主机 # 这里我实际用的是配置在 .ssh/config 中的主键昵称-aliyun_test_server ssh -L 5005:localhost:5005 aliyun_test_server # 如果需要在后台运行 ssh -fNL 5005:localhost:5005 aliyun_test_server # 3.配置 IDE - 配置远程调试 - 连接地址：localhost:5005（使用本地转发的端口 # 4. 常用的 SSH 隧道命令选项 # -f: 后台运行 # -N: 不执行远程命令 # -L: 本地端口转发 # -v: 显示详细信息（调试用） # 详细模式（便于调试） ssh -vNL 5005:localhost:5005 root@server_ip # 后台运行模式 ssh -fNL 5005:localhost:5005 root@server_ip # 指定密钥文件 ssh -i ~/.ssh/id_ed25519_aliyun.pub -fNL 5005:localhost:5005 root@server_ip # 5. 检查隧道状态 # 查看已建立的连接 netstat -tunlp | grep 5005 # 查看 SSH 进程 ps aux | grep ssh # 测试端口转发是否成功 nc -zv localhost 5005 # 6. 关闭 SSH 隧道 # 查找 SSH 进程 ps aux | grep ssh # 关闭特定的 SSH 隧道 kill &lt;进程ID&gt; # 或者关闭所有 SSH 隧道（谨慎使用） pkill -f &#34;ssh -fNL&#34; 遇到的问题 一个负责登录认证的拦截器未注册 比较奇怪的点在于，本地这个拦截器是正常的，但部署到远程之后它就失效了(远程 Debug 类 HandlerExecutionChain#applyPreHandle发现确实没有这个拦截器)，导致一些需要登录认证的接口无法使用。\n代码如下：\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 @Configuration public class InterceptorConfig extends WebMvcConfigurationSupport { @Bean public JwtInterceptor authenticationInterceptor() { return new JwtInterceptor(); } @Override public void addInterceptors(InterceptorRegistry registry) { registry.addInterceptor(authenticationInterceptor()) .addPathPatterns(&#34;/**&#34;); } } 目前怀疑可能是某些类冲突导致的（本地类加载顺序和远程不一样），具体原因还在排查(截至05.10)。\n">
+<meta name="keywords" content="deployment, debugging"><title>阿里云部署调试 Java 服务记录</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2025/05/aliyun-deployment-debugging-java-services/'>
+
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="阿里云部署调试 Java 服务记录">
+<meta property='og:description' content="背景 最近在做一个 APP 的后端开发，为了方便和客户端同学联调，用了一台阿里云的机器来部署服务，本文简单记录相关部署和调试流程，以备查阅。\n服务环境准备 考虑到测试环境对性能和稳定性要求不高，为了节省成本，选择之间将 MySQL 和 Redis 都安装在同一台机器上，其中 Linux 版本为 CentOS Linux release 7.9。\n配置 SSH 密钥登录 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 # 1. 客户端生成密钥对，系统有提示，一路回车即可 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_aliyun -C &#34;your_email@example.com&#34; # 2. 将私钥添加到 ssh-agent eval (ssh-agent -c) # 启动 ssh-agent (fish 写法) ssh-add ~/.ssh/id_ed25519_aliyun ssh-add -l # 查看已添加的公钥 # 3. 将公钥添加到远程服务器 cat ~/.ssh/id_ed25519_aliyun.pub | ssh username@server_ip &#34;cat &gt;&gt; ~/.ssh/authorized_keys&#34; # 4. 配置 fish 自动启动 ssh-agent # 在 ~/.config/fish/config.fish 中添加 if status is-interactive # 检查 ssh-agent 是否已运行 if not test -e $SSH_AUTH_SOCK eval (ssh-agent -c) set -Ux SSH_AUTH_SOCK $SSH_AUTH_SOCK set -Ux SSH_AGENT_PID $SSH_AGENT_PID end # 添加密钥（如果未添加） ssh-add -l &gt;/dev/null 2&gt;&amp;1 if test $status -eq 1 ssh-add ~/.ssh/id_ed25519_aliyun ssh-add ~/.ssh/id_ed25519 end end # 5. 编辑 SSH 配置文件 # 在 ~/.ssh/config 添加主机配置(之后直接 ssh aliyun_test_server 就可以登录服务器了) Host aliyun_test_server HostName server_ip User root UseKeychain yes AddKeysToAgent yes PreferredAuthentications publickey IdentityFile ~/.ssh/id_ed25519_aliyun 安装 Java、MySQL、Redis 等 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 # 1. Java（如果安装的是 java-1.8.0-openjdk，则仅仅是 JRE，不包含额外的开发工具（如 javac、jps、jstack 等） sudo yum install java-1.8.0-openjdk-devel # 2. Redis # 安装 sudo yum install -y redis # 启动 Redis systemctl start redis # 设置开机启动 systemctl enable redis # 验证 Redis redis-cli ping # 3. MySQL sudo yum install -y mysql-community-server # 启动 MySQL 服务 sudo systemctl start mysqld # 设置开机启动 sudo systemctl enable mysqld # 查看默认的 root 用户密码 grep &#39;temporary password&#39; /var/log/mysqld.log # 登录 MySQL mysql -u root -p 部署 Java 服务 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 1. 本地构建得到 jar 包 mvn clean package 2. 打包本地 lib 包（其中包含所有 maven 依赖 jar） # 考虑使用 maven-assembly-plugin 插件生成包含所有依赖的 JAR 文件，省略该步骤 zip -r lib.zip lib/ 2. 使用 scp 传输到远程服务器 scp target/your-project-jar-with-dependencies.jar user@remote-server:/path/to/deploy scp target/lib.zip user@remote-server:/path/to/deploy unzip lib.zip -d lib/ # 登录远程服务器后解压 3. 编写启动脚本启动服务 # vim restart.sh #!/bin/bash echo &#34;************ 查找进程 **************&#34; str=`ps aux | grep &#34;biz-1.0.0.jar&#34; | grep -v grep | awk &#39;{print $2}&#39;` echo $str biz kill -9 $str if [ &#34;$?&#34; -eq 0 ]; then echo &#34;kill success&#34; else echo &#34;kill failed&#34; fi echo &#34;************ 杀掉进程 **************&#34; export SUPERVISOR_LOG_HOME=&#34;logs&#34; JAVA_OPTS=&#34;-server -Xmx512m -Xms512m -Xmn256m -Xss256k -XX:MetaspaceSize=96m&#34; JAVA_OPTS=&#34;$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+DisableExplicitGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseConcMarkSweepGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSMaxAbortablePrecleanTime=5000&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSClassUnloadingEnabled &#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSParallelRemarkEnabled&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseFastAccessorMethods&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseCMSInitiatingOccupancyOnly&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+ExplicitGCInvokesConcurrent&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSInitiatingOccupancyFraction=80&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:SurvivorRatio=8&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError -XX:+OmitStackTraceInFastThrow -XX:HeapDumpPath=$SUPERVISOR_LOG_HOME/java.hprof&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Xloggc:$SUPERVISOR_LOG_HOME/gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Dlog.path=$SUPERVISOR_LOG_HOME&#34; nohup java $JAVA_OPTS -Dspring.profiles.active=test -jar biz-1.0.0.jar 2&gt;&amp;1 &amp; echo &#34;************ 启动成功 **************&#34; 目前这个非自动化部署的流程，操作起来还是比较繁琐。\n使用 SSH 隧道进行远程调试 出于安全考虑，debug 绑定只绑定本地回环接口，然后通过 SSH 隧道进行连接。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 # 1. 在远程服务器上启动 Java 应用时添加调试参数 # 配置 Java 应用只监听 localhost java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005 YourApp # 2. 建立 SSH 隧道 # 语法：ssh -L 本地端口:远程主机:远程端口 用户名@远程主机 # 这里我实际用的是配置在 .ssh/config 中的主键昵称-aliyun_test_server ssh -L 5005:localhost:5005 aliyun_test_server # 如果需要在后台运行 ssh -fNL 5005:localhost:5005 aliyun_test_server # 3.配置 IDE - 配置远程调试 - 连接地址：localhost:5005（使用本地转发的端口 # 4. 常用的 SSH 隧道命令选项 # -f: 后台运行 # -N: 不执行远程命令 # -L: 本地端口转发 # -v: 显示详细信息（调试用） # 详细模式（便于调试） ssh -vNL 5005:localhost:5005 root@server_ip # 后台运行模式 ssh -fNL 5005:localhost:5005 root@server_ip # 指定密钥文件 ssh -i ~/.ssh/id_ed25519_aliyun.pub -fNL 5005:localhost:5005 root@server_ip # 5. 检查隧道状态 # 查看已建立的连接 netstat -tunlp | grep 5005 # 查看 SSH 进程 ps aux | grep ssh # 测试端口转发是否成功 nc -zv localhost 5005 # 6. 关闭 SSH 隧道 # 查找 SSH 进程 ps aux | grep ssh # 关闭特定的 SSH 隧道 kill &lt;进程ID&gt; # 或者关闭所有 SSH 隧道（谨慎使用） pkill -f &#34;ssh -fNL&#34; 遇到的问题 一个负责登录认证的拦截器未注册 比较奇怪的点在于，本地这个拦截器是正常的，但部署到远程之后它就失效了(远程 Debug 类 HandlerExecutionChain#applyPreHandle发现确实没有这个拦截器)，导致一些需要登录认证的接口无法使用。\n代码如下：\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 @Configuration public class InterceptorConfig extends WebMvcConfigurationSupport { @Bean public JwtInterceptor authenticationInterceptor() { return new JwtInterceptor(); } @Override public void addInterceptors(InterceptorRegistry registry) { registry.addInterceptor(authenticationInterceptor()) .addPathPatterns(&#34;/**&#34;); } } 目前怀疑可能是某些类冲突导致的（本地类加载顺序和远程不一样），具体原因还在排查(截至05.10)。\n">
+<meta property='og:url' content='https://zhumengzhu.github.io/2025/05/aliyun-deployment-debugging-java-services/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Java' /><meta property='article:tag' content='Deployment' /><meta property='article:published_time' content='2025-05-10T17:13:00&#43;08:00'/><meta property='article:modified_time' content='2025-05-10T17:13:00&#43;08:00'/>
+<meta name="twitter:title" content="阿里云部署调试 Java 服务记录">
+<meta name="twitter:description" content="背景 最近在做一个 APP 的后端开发，为了方便和客户端同学联调，用了一台阿里云的机器来部署服务，本文简单记录相关部署和调试流程，以备查阅。\n服务环境准备 考虑到测试环境对性能和稳定性要求不高，为了节省成本，选择之间将 MySQL 和 Redis 都安装在同一台机器上，其中 Linux 版本为 CentOS Linux release 7.9。\n配置 SSH 密钥登录 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 # 1. 客户端生成密钥对，系统有提示，一路回车即可 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_aliyun -C &#34;your_email@example.com&#34; # 2. 将私钥添加到 ssh-agent eval (ssh-agent -c) # 启动 ssh-agent (fish 写法) ssh-add ~/.ssh/id_ed25519_aliyun ssh-add -l # 查看已添加的公钥 # 3. 将公钥添加到远程服务器 cat ~/.ssh/id_ed25519_aliyun.pub | ssh username@server_ip &#34;cat &gt;&gt; ~/.ssh/authorized_keys&#34; # 4. 配置 fish 自动启动 ssh-agent # 在 ~/.config/fish/config.fish 中添加 if status is-interactive # 检查 ssh-agent 是否已运行 if not test -e $SSH_AUTH_SOCK eval (ssh-agent -c) set -Ux SSH_AUTH_SOCK $SSH_AUTH_SOCK set -Ux SSH_AGENT_PID $SSH_AGENT_PID end # 添加密钥（如果未添加） ssh-add -l &gt;/dev/null 2&gt;&amp;1 if test $status -eq 1 ssh-add ~/.ssh/id_ed25519_aliyun ssh-add ~/.ssh/id_ed25519 end end # 5. 编辑 SSH 配置文件 # 在 ~/.ssh/config 添加主机配置(之后直接 ssh aliyun_test_server 就可以登录服务器了) Host aliyun_test_server HostName server_ip User root UseKeychain yes AddKeysToAgent yes PreferredAuthentications publickey IdentityFile ~/.ssh/id_ed25519_aliyun 安装 Java、MySQL、Redis 等 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 # 1. Java（如果安装的是 java-1.8.0-openjdk，则仅仅是 JRE，不包含额外的开发工具（如 javac、jps、jstack 等） sudo yum install java-1.8.0-openjdk-devel # 2. Redis # 安装 sudo yum install -y redis # 启动 Redis systemctl start redis # 设置开机启动 systemctl enable redis # 验证 Redis redis-cli ping # 3. MySQL sudo yum install -y mysql-community-server # 启动 MySQL 服务 sudo systemctl start mysqld # 设置开机启动 sudo systemctl enable mysqld # 查看默认的 root 用户密码 grep &#39;temporary password&#39; /var/log/mysqld.log # 登录 MySQL mysql -u root -p 部署 Java 服务 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 1. 本地构建得到 jar 包 mvn clean package 2. 打包本地 lib 包（其中包含所有 maven 依赖 jar） # 考虑使用 maven-assembly-plugin 插件生成包含所有依赖的 JAR 文件，省略该步骤 zip -r lib.zip lib/ 2. 使用 scp 传输到远程服务器 scp target/your-project-jar-with-dependencies.jar user@remote-server:/path/to/deploy scp target/lib.zip user@remote-server:/path/to/deploy unzip lib.zip -d lib/ # 登录远程服务器后解压 3. 编写启动脚本启动服务 # vim restart.sh #!/bin/bash echo &#34;************ 查找进程 **************&#34; str=`ps aux | grep &#34;biz-1.0.0.jar&#34; | grep -v grep | awk &#39;{print $2}&#39;` echo $str biz kill -9 $str if [ &#34;$?&#34; -eq 0 ]; then echo &#34;kill success&#34; else echo &#34;kill failed&#34; fi echo &#34;************ 杀掉进程 **************&#34; export SUPERVISOR_LOG_HOME=&#34;logs&#34; JAVA_OPTS=&#34;-server -Xmx512m -Xms512m -Xmn256m -Xss256k -XX:MetaspaceSize=96m&#34; JAVA_OPTS=&#34;$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+DisableExplicitGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseConcMarkSweepGC&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSMaxAbortablePrecleanTime=5000&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSClassUnloadingEnabled &#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+CMSParallelRemarkEnabled&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseFastAccessorMethods&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+UseCMSInitiatingOccupancyOnly&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+ExplicitGCInvokesConcurrent&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:CMSInitiatingOccupancyFraction=80&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:SurvivorRatio=8&#34; JAVA_OPTS=&#34;$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError -XX:+OmitStackTraceInFastThrow -XX:HeapDumpPath=$SUPERVISOR_LOG_HOME/java.hprof&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Xloggc:$SUPERVISOR_LOG_HOME/gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps&#34; JAVA_OPTS=&#34;$JAVA_OPTS -Dlog.path=$SUPERVISOR_LOG_HOME&#34; nohup java $JAVA_OPTS -Dspring.profiles.active=test -jar biz-1.0.0.jar 2&gt;&amp;1 &amp; echo &#34;************ 启动成功 **************&#34; 目前这个非自动化部署的流程，操作起来还是比较繁琐。\n使用 SSH 隧道进行远程调试 出于安全考虑，debug 绑定只绑定本地回环接口，然后通过 SSH 隧道进行连接。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 # 1. 在远程服务器上启动 Java 应用时添加调试参数 # 配置 Java 应用只监听 localhost java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005 YourApp # 2. 建立 SSH 隧道 # 语法：ssh -L 本地端口:远程主机:远程端口 用户名@远程主机 # 这里我实际用的是配置在 .ssh/config 中的主键昵称-aliyun_test_server ssh -L 5005:localhost:5005 aliyun_test_server # 如果需要在后台运行 ssh -fNL 5005:localhost:5005 aliyun_test_server # 3.配置 IDE - 配置远程调试 - 连接地址：localhost:5005（使用本地转发的端口 # 4. 常用的 SSH 隧道命令选项 # -f: 后台运行 # -N: 不执行远程命令 # -L: 本地端口转发 # -v: 显示详细信息（调试用） # 详细模式（便于调试） ssh -vNL 5005:localhost:5005 root@server_ip # 后台运行模式 ssh -fNL 5005:localhost:5005 root@server_ip # 指定密钥文件 ssh -i ~/.ssh/id_ed25519_aliyun.pub -fNL 5005:localhost:5005 root@server_ip # 5. 检查隧道状态 # 查看已建立的连接 netstat -tunlp | grep 5005 # 查看 SSH 进程 ps aux | grep ssh # 测试端口转发是否成功 nc -zv localhost 5005 # 6. 关闭 SSH 隧道 # 查找 SSH 进程 ps aux | grep ssh # 关闭特定的 SSH 隧道 kill &lt;进程ID&gt; # 或者关闭所有 SSH 隧道（谨慎使用） pkill -f &#34;ssh -fNL&#34; 遇到的问题 一个负责登录认证的拦截器未注册 比较奇怪的点在于，本地这个拦截器是正常的，但部署到远程之后它就失效了(远程 Debug 类 HandlerExecutionChain#applyPreHandle发现确实没有这个拦截器)，导致一些需要登录认证的接口无法使用。\n代码如下：\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 @Configuration public class InterceptorConfig extends WebMvcConfigurationSupport { @Bean public JwtInterceptor authenticationInterceptor() { return new JwtInterceptor(); } @Override public void addInterceptors(InterceptorRegistry registry) { registry.addInterceptor(authenticationInterceptor()) .addPathPatterns(&#34;/**&#34;); } } 目前怀疑可能是某些类冲突导致的（本地类加载顺序和远程不一样），具体原因还在排查(截至05.10)。\n">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#服务环境准备">服务环境准备</a>
+      <ol>
+        <li><a href="#配置-ssh-密钥登录">配置 SSH 密钥登录</a></li>
+        <li><a href="#安装-javamysqlredis-等">安装 Java、MySQL、Redis 等</a></li>
+      </ol>
+    </li>
+    <li><a href="#部署-java-服务">部署 Java 服务</a></li>
+    <li><a href="#使用-ssh-隧道进行远程调试">使用 SSH 隧道进行远程调试</a></li>
+    <li><a href="#遇到的问题">遇到的问题</a>
+      <ol>
+        <li><a href="#一个负责登录认证的拦截器未注册">一个负责登录认证的拦截器未注册</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/deployment/" >
+                Deployment
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2025/05/aliyun-deployment-debugging-java-services/">阿里云部署调试 Java 服务记录</a>
+        </h2>
+    
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2025/05/10</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2025-05-10 17:13:00 &#43;0800 CST" title="2025-05-10 17:13:00 &#43;0800 CST">
+                            2025/05/10 17:13 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 4 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="背景">背景
+</h2><p>最近在做一个 APP 的后端开发，为了方便和客户端同学联调，用了一台阿里云的机器来部署服务，本文简单记录相关部署和调试流程，以备查阅。</p>
+<h2 id="服务环境准备">服务环境准备
+</h2><p>考虑到测试环境对性能和稳定性要求不高，为了节省成本，选择之间将 MySQL 和 Redis 都安装在同一台机器上，其中 Linux 版本为 <code>CentOS Linux release 7.9</code>。</p>
+<h3 id="配置-ssh-密钥登录">配置 SSH 密钥登录
+</h3><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 客户端生成密钥对，系统有提示，一路回车即可</span>
+</span></span><span class="line"><span class="cl">ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_aliyun -C <span class="s2">&#34;your_email@example.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 将私钥添加到 ssh-agent</span>
+</span></span><span class="line"><span class="cl"><span class="nb">eval</span> <span class="o">(</span>ssh-agent -c<span class="o">)</span>  <span class="c1"># 启动 ssh-agent (fish 写法)</span>
+</span></span><span class="line"><span class="cl">ssh-add ~/.ssh/id_ed25519_aliyun
+</span></span><span class="line"><span class="cl">ssh-add -l  <span class="c1"># 查看已添加的公钥</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 将公钥添加到远程服务器</span>
+</span></span><span class="line"><span class="cl">cat ~/.ssh/id_ed25519_aliyun.pub <span class="p">|</span> ssh username@server_ip <span class="s2">&#34;cat &gt;&gt; ~/.ssh/authorized_keys&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 4. 配置 fish 自动启动 ssh-agent</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 在 ~/.config/fish/config.fish 中添加</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> status is-interactive
+</span></span><span class="line"><span class="cl">    <span class="c1"># 检查 ssh-agent 是否已运行</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> not <span class="nb">test</span> -e <span class="nv">$SSH_AUTH_SOCK</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">eval</span> <span class="o">(</span>ssh-agent -c<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">set</span> -Ux SSH_AUTH_SOCK <span class="nv">$SSH_AUTH_SOCK</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">set</span> -Ux SSH_AGENT_PID <span class="nv">$SSH_AGENT_PID</span>
+</span></span><span class="line"><span class="cl">    end
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># 添加密钥（如果未添加）</span>
+</span></span><span class="line"><span class="cl">    ssh-add -l &gt;/dev/null 2&gt;<span class="p">&amp;</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">test</span> <span class="nv">$status</span> -eq <span class="m">1</span>
+</span></span><span class="line"><span class="cl">        ssh-add ~/.ssh/id_ed25519_aliyun
+</span></span><span class="line"><span class="cl">        ssh-add ~/.ssh/id_ed25519
+</span></span><span class="line"><span class="cl">    end
+</span></span><span class="line"><span class="cl">end
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 5. 编辑 SSH 配置文件</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 在 ~/.ssh/config 添加主机配置(之后直接 ssh aliyun_test_server 就可以登录服务器了)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Host aliyun_test_server
+</span></span><span class="line"><span class="cl">  HostName server_ip
+</span></span><span class="line"><span class="cl">  User root
+</span></span><span class="line"><span class="cl">  UseKeychain yes
+</span></span><span class="line"><span class="cl">  AddKeysToAgent yes
+</span></span><span class="line"><span class="cl">  PreferredAuthentications publickey
+</span></span><span class="line"><span class="cl">  IdentityFile ~/.ssh/id_ed25519_aliyun
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="安装-javamysqlredis-等">安装 Java、MySQL、Redis 等
+</h3><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-Bash" data-lang="Bash"><span class="line"><span class="cl"><span class="c1"># 1. Java（如果安装的是 java-1.8.0-openjdk，则仅仅是 JRE，不包含额外的开发工具（如 javac、jps、jstack 等）</span>
+</span></span><span class="line"><span class="cl">sudo yum install java-1.8.0-openjdk-devel
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. Redis</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 安装</span>
+</span></span><span class="line"><span class="cl">sudo yum install -y redis
+</span></span><span class="line"><span class="cl"><span class="c1"># 启动 Redis</span>
+</span></span><span class="line"><span class="cl">systemctl start redis   
+</span></span><span class="line"><span class="cl"><span class="c1"># 设置开机启动</span>
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> redis
+</span></span><span class="line"><span class="cl"><span class="c1"># 验证 Redis</span>
+</span></span><span class="line"><span class="cl">redis-cli ping
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. MySQL</span>
+</span></span><span class="line"><span class="cl">sudo yum install -y mysql-community-server
+</span></span><span class="line"><span class="cl"><span class="c1"># 启动 MySQL 服务</span>
+</span></span><span class="line"><span class="cl">sudo systemctl start mysqld
+</span></span><span class="line"><span class="cl"><span class="c1"># 设置开机启动</span>
+</span></span><span class="line"><span class="cl">sudo systemctl <span class="nb">enable</span> mysqld
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看默认的 root 用户密码</span>
+</span></span><span class="line"><span class="cl">grep <span class="s1">&#39;temporary password&#39;</span> /var/log/mysqld.log
+</span></span><span class="line"><span class="cl"><span class="c1"># 登录 MySQL</span>
+</span></span><span class="line"><span class="cl">mysql -u root -p
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="部署-java-服务">部署 Java 服务
+</h2><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-Bash" data-lang="Bash"><span class="line"><span class="cl">1. 本地构建得到 jar 包
+</span></span><span class="line"><span class="cl">mvn clean package
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 打包本地 lib 包（其中包含所有 maven 依赖 jar）
+</span></span><span class="line"><span class="cl"><span class="c1"># 考虑使用 maven-assembly-plugin 插件生成包含所有依赖的 JAR 文件，省略该步骤</span>
+</span></span><span class="line"><span class="cl">zip -r lib.zip lib/ 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 使用 scp 传输到远程服务器
+</span></span><span class="line"><span class="cl">scp target/your-project-jar-with-dependencies.jar user@remote-server:/path/to/deploy
+</span></span><span class="line"><span class="cl">scp target/lib.zip user@remote-server:/path/to/deploy
+</span></span><span class="line"><span class="cl">unzip lib.zip -d lib/   <span class="c1"># 登录远程服务器后解压</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 编写启动脚本启动服务
+</span></span><span class="line"><span class="cl"><span class="c1"># vim restart.sh</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#!/bin/bash</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;************ 查找进程 **************&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">str</span><span class="o">=</span><span class="sb">`</span>ps aux <span class="p">|</span> grep <span class="s2">&#34;biz-1.0.0.jar&#34;</span> <span class="p">|</span> grep -v grep <span class="p">|</span> awk <span class="s1">&#39;{print $2}&#39;</span><span class="sb">`</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="nv">$str</span> biz
+</span></span><span class="line"><span class="cl"><span class="nb">kill</span> -9 <span class="nv">$str</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$?</span><span class="s2">&#34;</span> -eq <span class="m">0</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">echo</span> <span class="s2">&#34;kill success&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">echo</span> <span class="s2">&#34;kill failed&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;************ 杀掉进程 **************&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SUPERVISOR_LOG_HOME</span><span class="o">=</span><span class="s2">&#34;logs&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;-server -Xmx512m -Xms512m -Xmn256m -Xss256k -XX:MetaspaceSize=96m&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+DisableExplicitGC&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+UseConcMarkSweepGC&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:CMSMaxAbortablePrecleanTime=5000&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+CMSClassUnloadingEnabled &#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+CMSParallelRemarkEnabled&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+UseFastAccessorMethods&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+UseCMSInitiatingOccupancyOnly&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+ExplicitGCInvokesConcurrent&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:CMSInitiatingOccupancyFraction=80&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:SurvivorRatio=8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -XX:+HeapDumpOnOutOfMemoryError -XX:+OmitStackTraceInFastThrow -XX:HeapDumpPath=</span><span class="nv">$SUPERVISOR_LOG_HOME</span><span class="s2">/java.hprof&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -Xloggc:</span><span class="nv">$SUPERVISOR_LOG_HOME</span><span class="s2">/gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$JAVA_OPTS</span><span class="s2"> -Dlog.path=</span><span class="nv">$SUPERVISOR_LOG_HOME</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">nohup java <span class="nv">$JAVA_OPTS</span> -Dspring.profiles.active<span class="o">=</span><span class="nb">test</span> -jar biz-1.0.0.jar 2&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;************ 启动成功 **************&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>目前这个非自动化部署的流程，操作起来还是比较繁琐。</p>
+<h2 id="使用-ssh-隧道进行远程调试">使用 SSH 隧道进行远程调试
+</h2><p>出于安全考虑，debug 绑定只绑定本地回环接口，然后通过 SSH 隧道进行连接。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 在远程服务器上启动 Java 应用时添加调试参数</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 配置 Java 应用只监听 localhost</span>
+</span></span><span class="line"><span class="cl">java -agentlib:jdwp<span class="o">=</span><span class="nv">transport</span><span class="o">=</span>dt_socket,server<span class="o">=</span>y,suspend<span class="o">=</span>n,address<span class="o">=</span>localhost:5005 YourApp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 建立 SSH 隧道</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 语法：ssh -L 本地端口:远程主机:远程端口 用户名@远程主机</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 这里我实际用的是配置在 .ssh/config 中的主键昵称-aliyun_test_server</span>
+</span></span><span class="line"><span class="cl">ssh -L 5005:localhost:5005 aliyun_test_server
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 如果需要在后台运行</span>
+</span></span><span class="line"><span class="cl">ssh -fNL 5005:localhost:5005 aliyun_test_server
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3.配置 IDE</span>
+</span></span><span class="line"><span class="cl">- 配置远程调试
+</span></span><span class="line"><span class="cl">- 连接地址：localhost:5005（使用本地转发的端口
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 4. 常用的 SSH 隧道命令选项</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># -f: 后台运行</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># -N: 不执行远程命令</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># -L: 本地端口转发</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># -v: 显示详细信息（调试用）</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 详细模式（便于调试）</span>
+</span></span><span class="line"><span class="cl">ssh -vNL 5005:localhost:5005 root@server_ip
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 后台运行模式</span>
+</span></span><span class="line"><span class="cl">ssh -fNL 5005:localhost:5005 root@server_ip
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 指定密钥文件</span>
+</span></span><span class="line"><span class="cl">ssh -i ~/.ssh/id_ed25519_aliyun.pub -fNL 5005:localhost:5005 root@server_ip
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 5. 检查隧道状态</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看已建立的连接</span>
+</span></span><span class="line"><span class="cl">netstat -tunlp <span class="p">|</span> grep <span class="m">5005</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看 SSH 进程</span>
+</span></span><span class="line"><span class="cl">ps aux <span class="p">|</span> grep ssh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 测试端口转发是否成功</span>
+</span></span><span class="line"><span class="cl">nc -zv localhost <span class="m">5005</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 6. 关闭 SSH 隧道</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 查找 SSH 进程</span>
+</span></span><span class="line"><span class="cl">ps aux <span class="p">|</span> grep ssh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 关闭特定的 SSH 隧道</span>
+</span></span><span class="line"><span class="cl"><span class="nb">kill</span> &lt;进程ID&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 或者关闭所有 SSH 隧道（谨慎使用）</span>
+</span></span><span class="line"><span class="cl">pkill -f <span class="s2">&#34;ssh -fNL&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="遇到的问题">遇到的问题
+</h2><h3 id="一个负责登录认证的拦截器未注册">一个负责登录认证的拦截器未注册
+</h3><p>比较奇怪的点在于，<strong>本地</strong>这个拦截器是<strong>正常</strong>的，但部署到远程之后它就失效了(远程 Debug 类 <code>HandlerExecutionChain#applyPreHandle</code>发现确实没有这个拦截器)，导致一些需要登录认证的接口无法使用。</p>
+<p>代码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-Java" data-lang="Java"><span class="line"><span class="cl"><span class="nd">@Configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InterceptorConfig</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">WebMvcConfigurationSupport</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">JwtInterceptor</span><span class="w"> </span><span class="nf">authenticationInterceptor</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JwtInterceptor</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addInterceptors</span><span class="p">(</span><span class="n">InterceptorRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">registry</span><span class="p">.</span><span class="na">addInterceptor</span><span class="p">(</span><span class="n">authenticationInterceptor</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">.</span><span class="na">addPathPatterns</span><span class="p">(</span><span class="s">&#34;/**&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>目前怀疑可能是某些类冲突导致的（本地类加载顺序和远程不一样），具体原因还在排查(截至05.10)。</p>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/java/">Java</a>
+        
+            <a href="/tags/deployment/">Deployment</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2025 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了19篇文章 ·
+        总计31.06k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>
