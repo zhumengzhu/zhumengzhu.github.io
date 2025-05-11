@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="R树可以用来实现地理围栏，本来记录学习 R 树的过程中的一些资料和理解">
-<meta name="keywords" content="R树"><title>R树及其家族</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="本文通过实际代码示例，简单对比 Linux 和 macOS 两个操作系统在读取目录文件时的行为差异。">
+<meta name="keywords" content="file-system, file-loading-order, linux, macos"><title>Linux vs macOS 文件加载顺序差异</title>
 
-<link rel='canonical' href='https://zhumengzhu.github.io/2022/09/r-tree-and-its-family/'>
+<link rel='canonical' href='https://zhumengzhu.github.io/2025/05/file-loading-order-comparison-between-linux-and-macos/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="R树及其家族">
-<meta property='og:description' content="R树可以用来实现地理围栏，本来记录学习 R 树的过程中的一些资料和理解">
-<meta property='og:url' content='https://zhumengzhu.github.io/2022/09/r-tree-and-its-family/'>
+<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Linux vs macOS 文件加载顺序差异">
+<meta property='og:description' content="本文通过实际代码示例，简单对比 Linux 和 macOS 两个操作系统在读取目录文件时的行为差异。">
+<meta property='og:url' content='https://zhumengzhu.github.io/2025/05/file-loading-order-comparison-between-linux-and-macos/'>
 <meta property='og:site_name' content='Somnus'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='R树' /><meta property='article:published_time' content='2022-09-28T21:52:53&#43;08:00'/><meta property='article:modified_time' content='2024-12-10T21:52:53&#43;08:00'/>
-<meta name="twitter:title" content="R树及其家族">
-<meta name="twitter:description" content="R树可以用来实现地理围栏，本来记录学习 R 树的过程中的一些资料和理解">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='file-system' /><meta property='article:published_time' content='2025-05-11T13:10:01&#43;08:00'/><meta property='article:modified_time' content='2025-05-11T13:10:01&#43;08:00'/>
+<meta name="twitter:title" content="Linux vs macOS 文件加载顺序差异">
+<meta name="twitter:description" content="本文通过实际代码示例，简单对比 Linux 和 macOS 两个操作系统在读取目录文件时的行为差异。">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -275,17 +275,16 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
-    <li><a href="#如何理解-r-树">如何理解 R 树</a></li>
-    <li><a href="#基本概念">基本概念</a>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#测试方案">测试方案</a>
       <ol>
-        <li><a href="#mbr">MBR</a></li>
-        <li><a href="#packed-1-d-r-tree">Packed 1-D R-Tree</a></li>
-        <li><a href="#2-d-r-tree">2-D R-Tree</a></li>
-      </ol>
-    </li>
-    <li><a href="#实际应用">实际应用</a>
-      <ol>
-        <li><a href="#道路索引">道路索引</a></li>
+        <li><a href="#测试代码">测试代码</a></li>
+        <li><a href="#测试结果">测试结果</a>
+          <ol>
+            <li><a href="#macos">macOS</a></li>
+            <li><a href="#linux">Linux</a></li>
+          </ol>
+        </li>
       </ol>
     </li>
   </ol>
@@ -307,8 +306,8 @@
     
     <header class="article-category">
         
-            <a href="/categories/learning-journal/" >
-                Learning Journal
+            <a href="/categories/trouble-shooting/" >
+                Trouble Shooting
             </a>
         
     </header>
@@ -316,12 +315,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/2022/09/r-tree-and-its-family/">R树及其家族</a>
+            <a href="/2025/05/file-loading-order-comparison-between-linux-and-macos/">Linux vs macOS 文件加载顺序差异</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            R树可以用来实现地理围栏，本来记录学习 R 树的过程中的一些资料和理解
+            本文通过实际代码示例，简单对比 Linux 和 macOS 两个操作系统在读取目录文件时的行为差异。
         </h3>
         
     </div>
@@ -339,15 +338,15 @@
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                    <time class="article-time--published">2022/09/28</time>
+                    <time class="article-time--published">2025/05/11</time>
                 </div>
             
 
             
             
                         最后修改于:
-                        <time class="article-time--updated" datetime="2024-12-10 21:52:53 &#43;0800 CST" title="2024-12-10 21:52:53 &#43;0800 CST">
-                            2024/12/10 21:52 CST
+                        <time class="article-time--updated" datetime="2025-05-11 13:10:01 &#43;0800 CST" title="2025-05-11 13:10:01 &#43;0800 CST">
+                            2025/05/11 13:10 CST
                         </time>
 
             
@@ -361,7 +360,7 @@
 
 
                     <time class="article-time--reading">
-                        阅读时长: 1 分钟
+                        阅读时长: 2 分钟
                     </time>
                 </div>
             
@@ -377,99 +376,191 @@
     <section class="article-content">
     
     
-    <p>资料：</p>
-<ul>
-<li>R 树基础：<a class="link" href="https://www.cnblogs.com/cmi-sh-love/p/kong-jian-shud-ju-suo-yinRTree-wan-quan-jie-xi-jiJa.html#toc_0"  target="_blank" rel="noopener"
-    >空间数据索引RTree（R树）完全解析及Java实现
-</a></li>
-<li>实用场景 <a class="link" href="https://www.zjujournals.com/sci/fileup/1008-9497/HTML/20180512.htm"  target="_blank" rel="noopener"
-    >基于HBase与静态多级格网索引的地表覆盖数据高效检索方法</a></li>
-</ul>
-<h2 id="如何理解-r-树">如何理解 R 树
+    <h2 id="背景">背景
+</h2><p>昨天将一个 Java 服务部署到云服务器后，发现本地可用的一个鉴权拦截器(JwtInterceptor)在云端失效了，排查怀疑是本地和远程文件加载顺序不同导致。这里做简单实验进行验证。</p>
+<h2 id="测试方案">测试方案
 </h2><ul>
-<li>R 树是平衡树；</li>
-<li>平衡树要求节点有序；</li>
-<li>R 树的节点是高维数据，比如对于二维来说，存储的是 MBR(最小限定矩形)；</li>
-<li>高维数据的顺序如何定义？
-<ul>
-<li>对一维的线段来说，定义一个坐标系，存在一个原点，线段左端点距原点的距离作为排序的依据；</li>
-<li>对二维的MBR来说(可以用左下，右上两个点的坐标表示一个矩形)，怎么定义？
-<ul>
-<li>猜想，定义平面直角坐标系，以左下点的坐标(x,y)作为排序的依据：比如(1,2)&lt;(1,3)&lt;(2,1)；</li>
+<li>创建两个特定的 .class 文件(<code>JwtInterceptorConfig.class</code>, <code>WebMvcConfig.class</code>)</li>
+<li>使用 os.listdir() 和 Path.iterdir() 两种方法</li>
+<li>每种方法都测试5次，以观察顺序是否稳定</li>
+<li>分别在 macOS 和 Linux 平台(CentOS)运行</li>
 </ul>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="基本概念">基本概念
-</h2><h3 id="mbr">MBR
-</h3><p><img src="/images/MBR.jpeg"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image1"
-	
-	
-></p>
-<h3 id="packed-1-d-r-tree">Packed 1-D R-Tree
-</h3><p><img src="/images/1-D_R-Tree.jpeg"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image2"
-	
-	
-></p>
-<h3 id="2-d-r-tree">2-D R-Tree
-</h3><p><img src="/images/2-D_R-Tree.jpeg"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image3"
-	
-	
-></p>
-<p>上图中，总计 12 个实线框，正好对应 R 树中 12 个叶子节点 R8~R19;</p>
-<p><img src="/images/2-D_R-Tree-Search.jpeg"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image4"
-	
-	
-></p>
-<h2 id="实际应用">实际应用
-</h2><h3 id="道路索引">道路索引
-</h3><p>每一条路使用一个最小MBB来进行包裹，使它成为R树的叶子结点（也就是那些数据结点）</p>
-<p><img src="/images/road_MBR.png"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image5"
-	
-	
-></p>
-<p>将每一条路的最小MBB作为R树的数据单元来进行构建R树(这里采用的是R树的改进版本R*树)</p>
-<p><img src="/images/origin_road.jpeg"
-	
-	
-	
-	loading="lazy"
-	
-		alt="image5"
-	
-	
-></p>
+<h3 id="测试代码">测试代码
+</h3><p>由于不论系统、语言，目录读取都是基于 POSIX 标准的 readdir() 系统调用，因此简单起见，这里使用 Python 语音。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">os</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">time</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">create_test_files</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 创建测试目录</span>
+</span></span><span class="line"><span class="cl">    <span class="n">test_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&#34;config_test&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">test_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">test_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="n">file</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">test_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># 创建两个测试文件</span>
+</span></span><span class="line"><span class="cl">    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;JwtInterceptorConfig.class&#34;</span><span class="p">,</span> <span class="s2">&#34;WebMvcConfig.class&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="p">(</span><span class="n">test_dir</span> <span class="o">/</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>  <span class="c1"># 稍微等待一下，确保时间戳不同</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">test_dir</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">test_directory_reading</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">当前操作系统: </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">=== os.listdir() 测试 ===&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>  <span class="c1"># 连续测试5次</span>
+</span></span><span class="line"><span class="cl">        <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;第 </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> 次:&#34;</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">=== Path.iterdir() 测试 ===&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>  <span class="c1"># 连续测试5次</span>
+</span></span><span class="line"><span class="cl">        <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()]</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;第 </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> 次:&#34;</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">test_dir</span> <span class="o">=</span> <span class="n">create_test_files</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">test_directory_reading</span><span class="p">(</span><span class="n">test_dir</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># 清理测试文件</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">input</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">按回车键删除测试文件...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">test_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">file</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">test_dir</span><span class="o">.</span><span class="n">rmdir</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="测试结果">测试结果
+</h3><h4 id="macos">macOS
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">当前操作系统: <span class="nv">posix</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">===</span> os.listdir<span class="o">()</span> <span class="nv">测试</span> <span class="o">===</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">1</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">2</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">3</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">4</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">5</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">===</span> Path.iterdir<span class="o">()</span> <span class="nv">测试</span> <span class="o">===</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">1</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">2</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">3</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">4</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">5</span> 次: <span class="o">[</span><span class="s1">&#39;JwtInterceptorConfig.class&#39;</span>, <span class="s1">&#39;WebMvcConfig.class&#39;</span><span class="o">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="linux">Linux
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">当前操作系统: <span class="nv">posix</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">===</span> os.listdir<span class="o">()</span> <span class="nv">测试</span> <span class="o">===</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">1</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">2</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">3</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">4</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">5</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">===</span> Path.iterdir<span class="o">()</span> <span class="nv">测试</span> <span class="o">===</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">1</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">2</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">3</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">4</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">第 <span class="m">5</span> 次: <span class="o">[</span><span class="s1">&#39;WebMvcConfig.class&#39;</span>, <span class="s1">&#39;JwtInterceptorConfig.class&#39;</span><span class="o">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </section>
 
 
@@ -477,7 +568,7 @@
     
     <section class="article-tags">
         
-            <a href="/tags/r%E6%A0%91/">R树</a>
+            <a href="/tags/file-system/">File-System</a>
         
     </section>
 
@@ -494,19 +585,7 @@
 
         <span>Licensed under CC BY-NC-SA 4.0</span>
     </section>
-    <section class="article-lastmod">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <polyline points="12 7 12 12 15 15" />
-</svg>
-
-
-
-        <span>
-            最后更新于 2024/12/10 21:52 CST
-        </span>
-    </section></footer>
+    </footer>
 
 
     
@@ -547,12 +626,12 @@
             
                 
 <article class="">
-    <a href="/2022/10/hugo-quick-start/">
+    <a href="/2023/09/root-cause-jvm-deoptimization-storm/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">Hugo 配置记录</h2>
+            <h2 class="article-title">JIT deoptimization 风暴导致 CPU 使用率飙升</h2>
         </div>
     </a>
 </article>
@@ -560,12 +639,12 @@
             
                 
 <article class="">
-    <a href="/2022/10/how-to-set-network-proxy/">
+    <a href="/2023/07/memory-leak-issue-in-a-service/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">代理设置</h2>
+            <h2 class="article-title">服务内存泄露问题排查记录</h2>
         </div>
     </a>
 </article>
@@ -573,12 +652,12 @@
             
                 
 <article class="">
-    <a href="/2022/10/prometheus-and-grafana-learning-notes/">
+    <a href="/2023/06/java-service-old-generation-memory-anomaly-large-object-impact-and-solutions/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">Prometheus &amp; Grafana 学习记录</h2>
+            <h2 class="article-title">Java 服务老年代内存异常：大对象的影响与解决方案</h2>
         </div>
     </a>
 </article>
@@ -586,12 +665,12 @@
             
                 
 <article class="">
-    <a href="/2022/09/spatial-index-technology-first-glimpse/">
+    <a href="/2023/04/java-class-conflict-and-solutions/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">空间索引技术初见</h2>
+            <h2 class="article-title">Java 类冲突问题及其解决方案</h2>
         </div>
     </a>
 </article>
