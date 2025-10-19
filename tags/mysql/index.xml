@@ -315,9 +315,7 @@
     &gt;https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html&lt;/a&gt;
 INSERT INTO T SELECT &amp;hellip; FROM S WHERE &amp;hellip; sets an exclusive index record lock (without a gap lock) on each row inserted into T. If the transaction isolation level is READ COMMITTED, InnoDB does the search on S as a consistent read (no locks). Otherwise, InnoDB sets shared next-key locks on rows from S. InnoDB has to set locks in the latter case: During roll-forward recovery using a statement-based binary log, every SQL statement must be executed in exactly the same way it was done originally.
 CREATE TABLE &amp;hellip; SELECT &amp;hellip; performs the SELECT with shared next-key locks or as a consistent read, as for INSERT &amp;hellip; SELECT.
-When a SELECT is used in the constructs REPLACE INTO t SELECT &amp;hellip; FROM s WHERE &amp;hellip; or UPDATE t &amp;hellip; WHERE col IN (SELECT &amp;hellip; FROM s &amp;hellip;), InnoDB sets shared next-key locks on rows from table s.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
+When a SELECT is used in the constructs REPLACE INTO t SELECT &amp;hellip; FROM s WHERE &amp;hellip; or UPDATE t &amp;hellip; WHERE col IN (SELECT &amp;hellip; FROM s &amp;hellip;), InnoDB sets shared next-key locks on rows from table s.&lt;/p&gt;&lt;/blockquote&gt;&lt;/blockquote&gt;
 &lt;h4 id=&#34;实验二&#34;&gt;实验二
 &lt;/h4&gt;&lt;p&gt;&lt;code&gt;SELECT IFNULL(MAX(version) + 1, 1) AS version FROM &lt;/code&gt;t&lt;code&gt; FOR SHARE;&lt;/code&gt;
 单独执行 SELECT FOR SHARE 然后查看加锁情况：&lt;/p&gt;
@@ -624,18 +622,14 @@ When a SELECT is used in the constructs REPLACE INTO t SELECT &amp;hellip; FROM 
 &lt;p&gt;意向锁的作用&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;当我们准备给一张表加上表锁的时候，我们首先要去 判断有没其他的事务锁定了其中了某些行？如果有的话，肯定不能加上表锁。那么这个时候我们就要去扫描整张表才能确定能不能成功加上一个表锁，如果数据量特别大，比如有上千万的数据的时候，加表锁的效率会很低。当我们在使用共享行锁时，Innodb 会自动给我们加上IS，使用排他行锁时自动加上IX ，用来表示改表中已经存在那些锁
-参考：https://www.jianshu.com/p/ae91c63e7257&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
+参考：https://www.jianshu.com/p/ae91c63e7257&lt;/p&gt;&lt;/blockquote&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;插入意向锁的作用&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;插入意向锁是在插入之前，先判断插入的间隙是否存在间隙锁，如果存在则产生一个插入意向锁，去等待间隙锁的释放。
 多个事务插入同一个间隙的不同位置，他们并不会冲突。假设存在索引记录，其值分别为5和9。单独的事务分别尝试插入值6和7，在获得插入行的排他锁之前，每个事务都使用插入意图锁来锁定5和9之间的间隙，但他们不会互相阻塞。
 参考官方说明：https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html
-An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap need not wait for each other if they are not inserting at the same position within the gap. Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row, but do not block each other because the rows are nonconflicting.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
+An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap need not wait for each other if they are not inserting at the same position within the gap. Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row, but do not block each other because the rows are nonconflicting.&lt;/p&gt;&lt;/blockquote&gt;&lt;/blockquote&gt;
 &lt;h3 id=&#34;为什么-insert-into-t-select--from-s-where--需要加共享锁&#34;&gt;为什么 INSERT INTO T SELECT &amp;hellip; FROM S WHERE &amp;hellip; 需要加共享锁
 &lt;/h3&gt;&lt;p&gt;考虑下面的情况：&lt;/p&gt;
 &lt;ul&gt;
@@ -1065,8 +1059,7 @@ next-key 锁)
 &lt;blockquote&gt;
 &lt;p&gt;It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with
 the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their
-own sequence values.&lt;/p&gt;
-&lt;/blockquote&gt;
+own sequence values.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;see &lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;MySQL 8.0 Reference Manual&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;最后，还可以对上面的 SQL 进一步优化，使得只需执行 2 次 SQL：&lt;/p&gt;
@@ -1294,8 +1287,7 @@ own sequence values.&lt;/p&gt;
 &lt;p&gt;SET @update_id := 0;
 UPDATE some_table SET column_name = &amp;lsquo;value&amp;rsquo;, id = (SELECT @update_id := id)
 WHERE some_other_column = &amp;lsquo;blah&amp;rsquo; LIMIT 1;
-SELECT @update_id;&lt;/p&gt;
-&lt;/blockquote&gt;
+SELECT @update_id;&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;详情见：&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
 &lt;p&gt;这种方法在需要&lt;strong&gt;一次更新多条记录&lt;/strong&gt;时特别有用。&lt;/p&gt;
@@ -1305,8 +1297,7 @@ SELECT @update_id;&lt;/p&gt;
 这篇文章是在 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 的使用方法。&lt;/p&gt;
 &lt;p&gt;另外，需要特别注意：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h1 id=&#34;reference&#34;&gt;Reference
 &lt;/h1&gt;&lt;ul&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
@@ -1338,13 +1329,11 @@ SELECT @update_id;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Is this workaround specific to &lt;strong&gt;MyISAM&lt;/strong&gt; engine?&lt;/li&gt;
 &lt;li&gt;How does &lt;strong&gt;PostgreSQL&lt;/strong&gt; handle this?&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
 &lt;p&gt;Quassnoi 写下这篇新博客，即为了回答上述两个问题。&lt;/p&gt;
 &lt;h1 id=&#34;正文&#34;&gt;正文
 &lt;/h1&gt;&lt;blockquote&gt;
-&lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1360,8 +1349,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;which can be improved using a little rewrite:&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;which can be improved using a little rewrite:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1388,8 +1376,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;
 &lt;/h2&gt;&lt;h3 id=&#34;the-answer&#34;&gt;The Answer
 &lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;这句话是说，&lt;strong&gt;PostgreSQL&lt;/strong&gt; 只会在需要的时候才&lt;strong&gt;回表查询&lt;/strong&gt;。如果一个查询涉及 &lt;code&gt;ORDER BY&lt;/code&gt;、&lt;code&gt;LIMIT&lt;/code&gt; 和 &lt;code&gt;OFFSET&lt;/code&gt;，那么可以先利用索引跳过不需要的记录，只对需要的记录进行进行回表。&lt;/p&gt;
 &lt;p&gt;这其实就是『&lt;strong&gt;Late Row Lookups&lt;/strong&gt;』；与之相对的，MySQL 执行的是『&lt;strong&gt;Early Row Lookups&lt;/strong&gt;』。&lt;/p&gt;
 &lt;p&gt;作者后面说虽然 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 的查询计划不会输出&lt;strong&gt;回表信息&lt;/strong&gt;，但可以通过一个简单的测试进行验证。但具体怎么进行这个实验，作者没讲，下面试着做个补充。&lt;/p&gt;
@@ -1681,11 +1668,9 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;&lt;code&gt;0.133 sec&lt;/code&gt; vs &lt;code&gt;1.579 sec&lt;/code&gt;。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Why such a difference?&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Why such a difference?&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &amp;gt; some data out of the index. This is called external storage.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &amp;gt; some data out of the index. This is called external storage.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;在 &lt;strong&gt;InnoDB&lt;/strong&gt; 中，小于 768 字节的列会全部存储在页上，大于 768 字节则会分开存储。在上面的 &lt;code&gt;lookup&lt;/code&gt; 表中，&lt;code&gt;shottxt&lt;/code&gt; 列总是 &lt;code&gt;on-page&lt;/code&gt; 存储的，而 &lt;code&gt;longtxt&lt;/code&gt; 则是 &lt;code&gt;off-page&lt;/code&gt;的。&lt;/p&gt;
 &lt;p&gt;因此，直接查询 &lt;code&gt;longtxt&lt;/code&gt; 时，每扫描一条记录都要出发两次&lt;code&gt;page lookups&lt;/code&gt;：第一次查聚簇索引，第二次查外部存储。这既会花费很多时间，也可能破坏 &lt;strong&gt;InnoDB&lt;/strong&gt; 缓存，导致缓存命中率下降。&lt;/p&gt;
 &lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列
@@ -1739,8 +1724,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;It&amp;rsquo;s very useful on &lt;code&gt;ORDER BY&lt;/code&gt; conditions served by secondary indexes&lt;/li&gt;
 &lt;li&gt;It&amp;rsquo;s quite useful on moderate sized columns (still stored on page) or CPU-intensive expressions&lt;/li&gt;
 &lt;li&gt;It&amp;rsquo;s almost useless on short columns without complex CPU-intensive processing&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
 &lt;h1 id=&#34;其它&#34;&gt;其它
 &lt;/h1&gt;&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划
 &lt;/h2&gt;&lt;ul&gt;

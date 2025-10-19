@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析">
 <meta property='og:description' content="分析 INSERT INTO T SELECT ... FROM S WHERE ... 语句执行时，会加哪些锁，以及为什么加这些锁。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/12/insert-into-t-select-from-s-where-conditional-query/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -557,9 +557,7 @@
     >https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html</a>
 INSERT INTO T SELECT &hellip; FROM S WHERE &hellip; sets an exclusive index record lock (without a gap lock) on each row inserted into T. If the transaction isolation level is READ COMMITTED, InnoDB does the search on S as a consistent read (no locks). Otherwise, InnoDB sets shared next-key locks on rows from S. InnoDB has to set locks in the latter case: During roll-forward recovery using a statement-based binary log, every SQL statement must be executed in exactly the same way it was done originally.
 CREATE TABLE &hellip; SELECT &hellip; performs the SELECT with shared next-key locks or as a consistent read, as for INSERT &hellip; SELECT.
-When a SELECT is used in the constructs REPLACE INTO t SELECT &hellip; FROM s WHERE &hellip; or UPDATE t &hellip; WHERE col IN (SELECT &hellip; FROM s &hellip;), InnoDB sets shared next-key locks on rows from table s.</p>
-</blockquote>
-</blockquote>
+When a SELECT is used in the constructs REPLACE INTO t SELECT &hellip; FROM s WHERE &hellip; or UPDATE t &hellip; WHERE col IN (SELECT &hellip; FROM s &hellip;), InnoDB sets shared next-key locks on rows from table s.</p></blockquote></blockquote>
 <h4 id="实验二">实验二
 </h4><p><code>SELECT IFNULL(MAX(version) + 1, 1) AS version FROM </code>t<code> FOR SHARE;</code>
 单独执行 SELECT FOR SHARE 然后查看加锁情况：</p>
@@ -866,18 +864,14 @@ When a SELECT is used in the constructs REPLACE INTO t SELECT &hellip; FROM s WH
 <p>意向锁的作用</p>
 <blockquote>
 <p>当我们准备给一张表加上表锁的时候，我们首先要去 判断有没其他的事务锁定了其中了某些行？如果有的话，肯定不能加上表锁。那么这个时候我们就要去扫描整张表才能确定能不能成功加上一个表锁，如果数据量特别大，比如有上千万的数据的时候，加表锁的效率会很低。当我们在使用共享行锁时，Innodb 会自动给我们加上IS，使用排他行锁时自动加上IX ，用来表示改表中已经存在那些锁
-参考：https://www.jianshu.com/p/ae91c63e7257</p>
-</blockquote>
-</blockquote>
+参考：https://www.jianshu.com/p/ae91c63e7257</p></blockquote></blockquote>
 <blockquote>
 <p>插入意向锁的作用</p>
 <blockquote>
 <p>插入意向锁是在插入之前，先判断插入的间隙是否存在间隙锁，如果存在则产生一个插入意向锁，去等待间隙锁的释放。
 多个事务插入同一个间隙的不同位置，他们并不会冲突。假设存在索引记录，其值分别为5和9。单独的事务分别尝试插入值6和7，在获得插入行的排他锁之前，每个事务都使用插入意图锁来锁定5和9之间的间隙，但他们不会互相阻塞。
 参考官方说明：https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html
-An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap need not wait for each other if they are not inserting at the same position within the gap. Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row, but do not block each other because the rows are nonconflicting.</p>
-</blockquote>
-</blockquote>
+An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap need not wait for each other if they are not inserting at the same position within the gap. Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row, but do not block each other because the rows are nonconflicting.</p></blockquote></blockquote>
 <h3 id="为什么-insert-into-t-select--from-s-where--需要加共享锁">为什么 INSERT INTO T SELECT &hellip; FROM S WHERE &hellip; 需要加共享锁
 </h3><p>考虑下面的情况：</p>
 <ul>

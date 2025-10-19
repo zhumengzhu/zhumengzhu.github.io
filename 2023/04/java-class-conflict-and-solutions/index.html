@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Java 类冲突问题及其解决方案">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="Java 类冲突问题及其解决方案">
 <meta property='og:description' content="本文讨论 Java 类冲突问题的背景、解决方案，以及排查类冲突问题的小技巧。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2023/04/java-class-conflict-and-solutions/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -401,9 +401,7 @@
 <blockquote>
 <p>此时如果去查看错误日志，往往可以看到诸如 ClassNotFoundException、NoClassDefFoundError 等异常信息，接着很容易就会想到很可能是发生了类冲突。
 然后你会结合异常日志即依赖变更情况，定位到冲突的类及其所在的 jar 包，然后用 dependecy-exclude 等手段将冲突解决掉，最终使得服务可以正常启动。一般我们处理问题就到此为止了。
-本文试图更近一步，<strong>深入分析本地与远程服务器行为不一致的原因</strong>，并简单介绍<strong>业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧</strong>。</p>
-</blockquote>
-</blockquote>
+本文试图更近一步，<strong>深入分析本地与远程服务器行为不一致的原因</strong>，并简单介绍<strong>业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧</strong>。</p></blockquote></blockquote>
 <h2 id="背景知识">背景知识
 </h2><p><strong>Java Classpath</strong>:
 <img src="/images/class_conflict_1_2023-4-3_17-35-53.png"

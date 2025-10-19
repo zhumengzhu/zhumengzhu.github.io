@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="MySQL 中如何实现只更新未使用的一行数据">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="MySQL 中如何实现只更新未使用的一行数据">
 <meta property='og:description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -689,8 +689,7 @@ next-key 锁)
 <blockquote>
 <p>It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with
 the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their
-own sequence values.</p>
-</blockquote>
+own sequence values.</p></blockquote>
 <p>see <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id"  target="_blank" rel="noopener"
     >MySQL 8.0 Reference Manual</a></p>
 <p>最后，还可以对上面的 SQL 进一步优化，使得只需执行 2 次 SQL：</p>
@@ -918,8 +917,7 @@ own sequence values.</p>
 <p>SET @update_id := 0;
 UPDATE some_table SET column_name = &lsquo;value&rsquo;, id = (SELECT @update_id := id)
 WHERE some_other_column = &lsquo;blah&rsquo; LIMIT 1;
-SELECT @update_id;</p>
-</blockquote>
+SELECT @update_id;</p></blockquote>
 <p>详情见：<a class="link" href="https://stackoverflow.com/a/1751282/3496176"  target="_blank" rel="noopener"
     >How to get ID of the last updated row in MySQL?</a>:</p>
 <p>这种方法在需要<strong>一次更新多条记录</strong>时特别有用。</p>
@@ -929,8 +927,7 @@ SELECT @update_id;</p>
 这篇文章是在 <strong>2017 年 4 月 12</strong> 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 <code>SKIP LOCKED</code> 和 <code>NOWAIT</code> 的使用方法。</p>
 <p>另外，需要特别注意：</p>
 <blockquote>
-<p>Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.</p>
-</blockquote>
+<p>Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.</p></blockquote>
 <h1 id="reference">Reference
 </h1><ul>
 <li><a class="link" href="https://dba.stackexchange.com/questions/131051/update-just-one-unused-row"  target="_blank" rel="noopener"

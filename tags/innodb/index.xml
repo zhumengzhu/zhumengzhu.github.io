@@ -332,8 +332,7 @@ next-key 锁)
 &lt;blockquote&gt;
 &lt;p&gt;It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with
 the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their
-own sequence values.&lt;/p&gt;
-&lt;/blockquote&gt;
+own sequence values.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;see &lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;MySQL 8.0 Reference Manual&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;最后，还可以对上面的 SQL 进一步优化，使得只需执行 2 次 SQL：&lt;/p&gt;
@@ -561,8 +560,7 @@ own sequence values.&lt;/p&gt;
 &lt;p&gt;SET @update_id := 0;
 UPDATE some_table SET column_name = &amp;lsquo;value&amp;rsquo;, id = (SELECT @update_id := id)
 WHERE some_other_column = &amp;lsquo;blah&amp;rsquo; LIMIT 1;
-SELECT @update_id;&lt;/p&gt;
-&lt;/blockquote&gt;
+SELECT @update_id;&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;详情见：&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
 &lt;p&gt;这种方法在需要&lt;strong&gt;一次更新多条记录&lt;/strong&gt;时特别有用。&lt;/p&gt;
@@ -572,8 +570,7 @@ SELECT @update_id;&lt;/p&gt;
 这篇文章是在 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 的使用方法。&lt;/p&gt;
 &lt;p&gt;另外，需要特别注意：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h1 id=&#34;reference&#34;&gt;Reference
 &lt;/h1&gt;&lt;ul&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
@@ -605,13 +602,11 @@ SELECT @update_id;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Is this workaround specific to &lt;strong&gt;MyISAM&lt;/strong&gt; engine?&lt;/li&gt;
 &lt;li&gt;How does &lt;strong&gt;PostgreSQL&lt;/strong&gt; handle this?&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
 &lt;p&gt;Quassnoi 写下这篇新博客，即为了回答上述两个问题。&lt;/p&gt;
 &lt;h1 id=&#34;正文&#34;&gt;正文
 &lt;/h1&gt;&lt;blockquote&gt;
-&lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -627,8 +622,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;which can be improved using a little rewrite:&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;which can be improved using a little rewrite:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -655,8 +649,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;h2 id=&#34;postgresql&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;
 &lt;/h2&gt;&lt;h3 id=&#34;the-answer&#34;&gt;The Answer
 &lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The second questions is easy: PostgreSQL won&amp;rsquo;t pull the fields from the table until it really needs them. If a query involving an &lt;code&gt;ORDER BY&lt;/code&gt; along with &lt;code&gt;LIMIT&lt;/code&gt; and &lt;code&gt;OFFSET&lt;/code&gt; is optimized to use the index for the &lt;code&gt;ORDER BY&lt;/code&gt; part, the table lookups won&amp;rsquo;t happen for the records skipped.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;这句话是说，&lt;strong&gt;PostgreSQL&lt;/strong&gt; 只会在需要的时候才&lt;strong&gt;回表查询&lt;/strong&gt;。如果一个查询涉及 &lt;code&gt;ORDER BY&lt;/code&gt;、&lt;code&gt;LIMIT&lt;/code&gt; 和 &lt;code&gt;OFFSET&lt;/code&gt;，那么可以先利用索引跳过不需要的记录，只对需要的记录进行进行回表。&lt;/p&gt;
 &lt;p&gt;这其实就是『&lt;strong&gt;Late Row Lookups&lt;/strong&gt;』；与之相对的，MySQL 执行的是『&lt;strong&gt;Early Row Lookups&lt;/strong&gt;』。&lt;/p&gt;
 &lt;p&gt;作者后面说虽然 &lt;strong&gt;PostgreSQL&lt;/strong&gt; 的查询计划不会输出&lt;strong&gt;回表信息&lt;/strong&gt;，但可以通过一个简单的测试进行验证。但具体怎么进行这个实验，作者没讲，下面试着做个补充。&lt;/p&gt;
@@ -948,11 +941,9 @@ SELECT @update_id;&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;&lt;code&gt;0.133 sec&lt;/code&gt; vs &lt;code&gt;1.579 sec&lt;/code&gt;。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Why such a difference?&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Why such a difference?&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &amp;gt; some data out of the index. This is called external storage.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &amp;gt; some data out of the index. This is called external storage.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;在 &lt;strong&gt;InnoDB&lt;/strong&gt; 中，小于 768 字节的列会全部存储在页上，大于 768 字节则会分开存储。在上面的 &lt;code&gt;lookup&lt;/code&gt; 表中，&lt;code&gt;shottxt&lt;/code&gt; 列总是 &lt;code&gt;on-page&lt;/code&gt; 存储的，而 &lt;code&gt;longtxt&lt;/code&gt; 则是 &lt;code&gt;off-page&lt;/code&gt;的。&lt;/p&gt;
 &lt;p&gt;因此，直接查询 &lt;code&gt;longtxt&lt;/code&gt; 时，每扫描一条记录都要出发两次&lt;code&gt;page lookups&lt;/code&gt;：第一次查聚簇索引，第二次查外部存储。这既会花费很多时间，也可能破坏 &lt;strong&gt;InnoDB&lt;/strong&gt; 缓存，导致缓存命中率下降。&lt;/p&gt;
 &lt;h3 id=&#34;通过二级索引查询-shorttxt-列&#34;&gt;通过二级索引查询 shorttxt 列
@@ -1006,8 +997,7 @@ SELECT @update_id;&lt;/p&gt;
 &lt;li&gt;It&amp;rsquo;s very useful on &lt;code&gt;ORDER BY&lt;/code&gt; conditions served by secondary indexes&lt;/li&gt;
 &lt;li&gt;It&amp;rsquo;s quite useful on moderate sized columns (still stored on page) or CPU-intensive expressions&lt;/li&gt;
 &lt;li&gt;It&amp;rsquo;s almost useless on short columns without complex CPU-intensive processing&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
 &lt;h1 id=&#34;其它&#34;&gt;其它
 &lt;/h1&gt;&lt;h2 id=&#34;postgresql查询计划&#34;&gt;&lt;strong&gt;PostgreSQL&lt;/strong&gt;查询计划
 &lt;/h2&gt;&lt;ul&gt;

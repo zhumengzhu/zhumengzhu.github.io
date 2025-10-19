@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Oracle JDK 和 OpenJDK 如何选择？">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="Oracle JDK 和 OpenJDK 如何选择？">
 <meta property='og:description' content="Q1、JDK 和 JRE 的区别 答：JDK 是 JRE 的父集，我们 POD 中需要安装 JDK，以便能运行一些诊断工具。\nJDK(Java Development Kit，Java 开发工具包) ，是整个JAVA的核心，包括了Java运行环境JRE（Java Runtime Envirnment），一堆Java工具（javac/java/jdb等）和Java基础的类库），包含JVM标准实现及Java核心类库。 JRE(Java Runtime Environment Java 运行环境) ，是 JDK 的子集，也就是包括 JRE 所有内容，以及开发应用程序所需的编译器和调试器等工具。 见：https://docs.oracle.com/javase/8/docs/ Q2、Oracle JDK 究竟从哪个版本开始收费？ 答：jdk8u201 和 jdk8u202 是 orcale jdk8 最后的免费版本，从 jdk8u211 和 jdk8u212 开始收费。参考：https://www.cnblogs.com/xuruiming/p/12881503.html\n如果使用 Orcale JDK，建议 jdk8u201: Q3、如何下载 Orcale JDK 8u201? 答：从 Oracle 官网下载：https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html\nQ4、Oracle JDK8u 和 OpenJDK8u 有什么区别？ 答：最主要的是授权协议不同。Orcale 的高版本商用时收费，OpenJDK 则完全免费。\n其次还有OpenJDK源代码不完整、部分源代码用开源代码替换、OpenJDK只包含最精简的JDK等问题，但一般来说，这些影响可以忽略。\nQ5、JDK8 的支持到什么时候结束？ 答：2030年12月31日，https://endoflife.date/java Q6、OpenJDK 支持 Java Flight Recorder 吗？ 答：支持，见：低延迟 Profile 工具 Flight Recorder 被移植到 Java 8。\n开启方法：\n1 -XX:+UnlockCommercialFeatures -XX:+FlightRecorder Q7、OpenJDK8 中的 Java Flight Recorder 是商用特性吗？ 答：不是，该特性在 OpenJDK 是完全免费的，见：Get started with JDK Flight Recorder in OpenJDK 8u。\n但要注意：Oracle 的 JDK11 之前的版本中 JFR 是商用特性，所以需要加 -XX:+UnlockCommercialFeatures 开启；同时为了兼容性，使用 OpenJDK 也要添加该参数。\nQ8、OpenJDK8 支持识别 Docker 容器的资源限制吗？ 答：取决于版本。\n比如：从 jdk8u191 开始完整支持，不需要需要使用 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=1 -XX:G1ConcRefinementThreads=5 -XX:ActiveProcessorCount=8 这些参数指定 GC 线程数。\n详见：JVM 对容器化支持的参数（强烈建议，参考该文章在 docker 中进行验证）。\n小于 jdk8u131 版本不支持； 大于等于 jdk8u131，小于 jdk8u191 实验性支持； 大于等于 jdk8u191 开始完整的支持； Q9、如何下载 OpenJDK8？ 答： 很多，这里给出两个：Azul Zulu Downloads，OpenLogic OpenJDK Downloads 。\n特别地，如果是在个人开发电脑，则强烈建议使用 SDKMAN ，它支持并行版本管理，Java 生态的各种软件包，包括 JDK、、Kotlin、Groovy、Scala、Maven、Gradle 等等。\n">
 <meta property='og:url' content='https://zhumengzhu.github.io/2023/07/oracle-jdk-vs-openjdk-selection-guide/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 

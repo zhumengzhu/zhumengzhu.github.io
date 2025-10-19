@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2023/01/java-random-number-issues-overview/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Java 随机数问题综述">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="Java 随机数问题综述">
 <meta property='og:description' content="Java 随机数问题综述">
 <meta property='og:url' content='https://zhumengzhu.github.io/2023/01/java-random-number-issues-overview/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -378,8 +378,7 @@
 </ul>
 <blockquote>
 <p>To better understand this, let&rsquo;s see how one of its primary operations, <a class="link" href="https://github.com/openjdk/jdk/blob/a8a2246158bc53414394b007cbf47413e62d942e/src/java.base/share/classes/java/util/Random.java#L198"  target="_blank" rel="noopener"
-    >next(int)</a>, is implemented:</p>
-</blockquote>
+    >next(int)</a>, is implemented:</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -405,8 +404,7 @@
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><blockquote>
-<p>Instead of a dedicated instance of Random per thread, each thread only needs to maintain its own seed value. As of Java 8, the Thread class itself has been retrofitted to maintain the seed value:</p>
-</blockquote>
+<p>Instead of a dedicated instance of Random per thread, each thread only needs to maintain its own seed value. As of Java 8, the Thread class itself has been retrofitted to maintain the seed value:</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -438,8 +436,7 @@
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><blockquote>
-<p>The <em>threadLocalRandomSeed</em> variable is responsible for maintaining the current seed value for <em>ThreadLocalRandom</em>. Moreover, the secondary seed, <em>threadLocalRandomSecondarySeed</em>, is usually used internally by the likes of <em>ForkJoinPool</em>.</p>
-</blockquote>
+<p>The <em>threadLocalRandomSeed</em> variable is responsible for maintaining the current seed value for <em>ThreadLocalRandom</em>. Moreover, the secondary seed, <em>threadLocalRandomSecondarySeed</em>, is usually used internally by the likes of <em>ForkJoinPool</em>.</p></blockquote>
 <blockquote>
 <p>This implementation incorporates a few optimizations to make <em>ThreadLocalRandom</em> even more performant:</p>
 <ul>
@@ -447,15 +444,13 @@
     ><em><strong>false sharing</strong></em></a> by using the @Contented annotation, which basically adds enough padding to isolate the contended variables in their own cache lines</li>
 <li>Using sun.misc.Unsafe to update these three variables instead of using the Reflection API</li>
 <li>Avoiding extra hashtable lookups associated with the ThreadLocal implementation</li>
-</ul>
-</blockquote>
+</ul></blockquote>
 <h2 id="contention-in-javautilsecurerandom">Contention in java.util.SecureRandom
 </h2><p>it&rsquo;s the subclass of <code>java.util.Random</code></p>
 <blockquote>
 <p>one of the most common locking issues within Java applications is triggered through an innocent-looking <a class="link" href="https://docs.oracle.com/javase/7/docs/api/java/io/File.html#createTempFile%28java.lang.String,%20java.lang.String%29"  target="_blank" rel="noopener"
     >java.io.File.createTempFile()</a> calls. Under the hood, this temporary file creation is <a class="link" href="http://hg.openjdk.java.net/jdk7/jdk7/jdk/file/tip/src/share/classes/java/io/File.java#l1774"  target="_blank" rel="noopener"
-    >relying upon a SecureRandom class</a> to calculate the name of the file.</p>
-</blockquote>
+    >relying upon a SecureRandom class</a> to calculate the name of the file.</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -484,8 +479,7 @@
 </div>
 </div><blockquote>
 <p>And SecureRandom, when nextLong is called, eventually calls its method <a class="link" href="http://hg.openjdk.java.net/jdk7/jdk7/jdk/file/tip/src/share/classes/java/security/SecureRandom.java#l454"  target="_blank" rel="noopener"
-    >nextBytes()</a>, which is defined as synchronized:</p>
-</blockquote>
+    >nextBytes()</a>, which is defined as synchronized:</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -501,15 +495,12 @@
 </div><blockquote>
 <p>One may say, that if I create new SecureRandom in each thread, I will not get any issues. Unfortunately, it’s not that simple. SecureRandom uses an implementation of <a class="link" href="https://docs.oracle.com/javase/7/docs/api/java/security/SecureRandomSpi.html"  target="_blank" rel="noopener"
     >java.security.SecureRandomSpi</a>, which will eventually be contended anyhow (you may look at the following bug discussion with some benchmarks in <a class="link" href="https://issues.jenkins.io/browse/JENKINS-20108"  target="_blank" rel="noopener"
-    >Jenkins issue tracker</a>)</p>
-</blockquote>
+    >Jenkins issue tracker</a>)</p></blockquote>
 <blockquote>
-<p>This in combination with certain application usage patterns (especially if you have lots of  SSL connections which rely on SecureRandom for their crypto-handshaking magic) has a tendency to build up into long-lasting contention issues.</p>
-</blockquote>
+<p>This in combination with certain application usage patterns (especially if you have lots of  SSL connections which rely on SecureRandom for their crypto-handshaking magic) has a tendency to build up into long-lasting contention issues.</p></blockquote>
 <blockquote>
 <p>The fix to the situation is simple if you can control the source code – just rebuild the solution to rely upon the <a class="link" href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ThreadLocalRandom.html"  target="_blank" rel="noopener"
-    >java.util.ThreadLocalRandom</a> for multithreaded designs. In cases where you are stuck with a standard API making the decisions for you the solution can be more complex and require significant refactoring.</p>
-</blockquote>
+    >java.util.ThreadLocalRandom</a> for multithreaded designs. In cases where you are stuck with a standard API making the decisions for you the solution can be more complex and require significant refactoring.</p></blockquote>
 <h2 id="urandom-and-random-devices">urandom and random Devices
 </h2><p><a class="link" href="https://www.ibm.com/docs/en/aix/7.2?topic=files-urandom-random-devices"  target="_blank" rel="noopener"
     >https://www.ibm.com/docs/en/aix/7.2?topic=files-urandom-random-devices</a></p>

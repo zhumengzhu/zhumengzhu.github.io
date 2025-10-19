@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/09/spatial-index-technology-first-glimpse/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="空间索引技术初见">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="空间索引技术初见">
 <meta property='og:description' content="初步了解一些常用的空间索引技术及具体实现，包括 GeoHash、Redis、Google S2、Uber H3 等。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/09/spatial-index-technology-first-glimpse/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -398,8 +398,7 @@
 <p>The time complexity for these commands is approximately <strong>O(N+log(M))</strong> where N is the number of &gt; elements inside the bounding box of the circular area delimited by center and radius, and M is &gt; the number of items inside the index.</p>
 <p>There are plenty of solutions available for implementing spatial searches.</p>
 <p>Data structures like <strong>Quadtree, R-tree, and K-d tree</strong> can be used to index the entities.</p>
-<p>Geospatial indexers like S2 and H3 can be used for similar queries.</p>
-</blockquote>
+<p>Geospatial indexers like S2 and H3 can be used for similar queries.</p></blockquote>
 <p>疑问：</p>
 <ul>
 <li>为什么 GEOADD 复杂度是 O(log(N))，为什么 ZADD 复杂度是 O(log(N))，两者有什么关系？</li>
@@ -424,8 +423,7 @@ GEOPOS cities Seattle</p>
 <p>Notice that we provided –122.34 as longitude and 47.61 as latitude when calling GEOADD, but &gt; received –122.33999758958816528 and 47.61000085169597185, respectively, in return.</p>
 <p>This is an unfortunate consequence of Redis using a 52-bit geohash to store the coordinates:</p>
 <p><strong>Redis does not store the raw set of coordinates that we provide</strong>, but instead decodes the
-internally stored geohash to generate a GEOPOS response.</p>
-</blockquote>
+internally stored geohash to generate a GEOPOS response.</p></blockquote>
 <h3 id="资料三">资料三
 </h3><ul>
 <li><a class="link" href="https://luoming1224.github.io/2019/04/08/%5Bredis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%5Dredis%E4%B8%ADGeo%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D/"  target="_blank" rel="noopener"
@@ -443,8 +441,7 @@ geohash编码越长精度越高，相反编码越短，表示的范围越大，�
 <p>函数geohashGetAreasByRadiusWGS84根据中心点位置和搜索范围距离计算geohash编码的长度和geohash编码，以及在&gt; geohash长度编码的基础上，计算周边8个区块的geohash。</p>
 <p>函数membersOfAllNeighbors对中心点以及它周边八个方向进行查找，找出所有范围内的元素，返回满足搜索距离范围的点。&gt; 该函数中依次对中心点及周边8个区块调用membersOfGeoHashBox函数。</p>
 <p>long_range和lat_range为地球经纬度的范围；hash-&gt;bits用户保存最终二进制编码结果，hash-&gt;step是经纬度划分的次&gt; 数，在redis中该值为26，<strong>即经度/纬度的二进制编码长度为26</strong>，最终经交叉组合而成的地理位置的二进制编码为52位。Base32&gt; 编码为每5bits组成一个字符，所以<strong>最终的GeoHash字符串为11位</strong>。</p>
-<p>为什么是52位？因为在redis中是把地理位置编码后的二进制值存入zset数据结构中，<strong>double类型的尾数部分长度为52位</strong>。</p>
-</blockquote>
+<p>为什么是52位？因为在redis中是把地理位置编码后的二进制值存入zset数据结构中，<strong>double类型的尾数部分长度为52位</strong>。</p></blockquote>
 <h3 id="redis-的设计思路推演">Redis 的设计思路推演
 </h3><p>GeoHash 除了可以对空间进行编码之外，还有两个关键特性，使得 Redis 可以通过组合 GeoHash 与 ZSET，实现空间索引功能，这两个特性是：</p>
 <ul>
@@ -522,8 +519,7 @@ geohash编码越长精度越高，相反编码越短，表示的范围越大，�
 <p>其中，x为多边形的边数，𝜃为多边形的内角和。则一个正多边形的每个角的角度为 𝜃𝑥=(𝑥–2)∗180∘𝑥，而如果需要多边形能够铺满空间，则在多边形的顶点相交处，设每个顶点有y个多边形相交，需要满足以下等式：</p>
 <p>360∘𝑦=(𝑥–2)∗180∘𝑥</p>
 <p>以上等式的求解过程我不再赘述，这个等式只有三组整数解：x=3,y=6；x=4,y=4；x=6,y=3。</p>
-<p>因此，能够做网格空间索引的形状只有三角形、矩形和六边形，而六边形因为边数最多，最接近圆，所以理论上来说在某些场景下是最优的选择。</p>
-</blockquote>
+<p>因此，能够做网格空间索引的形状只有三角形、矩形和六边形，而六边形因为边数最多，最接近圆，所以理论上来说在某些场景下是最优的选择。</p></blockquote>
 <h2 id="其它">其它
 </h2><h3 id="什么是wgs84坐标系">什么是WGS84坐标系
 </h3><p><a class="link" href="https://zhuanlan.zhihu.com/p/97363931"  target="_blank" rel="noopener"

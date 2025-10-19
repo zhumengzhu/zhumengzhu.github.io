@@ -23,9 +23,7 @@
 &lt;blockquote&gt;
 &lt;p&gt;此时如果去查看错误日志，往往可以看到诸如 ClassNotFoundException、NoClassDefFoundError 等异常信息，接着很容易就会想到很可能是发生了类冲突。
 然后你会结合异常日志即依赖变更情况，定位到冲突的类及其所在的 jar 包，然后用 dependecy-exclude 等手段将冲突解决掉，最终使得服务可以正常启动。一般我们处理问题就到此为止了。
-本文试图更近一步，&lt;strong&gt;深入分析本地与远程服务器行为不一致的原因&lt;/strong&gt;，并简单介绍&lt;strong&gt;业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧&lt;/strong&gt;。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
+本文试图更近一步，&lt;strong&gt;深入分析本地与远程服务器行为不一致的原因&lt;/strong&gt;，并简单介绍&lt;strong&gt;业界解决依赖冲突的一些方法，和排查类冲突问题的小技巧&lt;/strong&gt;。&lt;/p&gt;&lt;/blockquote&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;背景知识&#34;&gt;背景知识
 &lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Java Classpath&lt;/strong&gt;:
 &lt;img src=&#34;https://zhumengzhu.github.io/images/class_conflict_1_2023-4-3_17-35-53.png&#34;

@@ -332,8 +332,7 @@ next-key 锁)
 &lt;blockquote&gt;
 &lt;p&gt;It is multi-user safe because multiple clients can issue the UPDATE statement and get their own sequence value with
 the SELECT statement (or mysql_insert_id()), without affecting or being affected by other clients that generate their
-own sequence values.&lt;/p&gt;
-&lt;/blockquote&gt;
+own sequence values.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;see &lt;a class=&#34;link&#34; href=&#34;https://dev.mysql.com/doc/refman/8.0/en/information-functions.html#function_last-insert-id&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;MySQL 8.0 Reference Manual&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;最后，还可以对上面的 SQL 进一步优化，使得只需执行 2 次 SQL：&lt;/p&gt;
@@ -561,8 +560,7 @@ own sequence values.&lt;/p&gt;
 &lt;p&gt;SET @update_id := 0;
 UPDATE some_table SET column_name = &amp;lsquo;value&amp;rsquo;, id = (SELECT @update_id := id)
 WHERE some_other_column = &amp;lsquo;blah&amp;rsquo; LIMIT 1;
-SELECT @update_id;&lt;/p&gt;
-&lt;/blockquote&gt;
+SELECT @update_id;&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;详情见：&lt;a class=&#34;link&#34; href=&#34;https://stackoverflow.com/a/1751282/3496176&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;How to get ID of the last updated row in MySQL?&lt;/a&gt;:&lt;/p&gt;
 &lt;p&gt;这种方法在需要&lt;strong&gt;一次更新多条记录&lt;/strong&gt;时特别有用。&lt;/p&gt;
@@ -572,8 +570,7 @@ SELECT @update_id;&lt;/p&gt;
 这篇文章是在 &lt;strong&gt;2017 年 4 月 12&lt;/strong&gt; 由 Martin Hansson 发布在 MySQL 官方博客上的。它主要是通过一个订票系统，讲解 &lt;code&gt;SKIP LOCKED&lt;/code&gt; 和 &lt;code&gt;NOWAIT&lt;/code&gt; 的使用方法。&lt;/p&gt;
 &lt;p&gt;另外，需要特别注意：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Statements that use NOWAIT or SKIP LOCKED are unsafe for statement based replication.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h1 id=&#34;reference&#34;&gt;Reference
 &lt;/h1&gt;&lt;ul&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://dba.stackexchange.com/questions/131051/update-just-one-unused-row&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;

@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/'>
 
-<link rel="stylesheet" href="/scss/style.min.f2c2f6575a929f0975c6f9ea89f94e50519c3afa396b1f9fcf11421c80a41b49.css"><meta property='og:title' content="Late Row Lookups: InnoDB">
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="Late Row Lookups: InnoDB">
 <meta property='og:description' content="博客『Late Row Lookups: InnoDB』的阅读笔记">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/'>
 <meta property='og:site_name' content='Somnus'>
@@ -72,7 +72,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu6810066810842614466.jpg" width="300"
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -392,13 +392,11 @@
 <ul>
 <li>Is this workaround specific to <strong>MyISAM</strong> engine?</li>
 <li>How does <strong>PostgreSQL</strong> handle this?</li>
-</ul>
-</blockquote>
+</ul></blockquote>
 <p>Quassnoi 写下这篇新博客，即为了回答上述两个问题。</p>
 <h1 id="正文">正文
 </h1><blockquote>
-<p>The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:</p>
-</blockquote>
+<p>The questions concerns a certain workaround for MySQL LIMIT … OFFSET queries like this:</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -414,8 +412,7 @@
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><blockquote>
-<p>which can be improved using a little rewrite:</p>
-</blockquote>
+<p>which can be improved using a little rewrite:</p></blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -442,8 +439,7 @@
 <h2 id="postgresql"><strong>PostgreSQL</strong>
 </h2><h3 id="the-answer">The Answer
 </h3><blockquote>
-<p>The second questions is easy: PostgreSQL won&rsquo;t pull the fields from the table until it really needs them. If a query involving an <code>ORDER BY</code> along with <code>LIMIT</code> and <code>OFFSET</code> is optimized to use the index for the <code>ORDER BY</code> part, the table lookups won&rsquo;t happen for the records skipped.</p>
-</blockquote>
+<p>The second questions is easy: PostgreSQL won&rsquo;t pull the fields from the table until it really needs them. If a query involving an <code>ORDER BY</code> along with <code>LIMIT</code> and <code>OFFSET</code> is optimized to use the index for the <code>ORDER BY</code> part, the table lookups won&rsquo;t happen for the records skipped.</p></blockquote>
 <p>这句话是说，<strong>PostgreSQL</strong> 只会在需要的时候才<strong>回表查询</strong>。如果一个查询涉及 <code>ORDER BY</code>、<code>LIMIT</code> 和 <code>OFFSET</code>，那么可以先利用索引跳过不需要的记录，只对需要的记录进行进行回表。</p>
 <p>这其实就是『<strong>Late Row Lookups</strong>』；与之相对的，MySQL 执行的是『<strong>Early Row Lookups</strong>』。</p>
 <p>作者后面说虽然 <strong>PostgreSQL</strong> 的查询计划不会输出<strong>回表信息</strong>，但可以通过一个简单的测试进行验证。但具体怎么进行这个实验，作者没讲，下面试着做个补充。</p>
@@ -735,11 +731,9 @@
 </div>
 </div><p><code>0.133 sec</code> vs <code>1.579 sec</code>。</p>
 <blockquote>
-<p>Why such a difference?</p>
-</blockquote>
+<p>Why such a difference?</p></blockquote>
 <blockquote>
-<p>The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &gt; some data out of the index. This is called external storage.</p>
-</blockquote>
+<p>The reason is that InnoDB, despite the fact it stores the data in the clustered index, is still able to move &gt; some data out of the index. This is called external storage.</p></blockquote>
 <p>在 <strong>InnoDB</strong> 中，小于 768 字节的列会全部存储在页上，大于 768 字节则会分开存储。在上面的 <code>lookup</code> 表中，<code>shottxt</code> 列总是 <code>on-page</code> 存储的，而 <code>longtxt</code> 则是 <code>off-page</code>的。</p>
 <p>因此，直接查询 <code>longtxt</code> 时，每扫描一条记录都要出发两次<code>page lookups</code>：第一次查聚簇索引，第二次查外部存储。这既会花费很多时间，也可能破坏 <strong>InnoDB</strong> 缓存，导致缓存命中率下降。</p>
 <h3 id="通过二级索引查询-shorttxt-列">通过二级索引查询 shorttxt 列
@@ -793,8 +787,7 @@
 <li>It&rsquo;s very useful on <code>ORDER BY</code> conditions served by secondary indexes</li>
 <li>It&rsquo;s quite useful on moderate sized columns (still stored on page) or CPU-intensive expressions</li>
 <li>It&rsquo;s almost useless on short columns without complex CPU-intensive processing</li>
-</ul>
-</blockquote>
+</ul></blockquote>
 <h1 id="其它">其它
 </h1><h2 id="postgresql查询计划"><strong>PostgreSQL</strong>查询计划
 </h2><ul>

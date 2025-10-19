@@ -31,8 +31,7 @@
 &lt;p&gt;The time complexity for these commands is approximately &lt;strong&gt;O(N+log(M))&lt;/strong&gt; where N is the number of &amp;gt; elements inside the bounding box of the circular area delimited by center and radius, and M is &amp;gt; the number of items inside the index.&lt;/p&gt;
 &lt;p&gt;There are plenty of solutions available for implementing spatial searches.&lt;/p&gt;
 &lt;p&gt;Data structures like &lt;strong&gt;Quadtree, R-tree, and K-d tree&lt;/strong&gt; can be used to index the entities.&lt;/p&gt;
-&lt;p&gt;Geospatial indexers like S2 and H3 can be used for similar queries.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Geospatial indexers like S2 and H3 can be used for similar queries.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;疑问：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;为什么 GEOADD 复杂度是 O(log(N))，为什么 ZADD 复杂度是 O(log(N))，两者有什么关系？&lt;/li&gt;
@@ -57,8 +56,7 @@ GEOPOS cities Seattle&lt;/p&gt;
 &lt;p&gt;Notice that we provided –122.34 as longitude and 47.61 as latitude when calling GEOADD, but &amp;gt; received –122.33999758958816528 and 47.61000085169597185, respectively, in return.&lt;/p&gt;
 &lt;p&gt;This is an unfortunate consequence of Redis using a 52-bit geohash to store the coordinates:&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Redis does not store the raw set of coordinates that we provide&lt;/strong&gt;, but instead decodes the
-internally stored geohash to generate a GEOPOS response.&lt;/p&gt;
-&lt;/blockquote&gt;
+internally stored geohash to generate a GEOPOS response.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h3 id=&#34;资料三&#34;&gt;资料三
 &lt;/h3&gt;&lt;ul&gt;
 &lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://luoming1224.github.io/2019/04/08/%5Bredis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%5Dredis%E4%B8%ADGeo%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
@@ -76,8 +74,7 @@ geohash编码越长精度越高，相反编码越短，表示的范围越大，�
 &lt;p&gt;函数geohashGetAreasByRadiusWGS84根据中心点位置和搜索范围距离计算geohash编码的长度和geohash编码，以及在&amp;gt; geohash长度编码的基础上，计算周边8个区块的geohash。&lt;/p&gt;
 &lt;p&gt;函数membersOfAllNeighbors对中心点以及它周边八个方向进行查找，找出所有范围内的元素，返回满足搜索距离范围的点。&amp;gt; 该函数中依次对中心点及周边8个区块调用membersOfGeoHashBox函数。&lt;/p&gt;
 &lt;p&gt;long_range和lat_range为地球经纬度的范围；hash-&amp;gt;bits用户保存最终二进制编码结果，hash-&amp;gt;step是经纬度划分的次&amp;gt; 数，在redis中该值为26，&lt;strong&gt;即经度/纬度的二进制编码长度为26&lt;/strong&gt;，最终经交叉组合而成的地理位置的二进制编码为52位。Base32&amp;gt; 编码为每5bits组成一个字符，所以&lt;strong&gt;最终的GeoHash字符串为11位&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;为什么是52位？因为在redis中是把地理位置编码后的二进制值存入zset数据结构中，&lt;strong&gt;double类型的尾数部分长度为52位&lt;/strong&gt;。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;为什么是52位？因为在redis中是把地理位置编码后的二进制值存入zset数据结构中，&lt;strong&gt;double类型的尾数部分长度为52位&lt;/strong&gt;。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h3 id=&#34;redis-的设计思路推演&#34;&gt;Redis 的设计思路推演
 &lt;/h3&gt;&lt;p&gt;GeoHash 除了可以对空间进行编码之外，还有两个关键特性，使得 Redis 可以通过组合 GeoHash 与 ZSET，实现空间索引功能，这两个特性是：&lt;/p&gt;
 &lt;ul&gt;
@@ -155,8 +152,7 @@ geohash编码越长精度越高，相反编码越短，表示的范围越大，�
 &lt;p&gt;其中，x为多边形的边数，𝜃为多边形的内角和。则一个正多边形的每个角的角度为 𝜃𝑥=(𝑥–2)∗180∘𝑥，而如果需要多边形能够铺满空间，则在多边形的顶点相交处，设每个顶点有y个多边形相交，需要满足以下等式：&lt;/p&gt;
 &lt;p&gt;360∘𝑦=(𝑥–2)∗180∘𝑥&lt;/p&gt;
 &lt;p&gt;以上等式的求解过程我不再赘述，这个等式只有三组整数解：x=3,y=6；x=4,y=4；x=6,y=3。&lt;/p&gt;
-&lt;p&gt;因此，能够做网格空间索引的形状只有三角形、矩形和六边形，而六边形因为边数最多，最接近圆，所以理论上来说在某些场景下是最优的选择。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;因此，能够做网格空间索引的形状只有三角形、矩形和六边形，而六边形因为边数最多，最接近圆，所以理论上来说在某些场景下是最优的选择。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;其它&#34;&gt;其它
 &lt;/h2&gt;&lt;h3 id=&#34;什么是wgs84坐标系&#34;&gt;什么是WGS84坐标系
 &lt;/h3&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://zhuanlan.zhihu.com/p/97363931&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;

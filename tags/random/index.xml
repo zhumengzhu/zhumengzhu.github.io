@@ -20,8 +20,7 @@
 &lt;/ul&gt;
 &lt;blockquote&gt;
 &lt;p&gt;To better understand this, let&amp;rsquo;s see how one of its primary operations, &lt;a class=&#34;link&#34; href=&#34;https://github.com/openjdk/jdk/blob/a8a2246158bc53414394b007cbf47413e62d942e/src/java.base/share/classes/java/util/Random.java#L198&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;next(int)&lt;/a&gt;, is implemented:&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;next(int)&lt;/a&gt;, is implemented:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -47,8 +46,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;Instead of a dedicated instance of Random per thread, each thread only needs to maintain its own seed value. As of Java 8, the Thread class itself has been retrofitted to maintain the seed value:&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;Instead of a dedicated instance of Random per thread, each thread only needs to maintain its own seed value. As of Java 8, the Thread class itself has been retrofitted to maintain the seed value:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -80,8 +78,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;The &lt;em&gt;threadLocalRandomSeed&lt;/em&gt; variable is responsible for maintaining the current seed value for &lt;em&gt;ThreadLocalRandom&lt;/em&gt;. Moreover, the secondary seed, &lt;em&gt;threadLocalRandomSecondarySeed&lt;/em&gt;, is usually used internally by the likes of &lt;em&gt;ForkJoinPool&lt;/em&gt;.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;The &lt;em&gt;threadLocalRandomSeed&lt;/em&gt; variable is responsible for maintaining the current seed value for &lt;em&gt;ThreadLocalRandom&lt;/em&gt;. Moreover, the secondary seed, &lt;em&gt;threadLocalRandomSecondarySeed&lt;/em&gt;, is usually used internally by the likes of &lt;em&gt;ForkJoinPool&lt;/em&gt;.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;This implementation incorporates a few optimizations to make &lt;em&gt;ThreadLocalRandom&lt;/em&gt; even more performant:&lt;/p&gt;
 &lt;ul&gt;
@@ -89,15 +86,13 @@
     &gt;&lt;em&gt;&lt;strong&gt;false sharing&lt;/strong&gt;&lt;/em&gt;&lt;/a&gt; by using the @Contented annotation, which basically adds enough padding to isolate the contended variables in their own cache lines&lt;/li&gt;
 &lt;li&gt;Using sun.misc.Unsafe to update these three variables instead of using the Reflection API&lt;/li&gt;
 &lt;li&gt;Avoiding extra hashtable lookups associated with the ThreadLocal implementation&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;contention-in-javautilsecurerandom&#34;&gt;Contention in java.util.SecureRandom
 &lt;/h2&gt;&lt;p&gt;it&amp;rsquo;s the subclass of &lt;code&gt;java.util.Random&lt;/code&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;one of the most common locking issues within Java applications is triggered through an innocent-looking &lt;a class=&#34;link&#34; href=&#34;https://docs.oracle.com/javase/7/docs/api/java/io/File.html#createTempFile%28java.lang.String,%20java.lang.String%29&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;java.io.File.createTempFile()&lt;/a&gt; calls. Under the hood, this temporary file creation is &lt;a class=&#34;link&#34; href=&#34;http://hg.openjdk.java.net/jdk7/jdk7/jdk/file/tip/src/share/classes/java/io/File.java#l1774&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;relying upon a SecureRandom class&lt;/a&gt; to calculate the name of the file.&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;relying upon a SecureRandom class&lt;/a&gt; to calculate the name of the file.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -126,8 +121,7 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;And SecureRandom, when nextLong is called, eventually calls its method &lt;a class=&#34;link&#34; href=&#34;http://hg.openjdk.java.net/jdk7/jdk7/jdk/file/tip/src/share/classes/java/security/SecureRandom.java#l454&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;nextBytes()&lt;/a&gt;, which is defined as synchronized:&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;nextBytes()&lt;/a&gt;, which is defined as synchronized:&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -143,15 +137,12 @@
 &lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;One may say, that if I create new SecureRandom in each thread, I will not get any issues. Unfortunately, it’s not that simple. SecureRandom uses an implementation of &lt;a class=&#34;link&#34; href=&#34;https://docs.oracle.com/javase/7/docs/api/java/security/SecureRandomSpi.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;java.security.SecureRandomSpi&lt;/a&gt;, which will eventually be contended anyhow (you may look at the following bug discussion with some benchmarks in &lt;a class=&#34;link&#34; href=&#34;https://issues.jenkins.io/browse/JENKINS-20108&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;Jenkins issue tracker&lt;/a&gt;)&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;Jenkins issue tracker&lt;/a&gt;)&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;This in combination with certain application usage patterns (especially if you have lots of  SSL connections which rely on SecureRandom for their crypto-handshaking magic) has a tendency to build up into long-lasting contention issues.&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;This in combination with certain application usage patterns (especially if you have lots of  SSL connections which rely on SecureRandom for their crypto-handshaking magic) has a tendency to build up into long-lasting contention issues.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The fix to the situation is simple if you can control the source code – just rebuild the solution to rely upon the &lt;a class=&#34;link&#34; href=&#34;https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ThreadLocalRandom.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;java.util.ThreadLocalRandom&lt;/a&gt; for multithreaded designs. In cases where you are stuck with a standard API making the decisions for you the solution can be more complex and require significant refactoring.&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;java.util.ThreadLocalRandom&lt;/a&gt; for multithreaded designs. In cases where you are stuck with a standard API making the decisions for you the solution can be more complex and require significant refactoring.&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;urandom-and-random-devices&#34;&gt;urandom and random Devices
 &lt;/h2&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.ibm.com/docs/en/aix/7.2?topic=files-urandom-random-devices&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://www.ibm.com/docs/en/aix/7.2?topic=files-urandom-random-devices&lt;/a&gt;&lt;/p&gt;
