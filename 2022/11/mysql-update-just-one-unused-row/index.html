@@ -2,7 +2,7 @@
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="本文从『优惠券发放』问题的讨论出发，介绍几个解决方案并分析其优缺点，然后简单讨论常见的`update just one unused row`模式，最后聊聊 MySQL 8.0.1 的 `SKIP LOCKED` 和 `NOWAIT` 特性。">
-<meta name="keywords" content="MySQL, InnoDB, Select for update, LAST_INSERT_ID, SKIP LOCKED, NOWAIT"><title>MySQL 中如何实现只更新未使用的一行数据</title>
+<meta name="keywords" content="MySQL 更新未使用行, SKIP LOCKED NOWAIT 特性, 并发更新优化"><title>MySQL 中如何实现只更新未使用的一行数据</title>
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/'>
 
@@ -52,7 +52,7 @@
     "name": "\"Somnus\"",
     "url": "\"https://zhumengzhu.github.io/\""
   },
-  "keywords": "\"MySQL, InnoDB, Select for update, LAST_INSERT_ID, SKIP LOCKED, NOWAIT\"",
+  "keywords": "\"MySQL 更新未使用行, SKIP LOCKED NOWAIT 特性, 并发更新优化\"",
   "articleSection": "\"post\"",
   "url": "\"https://zhumengzhu.github.io/2022/11/mysql-update-just-one-unused-row/\""
 }
@@ -1046,6 +1046,19 @@ SELECT @update_id;</p></blockquote>
             
                 
 <article class="">
+    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
     <a href="/2022/11/late-row-lookups-innodb/">
         
         
@@ -1065,19 +1078,6 @@ SELECT @update_id;</p></blockquote>
 
         <div class="article-details">
             <h2 class="article-title">『Locks Set by Different SQL Statements in InnoDB』翻译&amp;笔记</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="">
-    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
         </div>
     </a>
 </article>
@@ -1159,7 +1159,7 @@ SELECT @update_id;</p></blockquote>
         
         2022 -
         
-        2025 All Rights Reserved
+        2026 All Rights Reserved
     </section>
 
     

@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="博客『Late Row Lookups: InnoDB』的阅读笔记">
-<meta name="keywords" content="MySQL, Performance, Optimization, Late Row Lookups, InnoDB, PostgreSQL"><title>Late Row Lookups: InnoDB</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="博客『Late Row Lookups: InnoDB』的阅读笔记，探讨 InnoDB 延迟行查找机制及其性能优化。">
+<meta name="keywords" content="技术实践分享, 问题解决方案, 经验总结记录"><title>Late Row Lookups: InnoDB</title>
 
 <link rel='canonical' href='https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/'>
 
 <link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="Late Row Lookups: InnoDB">
-<meta property='og:description' content="博客『Late Row Lookups: InnoDB』的阅读笔记">
+<meta property='og:description' content="博客『Late Row Lookups: InnoDB』的阅读笔记，探讨 InnoDB 延迟行查找机制及其性能优化。">
 <meta property='og:url' content='https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/'>
 <meta property='og:site_name' content='Somnus'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Notes' /><meta property='article:tag' content='MySQL' /><meta property='article:tag' content='Performance' /><meta property='article:tag' content='Optimization' /><meta property='article:tag' content='Late Row Lookups' /><meta property='article:tag' content='InnoDB' /><meta property='article:tag' content='PostgreSQL' /><meta property='article:published_time' content='2022-11-14T19:12:47&#43;08:00'/><meta property='article:modified_time' content='2022-11-14T19:12:47&#43;08:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Notes' /><meta property='article:tag' content='MySQL' /><meta property='article:tag' content='Performance' /><meta property='article:tag' content='Optimization' /><meta property='article:tag' content='Late Row Lookups' /><meta property='article:tag' content='InnoDB' /><meta property='article:tag' content='PostgreSQL' /><meta property='article:tag' content='数据库索引' /><meta property='article:tag' content='查询执行计划' /><meta property='article:published_time' content='2022-11-14T19:12:47&#43;08:00'/><meta property='article:modified_time' content='2022-11-14T19:12:47&#43;08:00'/>
 <meta name="twitter:site" content="@@zhumengzhu">
     <meta name="twitter:creator" content="@@zhumengzhu"><meta name="twitter:title" content="Late Row Lookups: InnoDB">
-<meta name="twitter:description" content="博客『Late Row Lookups: InnoDB』的阅读笔记">
+<meta name="twitter:description" content="博客『Late Row Lookups: InnoDB』的阅读笔记，探讨 InnoDB 延迟行查找机制及其性能优化。">
     <link rel="shortcut icon" href="/favicon.ico" />
 
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
@@ -34,7 +34,7 @@
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "headline": "\"Late Row Lookups: InnoDB\"",
-  "description": "\"博客『Late Row Lookups: InnoDB』的阅读笔记\"",
+  "description": "\"博客『Late Row Lookups: InnoDB』的阅读笔记，探讨 InnoDB 延迟行查找机制及其性能优化。\"",
   "author": {
     "@type": "Person",
     "name": "\"孟柱\"",
@@ -52,7 +52,7 @@
     "name": "\"Somnus\"",
     "url": "\"https://zhumengzhu.github.io/\""
   },
-  "keywords": "\"MySQL, Performance, Optimization, Late Row Lookups, InnoDB, PostgreSQL\"",
+  "keywords": "\"技术实践分享, 问题解决方案, 经验总结记录\"",
   "articleSection": "\"post\"",
   "url": "\"https://zhumengzhu.github.io/2022/11/late-row-lookups-innodb/\""
 }
@@ -355,7 +355,7 @@
     
         
         <h3 class="article-subtitle">
-            博客『Late Row Lookups: InnoDB』的阅读笔记
+            博客『Late Row Lookups: InnoDB』的阅读笔记，探讨 InnoDB 延迟行查找机制及其性能优化。
         </h3>
         
     </div>
@@ -852,6 +852,10 @@
         
             <a href="/tags/postgresql/">PostgreSQL</a>
         
+            <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B4%A2%E5%BC%95/">数据库索引</a>
+        
+            <a href="/tags/%E6%9F%A5%E8%AF%A2%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/">查询执行计划</a>
+        
     </section>
 
 
@@ -921,6 +925,19 @@
             
                 
 <article class="">
+    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="">
     <a href="/2022/11/mysql-update-just-one-unused-row/">
         
         
@@ -940,19 +957,6 @@
 
         <div class="article-details">
             <h2 class="article-title">『Locks Set by Different SQL Statements in InnoDB』翻译&amp;笔记</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="">
-    <a href="/2022/12/insert-into-t-select-from-s-where-conditional-query/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">INSERT INTO T SELECT ... FROM S WHERE ... 语句加锁分析</h2>
         </div>
     </a>
 </article>
@@ -1021,7 +1025,7 @@
         
         2022 -
         
-        2025 All Rights Reserved
+        2026 All Rights Reserved
     </section>
 
     
