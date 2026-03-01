@@ -7,7 +7,163 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Sun, 11 May 2025 13:10:01 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 02 Mar 2026 00:15:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>自动线程监控的难点：身份、基数、开销与标识一致性</title>
+        <link>https://zhumengzhu.github.io/2026/03/auto-thread-pool-monitoring-three-hard-problems/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2026/03/auto-thread-pool-monitoring-three-hard-problems/</guid>
+        <description>&lt;p&gt;&lt;strong&gt;摘要&lt;/strong&gt;：自动线程监控的难点不在「能不能采到数据」，而在采到的指标是否有意义、代价是否可控。本文基于 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;OpenTelemetry Java Instrumentation&lt;/a&gt; 的 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/11149&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#11149&lt;/a&gt;、&lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14768&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#14768&lt;/a&gt;、&lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/13483&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#13483&lt;/a&gt; 与 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/pull/14831&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #14831&lt;/a&gt; 等讨论，归纳出身份识别、高基数与插桩开销三个主要难点，并说明三者如何相互牵制；同时补充上述讨论中较少显式涉及的一点：同一逻辑线程池在不同实例、不同时间应有&lt;strong&gt;一致且稳定&lt;/strong&gt;的标识，否则无法做跨实例聚合与跨时间趋势，这一要求进一步收窄了自动方案的设计空间。&lt;/p&gt;
+&lt;p&gt;自动线程监控（尤其是「自动发现 + 自动打指标」）最难的地方，不在「能不能采到数据」，而在「采到的指标是否有意义且代价可控」。具体来说，主要有三方面难点。下文基于上述几则 issue 与 PR 的讨论做归纳与补充；需说明的是，本文所依据的仅限这些公开讨论，不足以代表 OTel 或更广泛社区的整体立场或共识。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;核心难点一句话&#34;&gt;核心难点一句话
+&lt;/h2&gt;&lt;p&gt;从这些讨论来看，维护者反复强调的核心难点其实就一句：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;即便是 &lt;code&gt;ThreadPoolExecutor&lt;/code&gt;，也很快会变复杂，因为你必须知道这些指标到底属于哪个线程池。&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;下面分三点展开。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;1-识别这是谁的线程--线程池&#34;&gt;1. 识别「这是谁的线程 / 线程池？」
+&lt;/h2&gt;&lt;h3 id=&#34;为什么难&#34;&gt;为什么难
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;实现五花八门&lt;/strong&gt;：Java 里线程池实现非常多——&lt;code&gt;ThreadPoolExecutor&lt;/code&gt;、&lt;code&gt;ForkJoinPool&lt;/code&gt;、各种框架自己的 &lt;code&gt;QueuedThreadPool&lt;/code&gt;、&lt;code&gt;XnioWorker&lt;/code&gt;、业务自定义线程池等，根本不存在一个通吃的「catch-all」方案。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Hook 到了也不知道归属&lt;/strong&gt;：就算你 hook 到了 &lt;code&gt;ThreadPoolExecutor&lt;/code&gt; 的方法，你依然不知道：
+&lt;ul&gt;
+&lt;li&gt;这是哪个业务线程池（HTTP？异步任务？MQ 消费？）&lt;/li&gt;
+&lt;li&gt;哪段代码创建的这个线程池（哪一个 bean / 哪一份配置）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;需要额外身份维度&lt;/strong&gt;，例如：
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;thread.name.pattern&lt;/code&gt;（通过线程名模式识别）&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;thread.pool.create.stack&lt;/code&gt;（捕获创建线程池时的调用栈）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这些方案本身又会带来性能和基数问题（见后两节）。&lt;/p&gt;
+&lt;p&gt;如果「谁是谁」都搞不清，监控面板上只会看到一堆「线程池 1/2/3」的指标，几乎没有实战价值——这就是自动化 thread / thread pool 监控最大的&lt;strong&gt;结构性难题&lt;/strong&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;2-高基数cardinality与数据爆炸&#34;&gt;2. 高基数（cardinality）与数据爆炸
+&lt;/h2&gt;&lt;p&gt;要把线程/线程池「认出来」，通常必须加标签（attributes），例如：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;线程名模式：&lt;code&gt;thread.name_pattern = http-nio-8080-*&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;创建堆栈：&lt;code&gt;thread.pool.create.stack = com.foo.BarConfig.createExecutor(...)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;甚至用户自定义的分组策略&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在监控系统里，每一种标签组合都会变成一条独立时间序列，&lt;strong&gt;高基数问题&lt;/strong&gt;立刻出现：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;线程名里带随机 ID、端口、上下文信息时，如果不做归一化，会产生海量唯一标签值。&lt;/li&gt;
+&lt;li&gt;创建堆栈几乎是「唯一指纹」——稍微改个代码路径、升级个版本，堆栈就不同了，时间序列会指数级增长。&lt;/li&gt;
+&lt;li&gt;对于「自动检测、无需配置就扫所有线程池」的场景，高基数很容易把存储、查询、聚合成本拉爆。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;所以「自动线程监控」的难点不只是「能采多少」，而是&lt;strong&gt;如何在可控的基数下，仍然保留足够的业务语义&lt;/strong&gt;。上述 issue/PR 中也可见对 &lt;code&gt;thread.name_template&lt;/code&gt;、&lt;code&gt;thread.pool.create.stack&lt;/code&gt; 等方案的讨论。例如在 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/pull/14831&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #14831&lt;/a&gt; 中，review 明确要求将 &lt;code&gt;executor.queue.wait.duration&lt;/code&gt; 的 &lt;code&gt;thread.name&lt;/code&gt; 属性改为 &lt;strong&gt;opt-in&lt;/strong&gt;，原因就是「could be high cardinality」。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;3-性能开销与插桩复杂度&#34;&gt;3. 性能开销与插桩复杂度
+&lt;/h2&gt;&lt;p&gt;要让监控真正「自动」，需要在下面这些地方做事：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;构造线程池时&lt;/strong&gt;：标记这个线程池（可能还要捕获创建堆栈）。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;任务提交时&lt;/strong&gt;：给 &lt;code&gt;Runnable&lt;/code&gt; / &lt;code&gt;Callable&lt;/code&gt; 记下排队开始时间、绑定上下文（context）。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;任务执行前后&lt;/strong&gt;：计算 pending time、执行时间，记指标，恢复上下文。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;对应到 OTel Java 里，就是 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/pull/14831&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #14831&lt;/a&gt; 等实现里看到的那些思路：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;用 &lt;code&gt;VirtualField&lt;/code&gt; 给任务挂 &lt;code&gt;startTime&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;包一层 &lt;code&gt;WrappedRunnable&lt;/code&gt; / &lt;code&gt;PendingTaskRunnable&lt;/code&gt; 记录 queue wait（对应指标如 &lt;code&gt;executor.queue.wait.duration&lt;/code&gt;）。&lt;/li&gt;
+&lt;li&gt;在 &lt;code&gt;beforeExecute&lt;/code&gt; / &lt;code&gt;run()&lt;/code&gt; 上打 Advice，读取这些信息并上报指标或传播上下文。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;难点在于：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;这些拦截点&lt;strong&gt;非常频繁&lt;/strong&gt;（几乎每个任务提交/执行都会触发），哪怕每次只多做一点事，累积起来对 CPU/延迟都有明显影响。&lt;/li&gt;
+&lt;li&gt;要兼容各种 executor 类型（&lt;code&gt;ThreadPoolExecutor&lt;/code&gt;、&lt;code&gt;ForkJoinPool&lt;/code&gt;、框架 executor、自定义实现），字节码插桩规则会变得&lt;strong&gt;复杂且脆弱&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;还要避免和现有的 context 传播逻辑、其他监控框架（如 Micrometer）冲突。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此维护者对「自动线程池监控」的态度通常是：功能上非常想要，但必须&lt;strong&gt;非常谨慎&lt;/strong&gt;地设计指标模型和插桩方式，否则要么压垮系统，要么产出不可用的数据。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;4-跨实例与跨时间标识的一致与稳定上述-issuepr-中少谈的一块&#34;&gt;4. 跨实例与跨时间：标识的一致与稳定（上述 issue/PR 中少谈的一块）
+&lt;/h2&gt;&lt;p&gt;上文主要讨论的是「单进程内如何认出线程池」和「基数、开销如何控」。还有一层需求在上述几则讨论里很少被单独拎出来，但对生产可观测性同样关键：&lt;strong&gt;同一服务的不同实例之间、以及同一实例在不同时间（重启、发布）前后，「同一个逻辑线程池」应该被识别为同一个标识&lt;/strong&gt;。否则指标既没法在实例间聚合，也无法在时间上连续，告警和趋势都会失效。&lt;/p&gt;
+&lt;h3 id=&#34;为什么一致且稳定是硬需求&#34;&gt;为什么「一致且稳定」是硬需求
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;跨实例聚合&lt;/strong&gt;：服务通常多副本部署（多 pod、多节点）。若每个实例各自打上「线程池 A / B / C」而 A/B/C 的语义不统一（例如实例 1 的「A」是 HTTP 池、实例 2 的「A」是异步任务池），则无法做「所有副本上 HTTP 池队列深度之和」这类聚合；告警也只能按实例看，无法按「逻辑池」看。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;跨时间连续&lt;/strong&gt;：实例重启或发版后，若同一逻辑池（例如同一 Spring bean 创建的 executor）得到的是新标识，就会产生新时间序列、旧序列断掉。历史对比、趋势图和基于历史数据的告警都会被打断，甚至因「新标签值」导致序列爆炸。&lt;/li&gt;
+&lt;li&gt;因此，标识不仅要「有语义」（第 1 节），还要满足：&lt;strong&gt;多实例间一致&lt;/strong&gt;（同一逻辑池 → 同一标识）、&lt;strong&gt;跨重启/发版稳定&lt;/strong&gt;（不随进程 ID、创建顺序、或无关代码变更而变）。这是典型的**语义身份（semantic identity）**要求，而不是「能区分即可」的进程内句柄。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;哪些常见做法会破坏一致与稳定&#34;&gt;哪些常见做法会破坏一致与稳定
+&lt;/h3&gt;&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;做法&lt;/th&gt;
+          &lt;th&gt;跨实例&lt;/th&gt;
+          &lt;th&gt;跨时间（重启/发版）&lt;/th&gt;
+          &lt;th&gt;说明&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;对象 id / 内存地址&lt;/td&gt;
+          &lt;td&gt;否（每进程不同）&lt;/td&gt;
+          &lt;td&gt;否（每次创建不同）&lt;/td&gt;
+          &lt;td&gt;仅进程内唯一，不可用。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;创建顺序（第几个池）&lt;/td&gt;
+          &lt;td&gt;难（依赖启动路径）&lt;/td&gt;
+          &lt;td&gt;否（顺序可能变）&lt;/td&gt;
+          &lt;td&gt;不稳定，且多实例顺序未必一致。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;完整创建堆栈&lt;/td&gt;
+          &lt;td&gt;理论可一致&lt;/td&gt;
+          &lt;td&gt;否（改代码即变）&lt;/td&gt;
+          &lt;td&gt;行号、类名、重构都会变，序列易爆炸（又回到第 2 节基数问题）。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;未归一化线程名&lt;/td&gt;
+          &lt;td&gt;有时一致（若框架按角色命名）&lt;/td&gt;
+          &lt;td&gt;常不稳定（端口、worker id 等）&lt;/td&gt;
+          &lt;td&gt;如带端口、随机 id，则每实例/每次不同。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;归一化后的线程名模式&lt;/td&gt;
+          &lt;td&gt;可一致&lt;/td&gt;
+          &lt;td&gt;较稳定&lt;/td&gt;
+          &lt;td&gt;例如 &lt;code&gt;http-nio-*-exec-*&lt;/code&gt;，只要命名约定统一。&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Bean 名 / 配置源（框架层）&lt;/td&gt;
+          &lt;td&gt;可一致&lt;/td&gt;
+          &lt;td&gt;稳定&lt;/td&gt;
+          &lt;td&gt;需在框架创建点插桩，通用自动插桩往往拿不到。&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;也就是说：&lt;strong&gt;能自动拿到的「原始身份」（对象、堆栈、原始线程名）要么不可跨实例，要么不稳定；而稳定且一致的方案（归一化模式、bean 名）往往要额外约定或框架层支持&lt;/strong&gt;，与「零配置、通吃所有线程池」的愿景存在张力。&lt;/p&gt;
+&lt;h3 id=&#34;与前三方面难点的关系&#34;&gt;与前三方面难点的关系
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;与「身份识别」&lt;/strong&gt;：身份不仅要「有」，还要「定义成语义身份」——即面向聚合与时间连续性的稳定标识，而不是任意区分符。这会把「如何命名 / 归一化」提到设计层面，而不仅是实现细节。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与「高基数」&lt;/strong&gt;：若为稳定而采用「归一化」（例如堆栈只取前几帧、去掉行号），可能把本应区分的两个池并成一个，语义变模糊；若为区分度而保留细节，又容易导致跨时间不稳定、序列增多。&lt;strong&gt;稳定性与基数控制会共同约束「标识空间」的设计&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;与「插桩与开销」&lt;/strong&gt;：若在创建时不仅打标记，还要计算或挂上「稳定 id」（例如基于调用栈的归一化 hash、或从框架上下文取 bean 名），插桩点和计算逻辑都会增加，仍要放在「可接受开销」的约束下权衡。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;所以，&lt;strong&gt;「同一逻辑池在不同实例、不同时间映射到同一稳定标识」本质上是第四维约束&lt;/strong&gt;：它和「可识别」「低基数」「低开销」一起，把自动线程池监控的可行设计空间压得更小，也是上述讨论中在「怎么认池」上尚未显式展开、但在生产落地时一定会撞上的问题。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;小结&#34;&gt;小结
+&lt;/h2&gt;&lt;p&gt;自动线程监控要在「不需要用户配置」的前提下同时做到几件事：准确识别「哪个线程/线程池」、控制指标标签基数、把插桩开销压到可接受范围，以及（上述讨论中较少涉及但生产必遇）让同一逻辑池在不同实例、不同时间对应到&lt;strong&gt;一致且稳定&lt;/strong&gt;的标识，否则无法做跨实例聚合和跨时间趋势。这些目标彼此牵制——要识别身份就得加标签，标签一多基数就上去；要压基数就得收敛标签，语义又变弱；要稳定一致又进一步约束标识的设计空间；插桩还要覆盖多种实现且控制性能成本。因此 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/11149&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#11149&lt;/a&gt;、&lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14768&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#14768&lt;/a&gt;、&lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/13483&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#13483&lt;/a&gt; 与 &lt;a class=&#34;link&#34; href=&#34;https://github.com/open-telemetry/opentelemetry-java-instrumentation/pull/14831&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #14831&lt;/a&gt; 等讨论里功能需求一直在，却迟迟没做成「一键自动」，根因也在这里。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;解决方向概述&#34;&gt;解决方向概述
+&lt;/h2&gt;&lt;p&gt;针对上述难点，可考虑从「身份分层、归一化、规则匹配与用户可配置」入手：优先使用显式池名或框架层语义（如 Spring bean 名、Tomcat connector 名），退路为对线程名做归一化得到稳定模板；通过内置规则与用户配置规则生成稳定的 &lt;code&gt;thread.pool.template&lt;/code&gt; / &lt;code&gt;thread.pool.role&lt;/code&gt;，并控制高基数维度为 opt-in。完整的设计说明（原始信号、输出字段、线程名模板化算法、配置形态与实施计划）见另文：&lt;a class=&#34;link&#34; href=&#34;https://zhumengzhu.github.io/2026/03/auto-thread-pool-identity-design/&#34; &gt;《自动线程池指标归一化与标识稳定性设计》&lt;/a&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;em&gt;本文在写作过程中使用了 AI 辅助（构思、扩写与润色）。&lt;/em&gt;&lt;/p&gt;</description>
+        </item>
+        <item>
         <title>Linux vs macOS 文件加载顺序差异</title>
         <link>https://zhumengzhu.github.io/2025/05/file-loading-order-comparison-between-linux-and-macos/</link>
         <pubDate>Sun, 11 May 2025 13:10:01 +0800</pubDate>

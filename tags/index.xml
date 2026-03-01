@@ -7,7 +7,55 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Sun, 11 May 2025 13:10:01 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 02 Mar 2026 00:15:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>AI 辅助</title>
+        <link>https://zhumengzhu.github.io/tags/ai-%E8%BE%85%E5%8A%A9/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/ai-%E8%BE%85%E5%8A%A9/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Java</title>
+        <link>https://zhumengzhu.github.io/tags/java/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/java/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>OpenTelemetry</title>
+        <link>https://zhumengzhu.github.io/tags/opentelemetry/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/opentelemetry/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>监控</title>
+        <link>https://zhumengzhu.github.io/tags/%E7%9B%91%E6%8E%A7/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E7%9B%91%E6%8E%A7/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>可观测性</title>
+        <link>https://zhumengzhu.github.io/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>线程池</title>
+        <link>https://zhumengzhu.github.io/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</link>
+        <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>File-Loading-Order</title>
         <link>https://zhumengzhu.github.io/tags/file-loading-order/</link>
         <pubDate>Sun, 11 May 2025 13:10:01 +0800</pubDate>
@@ -69,14 +117,6 @@
         <pubDate>Sat, 10 May 2025 17:13:00 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/tags/deployment/</guid>
-        <description></description>
-        </item>
-        <item>
-        <title>Java</title>
-        <link>https://zhumengzhu.github.io/tags/java/</link>
-        <pubDate>Sat, 10 May 2025 17:13:00 +0800</pubDate>
-        
-        <guid>https://zhumengzhu.github.io/tags/java/</guid>
         <description></description>
         </item>
         <item>
@@ -525,14 +565,6 @@
         <pubDate>Tue, 11 Oct 2022 22:09:19 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/tags/%E5%91%8A%E8%AD%A6/</guid>
-        <description></description>
-        </item>
-        <item>
-        <title>监控</title>
-        <link>https://zhumengzhu.github.io/tags/%E7%9B%91%E6%8E%A7/</link>
-        <pubDate>Tue, 11 Oct 2022 22:09:19 +0800</pubDate>
-        
-        <guid>https://zhumengzhu.github.io/tags/%E7%9B%91%E6%8E%A7/</guid>
         <description></description>
         </item>
         <item>
