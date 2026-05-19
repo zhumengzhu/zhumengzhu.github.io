@@ -32,6 +32,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;HTTP 响应头已返回（200 OK，Content-Length 35MB），但 body 数据始终未能完整接收。同一 URL 使用 curl 下载正常，约 20 秒完成 35MB。&lt;/p&gt;
+&lt;p&gt;此问题在 OpenCode 社区中并非个例。自 2025 年 11 月起已有多位用户报告相同症状：OpenCode 启动时 &lt;code&gt;bun add&lt;/code&gt; 卡死，程序无响应（&lt;a class=&#34;link&#34; href=&#34;https://github.com/anomalyco/opencode/issues/4682&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#4682&lt;/a&gt;）。有用户排查后发现 bun 在收到 HTTP 304 缓存响应后陷入等待，也有用户直接将根因指向 IPv6——&amp;ldquo;disable ipv6 or add &amp;ndash;no-cache when adding bun appears to be the simplest solution&amp;rdquo;。该 issue 有 28 条讨论，最终因 90 天无活动被 bot 关闭，而非代码修复。&lt;/p&gt;
 &lt;h2 id=&#34;排查过程&#34;&gt;排查过程
 &lt;/h2&gt;&lt;h3 id=&#34;网络层&#34;&gt;网络层
 &lt;/h3&gt;&lt;p&gt;通过 &lt;code&gt;lsof -i -nP&lt;/code&gt; 查看 bun 进程的 TCP 连接（&lt;code&gt;-n&lt;/code&gt; 禁用 DNS 反查，&lt;code&gt;-P&lt;/code&gt; 不转换端口名）：&lt;/p&gt;
