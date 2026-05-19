@@ -8,14 +8,14 @@
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
         <lastBuildDate>Wed, 20 May 2026 00:00:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/javascript-runtime/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>opencode 更新卡住？Bun IPv6 问题分析</title>
+        <title>OpenCode 更新卡住？Bun IPv6 问题分析</title>
         <link>https://zhumengzhu.github.io/2026/05/bun-ipv6-odyssey/</link>
         <pubDate>Wed, 20 May 2026 00:00:00 +0800</pubDate>
         
         <guid>https://zhumengzhu.github.io/2026/05/bun-ipv6-odyssey/</guid>
-        <description>&lt;h1 id=&#34;opencode-更新卡住bun-ipv6-问题分析&#34;&gt;opencode 更新卡住？Bun IPv6 问题分析
+        <description>&lt;h1 id=&#34;opencode-更新卡住bun-ipv6-问题分析&#34;&gt;OpenCode 更新卡住？Bun IPv6 问题分析
 &lt;/h1&gt;&lt;h2 id=&#34;问题现象&#34;&gt;问题现象
-&lt;/h2&gt;&lt;p&gt;opencode 启动时会检查全局包的更新，触发 &lt;code&gt;bun install -g opencode-ai@latest&lt;/code&gt;。在某次更新中，该命令在 &amp;ldquo;Resolving dependencies&amp;rdquo; 阶段卡死。开启 &lt;code&gt;--verbose&lt;/code&gt; 后的输出：&lt;/p&gt;
+&lt;/h2&gt;&lt;p&gt;OpenCode 启动时会检查全局包的更新，触发 &lt;code&gt;bun install -g opencode-ai@latest&lt;/code&gt;。在某次更新中，该命令在 &amp;ldquo;Resolving dependencies&amp;rdquo; 阶段卡死。开启 &lt;code&gt;--verbose&lt;/code&gt; 后的输出：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -84,7 +84,7 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;IPv4 路径 1.6 MB/s，IPv6 路径仅 56 KB/s，差距约 30 倍。&lt;/p&gt;
 &lt;h3 id=&#34;进程层&#34;&gt;进程层
-&lt;/h3&gt;&lt;p&gt;&lt;code&gt;ps aux | grep opencode&lt;/code&gt; 显示有多个 opencode 实例和 bun install 进程共存：&lt;/p&gt;
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;ps aux | grep opencode&lt;/code&gt; 显示有多个 OpenCode 实例和 bun install 进程共存：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -141,7 +141,7 @@
 &lt;p&gt;&lt;strong&gt;Bun 的 IPv6 fallback 存在盲区&lt;/strong&gt;：即使 Happy Eyeballs 已实现（v1.1.9），它只作用于 TCP 连接建立阶段——同时发起 IPv6 和 IPv4 握手，先成功者胜出。但在本例中，IPv6 连接成功建立（ESTABLISHED，HTTP 200 响应头已返回），Happy Eyeballs 判定 IPv6 &amp;ldquo;胜出&amp;quot;后不再干预。问题出在后续的 body 传输阶段：连接虽然建立，但吞吐量仅 56 KB/s，远低于 IPv4 的 1.6 MB/s。Happy Eyeballs 不会因传输慢而切换——它只管连接，不管传输速度。#27337 加上的 10 秒超时同样只覆盖连接握手阶段，不覆盖已建立连接的数据传输。curl 在类似场景下可通过 TCP 重传超时及时发现链路劣化并重试。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;&lt;strong&gt;多进程锁竞争放大问题&lt;/strong&gt;：多个 opencode 实例同时触发 &lt;code&gt;bun install&lt;/code&gt;，文件锁竞争使得即使下载接近完成也无法继续。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;多进程锁竞争放大问题&lt;/strong&gt;：多个 OpenCode 实例同时触发 &lt;code&gt;bun install&lt;/code&gt;，文件锁竞争使得即使下载接近完成也无法继续。&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;并非所有环境都会遇到此问题。触发条件：&lt;/p&gt;
