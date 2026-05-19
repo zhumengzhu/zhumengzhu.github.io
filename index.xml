@@ -7,6 +7,328 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright><atom:link href="https://zhumengzhu.github.io/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>opencode 更新卡住？Bun IPv6 问题分析</title>
+        <link>https://zhumengzhu.github.io/2026/05/bun-ipv6-odyssey/</link>
+        <pubDate>Wed, 20 May 2026 00:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/2026/05/bun-ipv6-odyssey/</guid>
+        <description>&lt;h1 id=&#34;opencode-更新卡住bun-ipv6-问题分析&#34;&gt;opencode 更新卡住？Bun IPv6 问题分析
+&lt;/h1&gt;&lt;h2 id=&#34;问题现象&#34;&gt;问题现象
+&lt;/h2&gt;&lt;p&gt;opencode 启动时会检查全局包的更新，触发 &lt;code&gt;bun install -g opencode-ai@latest&lt;/code&gt;。在某次更新中，该命令在 &amp;ldquo;Resolving dependencies&amp;rdquo; 阶段卡死。开启 &lt;code&gt;--verbose&lt;/code&gt; 后的输出：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;bun add v1.3.14 (0d9b296a)
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Resolving dependencies
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;gt; HTTP/1.1 GET https://registry.npmjs.org/opencode-darwin-arm64/-/opencode-darwin-arm64-1.15.5.tgz
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;lt; 200 OK
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;lt; Content-Length: 35934948
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;HTTP 响应头已返回（200 OK，Content-Length 35MB），但 body 数据始终未能完整接收。同一 URL 使用 curl 下载正常，约 20 秒完成 35MB。&lt;/p&gt;
+&lt;h2 id=&#34;排查过程&#34;&gt;排查过程
+&lt;/h2&gt;&lt;h3 id=&#34;网络层&#34;&gt;网络层
+&lt;/h3&gt;&lt;p&gt;通过 &lt;code&gt;lsof -i -nP&lt;/code&gt; 查看 bun 进程的 TCP 连接（&lt;code&gt;-n&lt;/code&gt; 禁用 DNS 反查，&lt;code&gt;-P&lt;/code&gt; 不转换端口名）：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# lsof -i -nP | grep -i bun
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;bun  18653  zmz  16u  IPv6  TCP [2408:xxxx:...]:54412-&amp;gt;[2606:4700::6810:422]:443 (ESTABLISHED)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;连接走的是 IPv6，目标地址 &lt;code&gt;2606:4700::6810:422&lt;/code&gt; 属于 Cloudflare。该 IPv6 路径质量较差：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;$ traceroute6 2606:4700::6810:422
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;10  2400:cb00:447:3::  261ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;12  2400:cb00:1164:1024::ac40:d86d  334ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;RTT 约 334ms。对比 curl 的 &lt;code&gt;-4&lt;/code&gt; 和 &lt;code&gt;-6&lt;/code&gt; 强制模式：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-gdscript3&#34; data-lang=&#34;gdscript3&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;o&#34;&gt;$&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;curl&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dev&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;null&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;w&lt;/span&gt; &lt;span class=&#34;s2&#34;&gt;&amp;#34;speed=%{speed_download}&amp;#34;&lt;/span&gt; \
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;n&#34;&gt;https&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;//&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;registry&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;npmjs&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;org&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;opencode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;darwin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;arm64&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/-/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;opencode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;darwin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;arm64&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mf&#34;&gt;1.15&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;mf&#34;&gt;5.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tgz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;speed&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1630440&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;# 1.6 MB/s&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;o&#34;&gt;$&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;curl&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dev&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;null&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;w&lt;/span&gt; &lt;span class=&#34;s2&#34;&gt;&amp;#34;speed=%{speed_download}&amp;#34;&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;--&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;max&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;time&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;30&lt;/span&gt; \
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;n&#34;&gt;https&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;//&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;registry&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;npmjs&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;org&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;opencode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;darwin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;arm64&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/-/&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;opencode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;darwin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;arm64&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mf&#34;&gt;1.15&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;mf&#34;&gt;5.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tgz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;speed&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;56491&lt;/span&gt;   &lt;span class=&#34;c1&#34;&gt;# 56 KB/s，30 秒后超时&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;IPv4 路径 1.6 MB/s，IPv6 路径仅 56 KB/s，差距约 30 倍。&lt;/p&gt;
+&lt;h3 id=&#34;进程层&#34;&gt;进程层
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;ps aux | grep opencode&lt;/code&gt; 显示有多个 opencode 实例和 bun install 进程共存：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;zmz  14284  ... opencode     # 17 天前启动，CPU 时间 83 小时
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;zmz  95041  ... opencode     # 5 天前启动
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;zmz  90671  ... opencode     # 当前会话
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;zmz  98507  ... bun install  # opencode 子进程，卡在下载
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;zmz  99389  ... bun install  # 孤儿进程（PPID=1），同样卡住
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;两个 &lt;code&gt;bun install&lt;/code&gt; 进程同时竞争 &lt;code&gt;/Users/zmz/.bun/install/global/bun.lock&lt;/code&gt;，而各自的 IPv6 连接均在低速下载。即使某一进程下载完成，也无法写入 lockfile——锁被另一个进程持有。&lt;/p&gt;
+&lt;h3 id=&#34;环境层&#34;&gt;环境层
+&lt;/h3&gt;&lt;p&gt;当前网络环境（macOS, Wi-Fi）:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;$ networksetup -getinfo Wi-Fi
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;IPv6: Automatic
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;IPv6 IP address: 2408:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx  # 运营商分配的全局 IPv6，实际地址已脱敏
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;DNS 解析 &lt;code&gt;registry.npmjs.org&lt;/code&gt; 同时返回 AAAA（IPv6）和 A（IPv4）记录。Bun 按 &lt;a class=&#34;link&#34; href=&#34;https://www.rfc-editor.org/rfc/rfc6724&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;RFC 6724&lt;/a&gt; 地址选择规则优先走 IPv6，落入慢速路径。&lt;/p&gt;
+&lt;p&gt;关闭 Wi-Fi 的 IPv6 后，bun install 成功：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;$ networksetup -setv6off Wi-Fi
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;$ bun install -g opencode-ai@latest
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# 下载完成，安装成功
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;根因分析&#34;&gt;根因分析
+&lt;/h2&gt;&lt;p&gt;问题链涉及三个层面：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;IPv6 路由质量差&lt;/strong&gt;：运营商分配的 IPv6 到达 Cloudflare 的路由延迟高（334ms RTT），吞吐量低（56 KB/s vs 1.6 MB/s for IPv4）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Bun 的 IPv6 fallback 存在盲区&lt;/strong&gt;：即使 Happy Eyeballs 已实现（v1.1.9），它只作用于 TCP 连接建立阶段——同时发起 IPv6 和 IPv4 握手，先成功者胜出。但在本例中，IPv6 连接成功建立（ESTABLISHED，HTTP 200 响应头已返回），Happy Eyeballs 判定 IPv6 &amp;ldquo;胜出&amp;quot;后不再干预。问题出在后续的 body 传输阶段：连接虽然建立，但吞吐量仅 56 KB/s，远低于 IPv4 的 1.6 MB/s。Happy Eyeballs 不会因传输慢而切换——它只管连接，不管传输速度。#27337 加上的 10 秒超时同样只覆盖连接握手阶段，不覆盖已建立连接的数据传输。curl 在类似场景下可通过 TCP 重传超时及时发现链路劣化并重试。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;多进程锁竞争放大问题&lt;/strong&gt;：多个 opencode 实例同时触发 &lt;code&gt;bun install&lt;/code&gt;，文件锁竞争使得即使下载接近完成也无法继续。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;并非所有环境都会遇到此问题。触发条件：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;系统启用 IPv6&lt;/li&gt;
+&lt;li&gt;该 IPv6 路径到目标服务器（此处为 Cloudflare 托管的 npm registry）质量差，延迟高或吞吐低（取决于 ISP 路由）&lt;/li&gt;
+&lt;li&gt;Bun 的 Happy Eyeballs 未能在传输阶段切换回 IPv4&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;bun-ipv6-相关-issue-与修复时间线&#34;&gt;Bun IPv6 相关 Issue 与修复时间线
+&lt;/h2&gt;&lt;p&gt;此问题在 Bun 项目中有长期跟踪记录。以下是主要 Issue 和 PR 的时间线：&lt;/p&gt;
+&lt;div class=&#34;mermaid&#34;&gt;
+timeline
+    title Bun IPv6 连接问题相关 Issue 与修复
+    2023年8月 : Issue #4066: bun install 下载极慢，关 IPv6 可解
+    2023年9月 : Issue #4938/#5548: 更多用户报告相同症状
+    2024年1月 : PR #8295: 修复 Bun.connect(localhost) IPv6 偏好
+    2024年5月 : Issue #10731: Jarred-Sumner 提出双步修复计划
+              : PR #11206: Happy Eyeballs 实现合并
+              : Bun v1.1.9 发布，包含 Happy Eyeballs
+    2024年6月 : PR #12223: getaddrinfo 修复，优化 IPv4-only/IPv6-only 网络
+    2025年12月: Issue #25619: VPN（Cisco AnyConnect）场景回归
+    2026年1月 : PR #26012: DNS 排序修复，检测全局 IPv6 源地址
+    2026年2月 : PR #27337: 连接超时机制（10 秒），超时后 fallback
+    2026年3月 : Issue #28405: Tailscale ULA IPv6 地址导致回退失效
+    2026年4月 : Issue #28804: macOS 上 fetch() 返回 TLS 证书验证错误
+    2026年5月 : 实测 bun 1.3.14 在特定 IPv6 路径下仍会卡死
+&lt;/div&gt;
+&lt;script src=&#34;https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js&#34;&gt;&lt;/script&gt;
+&lt;script&gt;mermaid.initialize({startOnLoad:true, theme: &#39;neutral&#39;});&lt;/script&gt;
+&lt;h3 id=&#34;各阶段详细情况&#34;&gt;各阶段详细情况
+&lt;/h3&gt;&lt;h4 id=&#34;202308-09-问题首次被报告&#34;&gt;2023.08-09: 问题首次被报告
+&lt;/h4&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/4066&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #4066&lt;/a&gt; 是第一个大规模报告，描述了 &lt;code&gt;bun install&lt;/code&gt; 下载卡死。社区确认与 IPv6 相关，并提出三个 workaround：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;禁用 IPv6（Linux: &lt;code&gt;sysctl net.ipv6.conf.all.disable_ipv6=1&lt;/code&gt;，macOS: 系统设置中关闭）&lt;/li&gt;
+&lt;li&gt;修改 &lt;code&gt;/etc/gai.conf&lt;/code&gt;（Linux），取消注释 &lt;code&gt;precedence ::ffff:0:0/96  100&lt;/code&gt;，使 IPv4 优先&lt;/li&gt;
+&lt;li&gt;更换 DNS 服务器（部分用户反映从 Cloudflare DNS 切换到其他 DNS 有改善）&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Jarred-Sumner 在 #4066 中确认：&amp;ldquo;This is likely a bug with our dns code.&amp;rdquo;&lt;/p&gt;
+&lt;h4 id=&#34;202401-06-happy-eyeballs-实现&#34;&gt;2024.01-06: Happy Eyeballs 实现
+&lt;/h4&gt;&lt;p&gt;Jarred-Sumner 在 &lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/10731&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#10731&lt;/a&gt; 中提出了两步修复方案：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;非阻塞 DNS 解析&lt;/strong&gt;：macOS 用 libinfo，Windows 用 &lt;code&gt;uv_getaddrinfo&lt;/code&gt;，Linux 用线程池，避免 DNS 阻塞事件循环&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Happy Eyeballs v2（&lt;a class=&#34;link&#34; href=&#34;https://www.rfc-editor.org/rfc/rfc8305&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;RFC 8305&lt;/a&gt;）&lt;/strong&gt;：同时发起 IPv6 和 IPv4 连接，选择最先成功者&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;PR &lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/11206&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#11206&lt;/a&gt; 实现了该方案，在 Bun v1.1.9 中发布。Changelog 说明：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&amp;ldquo;If Bun receives multiple IP addresses for a single hostname, it will attempt to simultaneously connect to each address, then select the first successful connection.&amp;rdquo;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;需要注意的是，Happy Eyeballs 的覆盖范围仅限 TCP 握手阶段：一旦某个地址的连接成功建立，后续数据传输不再受 Happy Eyeballs 管辖。这意味着如果 IPv6 连接成功但传输缓慢（如本文的 56 KB/s 场景），Happy Eyeballs 不会自动切换回 IPv4。&lt;/p&gt;
+&lt;h4 id=&#34;202512-202603-持续回归&#34;&gt;2025.12-2026.03: 持续回归
+&lt;/h4&gt;&lt;p&gt;Happy Eyeballs 实现后，以下场景仍存在问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;VPN 虚拟接口 (Issue #25619)&lt;/strong&gt;：Cisco AnyConnect 创建的虚拟接口仅分配 link-local IPv6 地址（fe80::）。link-local 地址无法路由到公网，但 Bun 仍尝试通过它连接，且连接失败后未 fallback。PR &lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/26012&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#26012&lt;/a&gt; 修复：DNS 排序前检测系统是否存在全局 IPv6 源地址（2000::/3），不存在则优先 IPv4。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;连接超时缺失 (PR #27337)&lt;/strong&gt;：Bun 底层网络库 &lt;a class=&#34;link&#34; href=&#34;https://github.com/uNetworking/uSockets&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;uSockets&lt;/a&gt; 的 socket timeout 默认值为 255（表示禁用）。当 IPv6 SYN 包被中间路由器丢弃（无 RST 返回）时，连接无限等待，Happy Eyeballs 的 fallback 无法触发。PR &lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/27337&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;#27337&lt;/a&gt; 加上 10 秒连接超时，超时后 fallback 到下一个地址。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Tailscale ULA 地址 (Issue #28405)&lt;/strong&gt;：Tailscale 分配 ULA IPv6 地址（fdaa::）。ULA 地址理论可路由，但实际在很多网络环境中不可用，Bun 仍然优先尝试 IPv6。&lt;/p&gt;
+&lt;h4 id=&#34;202604-tls-证书验证问题&#34;&gt;2026.04: TLS 证书验证问题
+&lt;/h4&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/28804&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #28804&lt;/a&gt;（重复 #23735）报告了 macOS 上的 TLS 证书验证失败：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Error: UNKNOWN_CERTIFICATE_VERIFICATION_ERROR
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;path: &amp;#34;https://oauth2.googleapis.com/token&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;同一 URL 在 Node、curl、Python 下可正常连接。&lt;/p&gt;
+&lt;p&gt;根本原因：Bun 使用内置 BoringSSL 进行 TLS 验证，不使用 macOS 的 Security Framework（SecureTransport）。BoringSSL 维护独立的 CA 信任列表，不与系统钥匙链同步。当服务端证书依赖系统钥匙链中的企业 CA 或特定中间 CA 时，Bun 验证失败。&lt;/p&gt;
+&lt;p&gt;在同一机器上，DeepSeek API（&lt;code&gt;api.deepseek.com&lt;/code&gt;）也复现了该问题：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;$ openssl s_client -connect api.deepseek.com:443 -servername api.deepseek.com
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Verify return code: 0 (ok)      # 系统验证通过
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# bun fetch 对该域名报 UNKNOWN_CERTIFICATE_VERIFICATION_ERROR
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;该 Issue 截至 2026 年 5 月仍未修复。&lt;/p&gt;
+&lt;h2 id=&#34;与-nodejs--curl-的对比&#34;&gt;与 Node.js / curl 的对比
+&lt;/h2&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;             TLS 实现              IPv6 fallback        macOS CA 信任
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Node.js      OpenSSL/SecureTransport  libuv Happy Eyeballs  系统钥匙链
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;curl         SecureTransport/OpenSSL  Happy Eyeballs        系统钥匙链
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Bun          BoringSSL（自封装）      自研，存在缺陷        内置 CA 列表
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Node.js 通过 libuv 和 c-ares 处理 DNS 和连接，curl 通过 libcurl。二者均依赖经过长期验证的网络库，无需自己实现 RFC 8305 等协议细节。Bun 选择自行实现网络栈，在常规网络环境下性能更好，但在 IPv6 边界条件下暴露出更多问题。&lt;/p&gt;
+&lt;h2 id=&#34;当前状态与建议&#34;&gt;当前状态与建议
+&lt;/h2&gt;&lt;p&gt;截至 Bun 1.3.14（2026 年 5 月）：&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;修复项&lt;/th&gt;
+          &lt;th&gt;状态&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Happy Eyeballs&lt;/td&gt;
+          &lt;td&gt;已修复（v1.1.9）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;link-local IPv6 降权&lt;/td&gt;
+          &lt;td&gt;已修复（#26012）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;连接超时（10 秒 fallback）&lt;/td&gt;
+          &lt;td&gt;已修复（#27337）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;下载 body 流卡死（本文所述场景）&lt;/td&gt;
+          &lt;td&gt;未完全修复&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;macOS TLS 证书验证&lt;/td&gt;
+          &lt;td&gt;未修复（#28804/#23735）&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;macOS 用户的 workaround：&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# 临时关闭 Wi-Fi IPv6
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;networksetup -setv6off Wi-Fi
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;# 使用完毕后恢复
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;networksetup -setv6automatic Wi-Fi
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;或用 npm 替代 bun 安装全局包：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;npm install -g opencode-ai@latest
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;参考链接&#34;&gt;参考链接
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/4066&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #4066: bun install takes extremely long time&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/10731&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #10731: 2 step plan to fix most DNS-related issues in Bun&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/11206&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #11206: Happy Eyeballs implementation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/26012&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #26012: deprioritize link-local IPv6 addresses&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/pull/27337&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PR #27337: add connection timeout to prevent IPv6 hangs&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/28405&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #28405: bun install hangs with deprecated IPv6 ULA&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/issues/28804&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Issue #28804: fetch fails certificate verification on macOS&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://bun.com/blog/release-notes/bun-v1.1.9&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Bun v1.1.9 Release Notes&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/oven-sh/bun/blob/main/src/boringssl.zig&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;BoringSSL in Bun source&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+        </item>
+        <item>
         <title>OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理</title>
         <link>https://zhumengzhu.github.io/2026/05/opencode-deep-research/</link>
         <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
