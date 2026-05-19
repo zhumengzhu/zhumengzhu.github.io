@@ -2,13 +2,49 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://zhumengzhu.github.io/post/</loc>
-    <lastmod>2026-03-02T10:00:00+08:00</lastmod>
+    <loc>https://zhumengzhu.github.io/categories/ai/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
   </url><url>
-    <loc>https://zhumengzhu.github.io/tags/ai-%E8%BE%85%E5%8A%A9/</loc>
-    <lastmod>2026-03-02T00:15:00+08:00</lastmod>
+    <loc>https://zhumengzhu.github.io/tags/ai/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/categories/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/coding-agent/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/effect/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/llm/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/opencode/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/2026/05/opencode-deep-research/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/post/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/typescript/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/%E6%9E%B6%E6%9E%84/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/%E5%BC%80%E6%BA%90/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/%E7%BB%88%E7%AB%AF/</loc>
+    <lastmod>2026-05-19T22:00:00+08:00</lastmod>
+  </url><url>
+    <loc>https://zhumengzhu.github.io/tags/ai-%E8%BE%85%E5%8A%A9/</loc>
     <lastmod>2026-03-02T00:15:00+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/java/</loc>
@@ -18,9 +54,6 @@
     <lastmod>2026-03-02T00:15:00+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/opentelemetry/</loc>
-    <lastmod>2026-03-02T00:15:00+08:00</lastmod>
-  </url><url>
-    <loc>https://zhumengzhu.github.io/tags/</loc>
     <lastmod>2026-03-02T00:15:00+08:00</lastmod>
   </url><url>
     <loc>https://zhumengzhu.github.io/tags/%E7%9B%91%E6%8E%A7/</loc>

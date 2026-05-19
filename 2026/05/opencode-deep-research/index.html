@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="深度调研 OpenCode 项目：创始团队背景、发展历程、技术架构、核心模块（Agent Loop）、生态插件、竞品对比和学习路径指南。">
+<meta name="keywords" content="OpenCode, AI Coding Agent, 开源, 终端工具, LLM, 开发者工具"><title>OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理</title>
+
+<link rel='canonical' href='https://zhumengzhu.github.io/2026/05/opencode-deep-research/'>
+
+<link rel="stylesheet" href="/scss/style.min.6446795889a0bfe2ea25aab66389947bb9b57419e0370d7fa9eeb9c5bd4d30f4.css"><meta property='og:title' content="OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理">
+<meta property='og:description' content="深度调研 OpenCode 项目：创始团队背景、发展历程、技术架构、核心模块（Agent Loop）、生态插件、竞品对比和学习路径指南。">
+<meta property='og:url' content='https://zhumengzhu.github.io/2026/05/opencode-deep-research/'>
+<meta property='og:site_name' content='Somnus'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='OpenCode' /><meta property='article:tag' content='AI' /><meta property='article:tag' content='Coding Agent' /><meta property='article:tag' content='开源' /><meta property='article:tag' content='终端' /><meta property='article:tag' content='架构' /><meta property='article:tag' content='LLM' /><meta property='article:tag' content='Effect' /><meta property='article:tag' content='TypeScript' /><meta property='article:published_time' content='2026-05-19T22:00:00&#43;08:00'/><meta property='article:modified_time' content='2026-05-19T22:00:00&#43;08:00'/>
+<meta name="twitter:site" content="@@zhumengzhu">
+    <meta name="twitter:creator" content="@@zhumengzhu"><meta name="twitter:title" content="OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理">
+<meta name="twitter:description" content="深度调研 OpenCode 项目：创始团队背景、发展历程、技术架构、核心模块（Agent Loop）、生态插件、竞品对比和学习路径指南。">
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZVWGDHM98D"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-ZVWGDHM98D');
+        }
+      </script><script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "\"OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理\"",
+  "description": "\"深度调研 OpenCode 项目：创始团队背景、发展历程、技术架构、核心模块（Agent Loop）、生态插件、竞品对比和学习路径指南。\"",
+  "author": {
+    "@type": "Person",
+    "name": "\"孟柱\"",
+    "image": "\"https://zhumengzhu.github.io//img/avatar.jpg\"",
+    "description": "\"一个有点懒、有点笨，又爱刨根问底的程序员。A programmer who is a bit lazy, a bit slow-witted, yet loves to dig deep into the roots of things.\""
+  },
+  "datePublished": "\"2026-05-19T22:00:00+08:00\"",
+  "dateModified": "\"2026-05-19T22:00:00+08:00\"",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "\"https://zhumengzhu.github.io/2026/05/opencode-deep-research/\""
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "\"Somnus\"",
+    "url": "\"https://zhumengzhu.github.io/\""
+  },
+  "keywords": "\"OpenCode, AI Coding Agent, 开源, 终端工具, LLM, 开发者工具\"",
+  "articleSection": "\"post\"",
+  "url": "\"https://zhumengzhu.github.io/2026/05/opencode-deep-research/\""
+}
+</script>
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_5215dd1208300fe9.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">💯</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Somnus</a></h1>
+            <h2 class="site-description">孟柱的小窝</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/zhumengzhu'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://stackoverflow.com/users/3496176/zhumengzhu'
+                        target="_blank"
+                        title="stack overflow"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-stackoverflow"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-1" /><path d="M8 16h8" /><path d="M8.322 12.582l7.956 .836" /><path d="M8.787 9.168l7.826 1.664" /><path d="M10.096 5.764l7.608 2.472" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+    
+    
+    
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#摘要">摘要</a></li>
+    <li><a href="#一项目概览">一、项目概览</a></li>
+    <li><a href="#二创始团队与公司背景">二、创始团队与公司背景</a>
+      <ol>
+        <li><a href="#21-核心创始人">2.1 核心创始人</a></li>
+        <li><a href="#22-关键贡献者">2.2 关键贡献者</a></li>
+        <li><a href="#23-公司与投资">2.3 公司与投资</a></li>
+      </ol>
+    </li>
+    <li><a href="#三发展历程">三、发展历程</a>
+      <ol>
+        <li><a href="#31-起源故事">3.1 起源故事</a></li>
+        <li><a href="#32-关键里程碑时间线">3.2 关键里程碑时间线</a></li>
+        <li><a href="#33-增长数据与驱动因素">3.3 增长数据与驱动因素</a></li>
+      </ol>
+    </li>
+    <li><a href="#四社区发展">四、社区发展</a>
+      <ol>
+        <li><a href="#41-github-社区">4.1 GitHub 社区</a></li>
+        <li><a href="#42-行业影响力">4.2 行业影响力</a></li>
+        <li><a href="#43-争议与批评">4.3 争议与批评</a></li>
+      </ol>
+    </li>
+    <li><a href="#五技术架构">五、技术架构</a>
+      <ol>
+        <li><a href="#51-整体架构概览">5.1 整体架构概览</a></li>
+        <li><a href="#52-技术栈选型">5.2 技术栈选型</a></li>
+        <li><a href="#53-包结构详解">5.3 包结构详解</a></li>
+        <li><a href="#54-llm-抽象层设计">5.4 LLM 抽象层设计</a></li>
+        <li><a href="#55-effect-v4-的深度应用">5.5 Effect v4 的深度应用</a></li>
+      </ol>
+    </li>
+    <li><a href="#六核心模块与组件">六、核心模块与组件</a>
+      <ol>
+        <li><a href="#61-agent-系统">6.1 Agent 系统</a></li>
+        <li><a href="#62-agent-loop核心循环">6.2 Agent Loop（核心循环）</a></li>
+        <li><a href="#63-工具系统">6.3 工具系统</a></li>
+        <li><a href="#64-子代理机制">6.4 子代理机制</a></li>
+        <li><a href="#65-客户端服务器架构">6.5 客户端/服务器架构</a></li>
+        <li><a href="#66-会话与状态管理">6.6 会话与状态管理</a></li>
+      </ol>
+    </li>
+    <li><a href="#七生态插件">七、生态插件</a>
+      <ol>
+        <li><a href="#第一梯队多代理编排">第一梯队：多代理编排</a></li>
+        <li><a href="#第二梯队认证与模型访问">第二梯队：认证与模型访问</a></li>
+        <li><a href="#第三梯队开发者工具">第三梯队：开发者工具</a></li>
+      </ol>
+    </li>
+    <li><a href="#八竞品对比">八、竞品对比</a></li>
+    <li><a href="#九学习路径指南">九、学习路径指南</a>
+      <ol>
+        <li><a href="#91-用户入门">9.1 用户入门</a></li>
+        <li><a href="#92-贡献者进阶">9.2 贡献者进阶</a></li>
+      </ol>
+    </li>
+    <li><a href="#十总结与展望">十、总结与展望</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+    
+    
+    
+</aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/ai/" >
+                AI
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/2026/05/opencode-deep-research/">OpenCode 深度研究报告：从 0 到 16 万 Star 的开源 AI 编程代理</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            深度调研 OpenCode 项目：创始团队背景、发展历程、技术架构、核心模块（Agent Loop）、生态插件、竞品对比和学习路径指南。
+        </h3>
+        
+    </div>
+
+    
+        <footer class="article-time">
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                    <time class="article-time--published">2026/05/19</time>
+                </div>
+            
+
+            
+            
+                        最后修改于:
+                        <time class="article-time--updated" datetime="2026-05-19 22:00:00 &#43;0800 CST" title="2026-05-19 22:00:00 &#43;0800 CST">
+                            2026/05/19 22:00 CST
+                        </time>
+
+            
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                    <time class="article-time--reading">
+                        阅读时长: 18 分钟
+                    </time>
+                </div>
+            
+        </footer>
+    
+
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="opencode-深度研究报告">OpenCode 深度研究报告
+</h1><h2 id="摘要">摘要
+</h2><p>OpenCode 是一款开源的人工智能编程代理（AI Coding Agent），采用终端原生 TUI 界面、独立于模型供应商的架构，以及客户端/服务器模式。截至 2026 年 5 月，该项目在 GitHub 上获得约 161,000 颗星标，累计下载量约 1,800 万次，是当前最受欢迎的终端 AI 编程工具之一。</p>
+<p>本项目由 Anomaly Innovations 公司（SST / Serverless Stack 的母公司）主导开发，核心团队来自 Y Combinator W2021 批次。技术层面，OpenCode 以 Effect v4 为系统性基础框架，结合 SolidJS 和自研的 OpenTUI 界面框架，构建了一套可插拔的 LLM 抽象层，支持 75 种以上的模型供应商。项目从 2025 年 4 月创建至今仅用约一年时间即完成爆发式增长，经历了社群分化、供应商封锁、以及产品架构多轮重写等重要拐点。</p>
+<p>报告将从项目背景、创始团队、发展历程、技术架构、生态插件、竞品格局和学习路径等七个方面进行系统梳理。</p>
+<h2 id="一项目概览">一、项目概览
+</h2><p>OpenCode 是一个终端原生的 AI 编程代理。与常见的 IDE 插件形态（如 Cursor、Cline）不同，OpenCode 运行在终端模拟器中，提供完整的 TUI 交互界面。它支持用户通过自然语言指令完成代码编写、文件操作、Shell 命令执行、网络搜索等一系列开发任务。</p>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>指标</th>
+          <th>数值</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>GitHub 星标</td>
+          <td>~161,000</td>
+      </tr>
+      <tr>
+          <td>贡献者数</td>
+          <td>911</td>
+      </tr>
+      <tr>
+          <td>月活跃开发者</td>
+          <td>约 650 万（官方数据）</td>
+      </tr>
+      <tr>
+          <td>累计下载量</td>
+          <td>~1,800 万</td>
+      </tr>
+      <tr>
+          <td>仓库创建日期</td>
+          <td>2025-04-30</td>
+      </tr>
+      <tr>
+          <td>公开发布日期</td>
+          <td>2025-06-19</td>
+      </tr>
+      <tr>
+          <td>最新版本</td>
+          <td>v1.15.0（2026-05-15）</td>
+      </tr>
+      <tr>
+          <td>累计发布次数</td>
+          <td>1,020+</td>
+      </tr>
+      <tr>
+          <td>许可证</td>
+          <td>MIT</td>
+      </tr>
+      <tr>
+          <td>主要语言</td>
+          <td>TypeScript</td>
+      </tr>
+      <tr>
+          <td>官方网站</td>
+          <td><a class="link" href="https://opencode.ai"  target="_blank" rel="noopener"
+    >opencode.ai</a></td>
+      </tr>
+      <tr>
+          <td>仓库地址</td>
+          <td><a class="link" href="https://github.com/anomalyco/opencode"  target="_blank" rel="noopener"
+    >github.com/anomalyco/opencode</a></td>
+      </tr>
+  </tbody>
+</table></div>
+<p>OpenCode 的市场定位可以概括为&quot;终端中的 AI 程序员&quot;。它不依赖特定的编辑器生态，也不绑定特定的模型供应商。这一独立定位使其在 Cursor（VS Code 分支，闭源）和 Cline（VS Code 扩展，开源但受限于编辑器）等竞品之间找到了独特的差异化空间。</p>
+<h2 id="二创始团队与公司背景">二、创始团队与公司背景
+</h2><h3 id="21-核心创始人">2.1 核心创始人
+</h3><p><strong>Jay V（CEO 兼联合创始人）</strong></p>
+<p>Jay V（GitHub: <a class="link" href="https://github.com/jayair"  target="_blank" rel="noopener"
+    >@jayair</a>）毕业于滑铁卢大学计算机工程专业（2003-2008），在校第一周即结识了 Frank Wang，两人此后保持了近二十年的合作关系。毕业后曾任职于 iUpload、St.Clair Interactive 等公司。2008 年与 Frank Wang 共同创立 Anomaly Innovations（YC 资料显示 SST 品牌于 2010 年正式成立），先后推出了 Seed.run（Serverless CI/CD）、SST（Serverless Stack）等产品。团队于 2021 年入选 Y Combinator W2021 批次。Jay V 同时是 Functions Conference 的创办人。[1]</p>
+<p><strong>Frank Wang（CTO 兼联合创始人）</strong></p>
+<p>Frank Wang（GitHub: <a class="link" href="https://github.com/fwang"  target="_blank" rel="noopener"
+    >@fwang</a>）同为滑铁卢大学计算机工程专业毕业生。2005-2007 年间在 NVIDIA 担任软件工程师。学术方面，曾在 NSDI、NDSS 等顶级学术会议上发表关于隐私保护与分布式系统的论文（Sieve、Splinter）。2008 年与 Jay V 联合创立 Anomaly Innovations（YC 资料显示 SST 品牌于 2010 年正式成立），担任 CTO，负责 SST、Seed.run 和 OpenCode 的技术战略。[2]</p>
+<h3 id="22-关键贡献者">2.2 关键贡献者
+</h3><p><strong>Dax Raad（核心贡献者 / 事实上的联合创始人）</strong></p>
+<p>Dax Raad（GitHub: <a class="link" href="https://github.com/thdxr"  target="_blank" rel="noopener"
+    >@thdxr</a>）以 2,544 次提交位居项目贡献者榜首。他早期是 SST 的用户，2021 年正式加入 SST 团队。Dax 在纽约布鲁克林远程工作，以创建 <a class="link" href="https://terminal.shop"  target="_blank" rel="noopener"
+    >Terminal.shop</a>（一个完全运行在终端中的咖啡商店，首年营收超 10 万美元）而闻名。[3] 在 OpenCode 的分化事件中（见 3.1 节），他主动购买了 <code>opencode.ai</code> 域名，推动了项目向 SST 品牌下的独立发展。他是项目技术路线的主要决策者，公开倡导&quot;终端优先、供应商无关、完全开源&quot;的理念。</p>
+<p><strong>Adam Elmore（核心贡献者）</strong></p>
+<p>Adam Elmore（GitHub: <a class="link" href="https://github.com/adamdotdevin"  target="_blank" rel="noopener"
+    >@adamdotdevin</a>，1,579 次提交）是 StatMuse（获迪士尼与 Google 投资的体育/金融搜索引擎）的联合创始人、ProAWS.dev 的创始人，持有全部 12 项 AWS 认证，获评 AWS DevOps Hero。他还主持 AWS.FM 播客，并与 Dax Raad 共同运营 Terminal.shop。在 OpenCode 中，他主导了桌面应用 UI 架构、差异对比和代码审查系统的开发。[4]</p>
+<p><strong>其他主要贡献者</strong></p>
+<p>按提交次数排序的主要贡献者还包括：Aiden Cline（1,525）、Kit Langton（1,439）、Frank Wang（744）、David Hill（689）、Brendan Allan（347）、Jay V（346）、Shoubhit Dash（236）、Luke Parker（177）、Kujtim Hoxha（129）、James Long（104）。</p>
+<h3 id="23-公司与投资">2.3 公司与投资
+</h3><p>OpenCode 背后的运营主体是 Anomaly Innovations，前身为 SST（Serverless Stack）。根据 Y Combinator 资料，公司于 2010 年由 Jay V 与 Frank Wang 创立，总部在加拿大多伦多，约 8 名员工，全部远程分布式办公。</p>
+<p>公司产品矩阵包括：</p>
+<ul>
+<li><strong>SST</strong>（Serverless Stack）：AWS 基础架构即代码框架，开源免费</li>
+<li><strong>Seed.run</strong>：Serverless CI/CD 平台（SST 的商业化产品）</li>
+<li><strong>OpenCode</strong>：AI 编程代理（核心开源 + Zen 付费计划）</li>
+<li><strong>model.dev</strong>：LLM API 聚合服务</li>
+</ul>
+<p>据公开信息估算，公司 SST 业务年收入约 310 万美元，OpenCode Zen 订阅与 model.dev 合计已达到数百万美元的 ARR 规模。</p>
+<p>融资方面，公司在 Y Combinator W2021 批次及后续阶段完成种子融资，外加一轮未公开金额的战略融资。根据公开资料，早期投资者包括多位知名科技公司创始人：Reid Hoffman（LinkedIn 联合创始人）、Max Levchin（PayPal 联合创始人）、Steve Chen（YouTube 联合创始人）等，以及 Y Combinator 和 SV Angel。[1][5]</p>
+<h2 id="三发展历程">三、发展历程
+</h2><h3 id="31-起源故事">3.1 起源故事
+</h3><p>OpenCode 的起源伴随一次广为人知的开源社区争议。</p>
+<p>2025 年 4 月，一名开发者 Kujtim Hoxha 创建了名为 <strong>TermAI</strong> 的终端 AI 编程工具，使用了 Charm 公司的 Bubble Tea 和 Lip Gloss 等终端 UI 库。Dax Raad 和 Adam Elmore 在 4-5 月间加入协助，项目改名为 OpenCode，Dax 购买了 <code>opencode.ai</code> 域名。</p>
+<p>分歧由此产生：Charm 公司向 Kujtim 提供了全职职位（实际效果相当于收购项目）。Dax 和 Adam 反对将项目置于风险投资支持的公司的控制之下。此后，Charm 团队将项目移入 <code>opencode-ai</code> 组织，据称重写了 git 历史移除了 Dax 的提交，删除了批评性评论，并将 Adam 从仓库中封禁。[6][7]</p>
+<p>Dax 和 Adam 随即在 SST / Anomaly Innovation 名下进行分叉（fork），该分叉即目前 <code>anomalyco/opencode</code>。两个版本并行存在约两个月后，Charm 方将其版本改名为 <strong>Crush</strong>（<a class="link" href="https://github.com/charmbracelet/crush"  target="_blank" rel="noopener"
+    >github.com/charmbracelet/crush</a>）。Crush 至今仍在 Charm 公司下活跃维护，拥有约 24,400 星标和 1,700 个 Fork（截至 2026 年 5 月），与 OpenCode 并存发展。SST 版是目前获得 ~161,000 星标的主导版本。[8]</p>
+<p>这一事件反映了开源社区中一个核心张力：当个人项目获得高速增长时，社区治理、公司控制和开源理念之间的平衡如何达成。</p>
+<h3 id="32-关键里程碑时间线">3.2 关键里程碑时间线
+</h3><div class="mermaid">
+timeline
+    title OpenCode 发展时间线
+    2025-04 : 仓库创建 (anomalyco/opencode)
+    2025-05 : Go 语言原型阶段
+    2025-06 : 公开正式发布<br>v0.1.x TypeScript 重写
+    2025-08 : v0.4.x 早期版本迭代
+    2025-10 : 26K Stars<br>GitHub 内部集成
+    2025-12 : v1.0.0 发布<br>OpenTUI 重构
+    2026-01 : Anthropic 封禁事件<br>GitHub Copilot 官方集成<br>Stars 从 50K 飙至 72K
+    2026-03 : v1.3.0 多代理编排<br>Hacker News #1<br>120K Stars
+    2026-05 : v1.15.0<br>Effect 核心事件系统<br>162K Stars
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme: 'neutral'});</script>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>日期</th>
+          <th>事件</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>2025-04-30</td>
+          <td>仓库创建</td>
+      </tr>
+      <tr>
+          <td>2025-05 中旬</td>
+          <td>Go 语言原型阶段</td>
+      </tr>
+      <tr>
+          <td>2025-06-15</td>
+          <td>宣布从 Go 到 TypeScript 的重写（v0.1.x）</td>
+      </tr>
+      <tr>
+          <td>2025-06-19</td>
+          <td>正式公开发布</td>
+      </tr>
+      <tr>
+          <td>2025-08-11</td>
+          <td>v0.4.6（可追溯的最早版本号）</td>
+      </tr>
+      <tr>
+          <td>2025-10-12</td>
+          <td>GitHub 内部集成（Copilot 兼容层）</td>
+      </tr>
+      <tr>
+          <td>2025-12-02</td>
+          <td>v1.0.0 系列发布（TUI 使用 OpenTUI 重构）</td>
+      </tr>
+      <tr>
+          <td>2026-01-09</td>
+          <td>Anthropic 封禁 OAuth 访问引发大规模公关浪潮</td>
+      </tr>
+      <tr>
+          <td>2026-01-16</td>
+          <td>GitHub Copilot 官方集成（项目最大里程碑）</td>
+      </tr>
+      <tr>
+          <td>2026-03-20</td>
+          <td>Hacker News 排名第一</td>
+      </tr>
+      <tr>
+          <td>2026-03-22</td>
+          <td>v1.3.0（多代理编排，75+ 供应商支持）</td>
+      </tr>
+      <tr>
+          <td>2026-05-15</td>
+          <td>v1.15.0（Effect 核心事件系统，背景子代理）</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="33-增长数据与驱动因素">3.3 增长数据与驱动因素
+</h3><p>OpenCode 的星标增长轨迹极为陡峭：</p>
+<p>2025 年 6 月 ~2K → 10 月 ~26K → 12 月 ~37K → 2026 年 1 月 1 日 ~50K → 1 月 19 日 ~72K → 3 月 ~120K → 4 月 ~140K → 5 月 ~161K。</p>
+<p>下载量同步增长：2025 年 6 月 29 日 5.8 万次 → 10 月 1 日 77.5 万次 → 2026 年 1 月 1 日 280 万次 → 1 月 29 日 1,019 万次 → 5 月约 1,800 万次。</p>
+<p>两次关键的爆发式增长事件：</p>
+<ol>
+<li>
+<p><strong>Anthropic 封禁事件（2026 年 1 月 9 日）</strong>：Anthropic 封禁了 OpenCode 的 OAuth 访问。Ruby on Rails 创始人 DHH 公开批评 Anthropic 的做法，反而催生了反向推广效应。大量开发者因此得知 OpenCode 的存在并开始使用。[9]</p>
+</li>
+<li>
+<p><strong>GitHub Copilot 集成（2026 年 1 月 16 日）</strong>：OpenCode 获得了 GitHub Copilot 的官方集成。这使得 Copilot 订阅用户可以零摩擦地使用 OpenCode，不再需要额外配置 API 密钥，大幅降低了使用门槛。这一事件是推动 OpenCode 用户基数迈向百万级的最重要因素。[10]</p>
+</li>
+</ol>
+<h2 id="四社区发展">四、社区发展
+</h2><h3 id="41-github-社区">4.1 GitHub 社区
+</h3><p>OpenCode 在 GitHub 上的社区规模在同类项目中位居第一。911 位贡献者、1,020+ 次发布、活跃的 Issue 与 PR 讨论，构成了一个高度活跃的开发者社区。项目在 GitHub 上建立了详细的贡献指南（CONTRIBUTING.md），并通过 AGENTS.md 文件体系维护代码知识库，以降低新贡献者的接入成本。</p>
+<h3 id="42-行业影响力">4.2 行业影响力
+</h3><p>OpenCode 的增长引发了多个维度的行业影响：</p>
+<ul>
+<li><strong>推动了终端 AI 工具品类的确立</strong>：在 OpenCode 之前，AI 编程工具多采用 IDE 插件形态。OpenCode 验证了纯终端方案的可行性，后续出现了大批模仿者。</li>
+<li><strong>加速了模型供应商的竞争</strong>：OpenCode 的供应商无关架构使开发者可以自由切换底层模型，削弱了单一供应商的锁定效应。75+ 供应商的广泛支持实际上创造了一个模型市场。</li>
+<li><strong>影响了 GitHub Copilot 的产品策略</strong>：Copilot 对 OpenCode 的官方集成本身就说明微软/GitHub 将其视为重要的生态伙伴而非竞争对手。</li>
+<li><strong>引发了开源 AI 工具的治理讨论</strong>：Charm 分叉事件成为开源社区中关于项目治理、公司控制和贡献者权利的重要案例。</li>
+</ul>
+<h3 id="43-争议与批评">4.3 争议与批评
+</h3><p>OpenCode 在发展过程中也面临若干争议：</p>
+<ol>
+<li><strong>Charm 分叉事件（见 3.1 节）</strong>：虽然 SST 版本已成为主导，但分叉事件本身引发了关于开源伦理和项目治理的持续讨论。[6][7]</li>
+<li><strong>增长可持续性</strong>：有观点认为 OpenCode 目前的增长高度依赖 GitHub Copilot 集成，存在单一外部依赖风险。</li>
+<li><strong>安全问题</strong>：作为可以执行任意 Shell 命令的终端工具，OpenCode 面临天然的安全审查压力。项目通过权限系统进行管理，但每次安全事故都可能影响社区信任。</li>
+<li><strong>项目复杂性的增加</strong>：随着 v2 迁移的推进和 Effect 框架的全面应用，新贡献者的学习曲线日趋陡峭。[11]</li>
+</ol>
+<h2 id="五技术架构">五、技术架构
+</h2><h3 id="51-整体架构概览">5.1 整体架构概览
+</h3><p>OpenCode 的技术架构可以分解为四个层次：</p>
+<ol>
+<li><strong>运行时层</strong>：Bun 1.3.13 运行时，利用其闪电般的启动速度和内置 TypeScript 支持。</li>
+<li><strong>基础框架层</strong>：Effect v4 为系统性基础，提供结构化并发、依赖注入、错误处理、流式处理等基建能力。</li>
+<li><strong>界面层</strong>：SolidJS + 自研 OpenTUI 框架，同时支持终端 TUI 和 Web/桌面应用。</li>
+<li><strong>LLM 抽象层</strong>：自定义的 LLM 抽象库（<code>@opencode-ai/llm</code>），以 Route 为核心概念进行供应商无关的模型调用。</li>
+</ol>
+<h3 id="52-技术栈选型">5.2 技术栈选型
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>类别</th>
+          <th>选择</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>运行时</td>
+          <td>Bun 1.3.13</td>
+          <td>替代 Node.js，提供更快启动、内置打包和 TypeScript 支持</td>
+      </tr>
+      <tr>
+          <td>类型检查</td>
+          <td>tsgo</td>
+          <td>替代 <code>tsc</code>，速度更快</td>
+      </tr>
+      <tr>
+          <td>UI 框架</td>
+          <td>SolidJS + OpenTUI</td>
+          <td>自研终端 UI 框架，基于 SolidJS 的响应式模型</td>
+      </tr>
+      <tr>
+          <td>后端框架</td>
+          <td>Effect v4</td>
+          <td>结构化并发、依赖注入、Streaming、Schema 验证</td>
+      </tr>
+      <tr>
+          <td>数据库 ORM</td>
+          <td>Drizzle + SQLite</td>
+          <td>轻量级，snake_case 命名约定</td>
+      </tr>
+      <tr>
+          <td>HTTP 服务</td>
+          <td>Hono → Effect HttpApi</td>
+          <td>正在向 Effect 原生 HTTP 层迁移</td>
+      </tr>
+      <tr>
+          <td>构建系统</td>
+          <td>Turborepo 2.8.13</td>
+          <td>Monorepo 编排</td>
+      </tr>
+      <tr>
+          <td>代码检查</td>
+          <td>oxlint</td>
+          <td>替代 eslint，速度更快</td>
+      </tr>
+      <tr>
+          <td>测试</td>
+          <td>bun test</td>
+          <td>内置测试框架</td>
+      </tr>
+      <tr>
+          <td>文档渲染</td>
+          <td>marked + shiki</td>
+          <td>Markdown 渲染 + 代码高亮</td>
+      </tr>
+      <tr>
+          <td>观测</td>
+          <td>OpenTelemetry</td>
+          <td>全链路追踪</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="53-包结构详解">5.3 包结构详解
+</h3><p>Monorepo 下共约 20 个包。以下是核心包的详细说明：</p>
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>包</th>
+          <th>路径</th>
+          <th>职责</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>opencode</code></td>
+          <td><code>packages/opencode/</code></td>
+          <td>主 CLI 应用，包含 TUI、yargs 命令、MCP、LSP、数据库、工具系统</td>
+      </tr>
+      <tr>
+          <td><code>core</code></td>
+          <td><code>packages/core/</code></td>
+          <td>共享库，包含模型定义、供应商配置、安装、认证</td>
+      </tr>
+      <tr>
+          <td><code>llm</code></td>
+          <td><code>packages/llm/</code></td>
+          <td>LLM 抽象层，Route 模式驱动</td>
+      </tr>
+      <tr>
+          <td><code>ui</code></td>
+          <td><code>packages/ui/</code></td>
+          <td>SolidJS 组件库，182 个组件、37 个主题</td>
+      </tr>
+      <tr>
+          <td><code>app</code></td>
+          <td><code>packages/app/</code></td>
+          <td>Web 应用（Vite + SolidJS）</td>
+      </tr>
+      <tr>
+          <td><code>desktop</code></td>
+          <td><code>packages/desktop/</code></td>
+          <td>Electron 桌面应用</td>
+      </tr>
+      <tr>
+          <td><code>console</code></td>
+          <td><code>packages/console/</code></td>
+          <td>云控制台（SolidStart + SST/Cloudflare）</td>
+      </tr>
+      <tr>
+          <td><code>sdk/js</code></td>
+          <td><code>packages/sdk/js/</code></td>
+          <td>JavaScript SDK</td>
+      </tr>
+      <tr>
+          <td><code>plugin</code></td>
+          <td><code>packages/plugin/</code></td>
+          <td>插件 SDK</td>
+      </tr>
+      <tr>
+          <td><code>slack</code></td>
+          <td><code>packages/slack/</code></td>
+          <td>Slack 机器人集成</td>
+      </tr>
+      <tr>
+          <td><code>enterprise</code></td>
+          <td><code>packages/enterprise/</code></td>
+          <td>企业版</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="54-llm-抽象层设计">5.4 LLM 抽象层设计
+</h3><p><code>@opencode-ai/llm</code> 包是 OpenCode 架构中最具设计亮点的部分。它通过四轴分解将模型调用标准化：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Route = Protocol + Endpoint + Auth + Framing
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><strong>Protocol（协议）</strong>：语义 API 契约，定义请求体构建和流式响应解析的方式</li>
+<li><strong>Endpoint（端点）</strong>：URL 路径构造逻辑</li>
+<li><strong>Auth（认证）</strong>：每个请求的认证方式（Bearer Token、API Key、AWS SigV4）</li>
+<li><strong>Framing（帧解析）</strong>：字节流到结构化消息的解析（SSE、AWS event-stream）</li>
+</ul>
+<p>这种四轴设计使得添加一个新的模型供应商只需要组合已有的 Protocol 实现（通常是 OpenAI 兼容）和实现特定于该供应商的 Endpoint、Auth 和 Framing。</p>
+<p>目前支持的供应商包括：OpenAI（Chat + Responses）、Anthropic（Messages）、Google（Gemini）、Amazon Bedrock、Azure OpenAI、Cloudflare、GitHub Copilot、OpenRouter、xAI，以及大量 OpenAI 兼容接口的供应商（DeepSeek、Cerebras、Groq、Together、Fireworks、DeepInfra 等）。</p>
+<h3 id="55-effect-v4-的深度应用">5.5 Effect v4 的深度应用
+</h3><p>Effect v4（beta 阶段）是贯穿 OpenCode 全代码库的系统性基础框架，而非局部使用的工具库。其使用模式包括：</p>
+<ul>
+<li><strong>结构化并发</strong>：通过 Scope + Fiber 管理并发任务，使用 <code>forkIn(scope)</code> 替代 Effect v3 的 <code>fork</code>/<code>forkDaemon</code></li>
+<li><strong>依赖注入</strong>：每个服务模块定义为 <code>Context.Service</code>，通过 <code>Layer</code> 进行组装和替换，便于测试</li>
+<li><strong>类型化错误</strong>：使用 <code>Schema.TaggedErrorClass</code> 定义可标记的错误类型，编译期即可追踪错误处理路径</li>
+<li><strong>流式处理</strong>：使用 <code>Stream</code> 处理 LLM 的流式输出</li>
+<li><strong>Schema 验证</strong>：使用 <code>Schema</code> 模块进行运行时数据结构验证</li>
+<li><strong>观测集成</strong>：通过 <code>OpenTelemetry</code> 进行全链路追踪</li>
+</ul>
+<p>代码风格方面，项目有严格的约定：使用 <code>Effect.gen</code> 进行组合式编程、使用 <code>Effect.fn</code> 声明命名且可追踪的 Effect、禁止 <code>try/catch</code>、优先使用 Schema 进行 JSON 解析而非手动 <code>JSON.parse</code>。[12]</p>
+<p>这种对 Effect 框架的全面拥抱使得 OpenCode 成为 Effect v4 在生产环境的最大规模应用实例之一。这种选择带来了编译期安全性、可测试性和组合性的显著提升，但也提高了新贡献者的学习门槛。</p>
+<h2 id="六核心模块与组件">六、核心模块与组件
+</h2><h3 id="61-agent-系统">6.1 Agent 系统
+</h3><p>OpenCode 内置三种 Agent，可通过 Tab 键切换：</p>
+<ul>
+<li><strong>build（默认）</strong>：完全访问权限，适合开发工作</li>
+<li><strong>plan</strong>：只读模式，进行分析和代码搜索，默认拒绝文件编辑操作</li>
+<li><strong>general</strong>：子代理类型，用于复杂搜索和多步骤任务</li>
+</ul>
+<p>此外，系统内部还运行着 <code>explore</code>、<code>scout</code>、<code>compaction</code>、<code>title</code>、<code>summary</code> 等专用代理。</p>
+<h3 id="62-agent-loop核心循环">6.2 Agent Loop（核心循环）
+</h3><p>Agent 循环逻辑位于 <code>packages/opencode/src/session/prompt.ts</code>（2,168 行），是项目最核心的代码文件。<code>runLoop()</code> 函数的执行流程如下：</p>
+<ol>
+<li><strong>设置</strong>：从数据库加载会话，获取最后一条用户/助手消息</li>
+<li><strong>退出检查</strong>：如果助手消息的结束原因不是 <code>&quot;tool-calls&quot;</code>，则退出循环</li>
+<li><strong>子任务处理</strong>：<code>handleSubtask()</code> 处理 <code>@agent</code> 提及</li>
+<li><strong>压缩检查</strong>：<code>compaction.isOverflow()</code> 检查 Token 是否溢出</li>
+<li><strong>消息构造</strong>：创建新的助手消息并持久化到数据库</li>
+<li><strong>处理器创建</strong>：<code>processor.create()</code> 设置 LLM 流和快照追踪器</li>
+<li><strong>工具解析</strong>：<code>resolveTools()</code> 加载所有工具和 MCP 工具</li>
+<li><strong>LLM 流</strong>：<code>handle.process()</code> 通过 <code>llm.stream()</code> 向 LLM 发送事件</li>
+<li><strong>结果评估</strong>：确定继续、停止或压缩</li>
+<li><strong>循环</strong>：如果需要继续，跳转到步骤 2</li>
+</ol>
+<h3 id="63-工具系统">6.3 工具系统
+</h3><p>OpenCode 内置 44 个工具文件（位于 <code>src/tool/</code>），涵盖了 AI 编程代理所需的全部能力：</p>
+<ul>
+<li><strong>文件操作</strong>：<code>read</code>、<code>write</code>、<code>edit</code>、<code>glob</code>、<code>grep</code>、<code>apply_patch</code></li>
+<li><strong>终端操作</strong>：<code>shell</code>（命令执行）、<code>truncate</code>（输出截断）</li>
+<li><strong>代码分析</strong>：LSP 集成（跳转定义、查找引用、诊断）</li>
+<li><strong>网络</strong>：<code>websearch</code>、<code>webfetch</code></li>
+<li><strong>协作</strong>：<code>task</code>（子代理调用）、<code>question</code>（向用户提问）</li>
+<li><strong>元操作</strong>：<code>skill</code>（加载技能）、<code>todowrite</code>（任务管理）</li>
+<li><strong>仓库操作</strong>：<code>repo_clone</code>、<code>repo_overview</code></li>
+</ul>
+<p>工具执行路径：<code>resolveTools()</code> 包装每个工具 → 通过 <code>EffectBridge</code> 执行（在 Effect 和 JavaScript 边界之间保持 AsyncLocalStorage）→ 工具与权限系统和 MCP 集成。</p>
+<h3 id="64-子代理机制">6.4 子代理机制
+</h3><p>Task 工具是子代理系统的入口。当 LLM 调用 <code>task</code> 工具时：</p>
+<ol>
+<li><code>handleSubtask()</code> 查找目标代理配置</li>
+<li>创建具有独立权限的子会话</li>
+<li>在子会话中运行完整的 <code>prompt()</code> 循环</li>
+<li>将结果传回父会话</li>
+<li>权限由 <code>deriveSubagentSessionPermission()</code> 推导，父级的拒绝规则会传播到子代理</li>
+</ol>
+<p>v1.15.0 新增的背景子代理（background subagents）基于 Effect 的结构化并发实现，实现了真正的异步并行执行。</p>
+<h3 id="65-客户端服务器架构">6.5 客户端/服务器架构
+</h3><p>TUI 运行时实际上运行在两个进程/线程中：</p>
+<ul>
+<li><strong>主线程</strong>：UI 渲染（SolidJS + OpenTUI）</li>
+<li><strong>Web Worker</strong>：后端运行（Effect 运行时、数据库、HTTP 服务器、Agent 处理）</li>
+</ul>
+<p>两者通过 RPC 通信（fetch 代理 + 全局事件转发）。SDK 客户端调用 HTTP API → Effect HttpApi 处理器 → prompt 服务。</p>
+<h3 id="66-会话与状态管理">6.6 会话与状态管理
+</h3><p>Runner 状态机定义如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Idle → Running → Shell → ShellThenRun
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>保证每个会话 ID 同时最多只有一个活跃的 LLM 循环。这种设计防止了并发冲突，同时允许 Shell 命令执行与 LLM 流处理有序交替。</p>
+<h2 id="七生态插件">七、生态插件
+</h2><p>OpenCode 的插件生态是其生态活力的重要指标。以下是最具影响力的插件：</p>
+<h3 id="第一梯队多代理编排">第一梯队：多代理编排
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>插件</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>oh-my-opencode (OmO)</strong></td>
+          <td>最流行的插件。背景代理、LSP/AST 工具、预设代理（Sisyphus/Oracle/Librarian/Explore）、Claude Code 兼容层、内置 MCP</td>
+      </tr>
+      <tr>
+          <td><strong>opencode-workspace (KDCO)</strong></td>
+          <td>16 组件多代理编排套件：4 个插件、3 个 MCP 服务器、4 个代理、4 个技能、权限边界</td>
+      </tr>
+      <tr>
+          <td><strong>opencode-codex-orch</strong> (~376 星标)</td>
+          <td>OpenAI Codex 的多代理编排</td>
+      </tr>
+      <tr>
+          <td><strong>opencode-autopilot (Kodrun)</strong></td>
+          <td>8 阶段自主开发流水线、13 代理对抗式代码审查、39 个注册工具、记忆系统</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="第二梯队认证与模型访问">第二梯队：认证与模型访问
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>插件</th>
+          <th>星标</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>opencode-openai-codex-auth</code></td>
+          <td>~2,041</td>
+          <td>使用 ChatGPT Plus/Pro 订阅替代 API Key</td>
+      </tr>
+      <tr>
+          <td><code>opencode-gemini-auth</code></td>
+          <td>~1,527</td>
+          <td>使用 Google Gemini 套餐和免费额度</td>
+      </tr>
+      <tr>
+          <td><code>opencode-google-antigravity-auth</code></td>
+          <td>~376</td>
+          <td>Google OAuth 认证</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="第三梯队开发者工具">第三梯队：开发者工具
+</h3><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>插件</th>
+          <th>星标</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>opencode-mem</code></td>
+          <td>~679</td>
+          <td>基于本地向量数据库（SQLite + USearch）的持久记忆</td>
+      </tr>
+      <tr>
+          <td><code>opencode-pty</code></td>
+          <td>~368</td>
+          <td>交互式 PTY 管理，5 个工具</td>
+      </tr>
+      <tr>
+          <td><code>opencode-wakatime</code></td>
+          <td>~112</td>
+          <td>AI 编程活动追踪（WakaTime 集成）</td>
+      </tr>
+  </tbody>
+</table></div>
+<p>社区整理的 <a class="link" href="https://github.com/awesome-opencode/awesome-opencode"  target="_blank" rel="noopener"
+    >awesome-opencode</a> 合集已有 5,000+ 星标，收录 58+ 插件、4 个代理、29 个项目，是了解 OpenCode 生态的最佳入口。[13]</p>
+<h2 id="八竞品对比">八、竞品对比
+</h2><div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th>工具</th>
+          <th>星标</th>
+          <th>类型</th>
+          <th>开源</th>
+          <th>供应商无关</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>OpenCode</td>
+          <td>~162K</td>
+          <td>终端 TUI + 桌面 + IDE</td>
+          <td>MIT 开源</td>
+          <td>是（75+ 供应商）</td>
+      </tr>
+      <tr>
+          <td>Claude Code</td>
+          <td>~125K</td>
+          <td>终端 CLI</td>
+          <td>源代码可用，非开源</td>
+          <td>否（仅 Anthropic）</td>
+      </tr>
+      <tr>
+          <td>Cline</td>
+          <td>~62K</td>
+          <td>VS Code 扩展</td>
+          <td>Apache 2.0</td>
+          <td>是</td>
+      </tr>
+      <tr>
+          <td>Aider</td>
+          <td>~45K</td>
+          <td>终端 CLI</td>
+          <td>Apache 2.0</td>
+          <td>是</td>
+      </tr>
+      <tr>
+          <td>Cursor</td>
+          <td>~33K</td>
+          <td>VS Code 分支 IDE（闭源）</td>
+          <td>闭源</td>
+          <td>有限</td>
+      </tr>
+  </tbody>
+</table></div>
+<p>OpenCode 的核心差异化优势：</p>
+<ol>
+<li><strong>真正的供应商无关</strong>：在主流 AI 编程工具中，OpenCode 是少数不绑定特定模型供应商的选择。Claude Code 只支持 Anthropic，Cursor 偏向 OpenAI。OpenCode 支持 75+ 供应商，用户可以自由切换或组合。</li>
+<li><strong>终端原生体验</strong>：面向 Neovim 用户和终端重度用户设计，比 IDE 插件更适合自动化脚本和 CI/CD 集成。</li>
+<li><strong>完全开源 + MIT 许可</strong>：在竞品中，Cursor 闭源，Claude Code 仅提供源代码可读但不允许修改和重新分发。MIT 许可给予了用户最大的自由度。</li>
+<li><strong>企业级架构</strong>：基于 Effect v4 的架构提供了 IDE 插件形态无法比拟的健壮性和可组合性。</li>
+</ol>
+<h2 id="九学习路径指南">九、学习路径指南
+</h2><h3 id="91-用户入门">9.1 用户入门
+</h3><ol>
+<li>安装：<code>curl -fsSL https://opencode.ai/install | bash</code></li>
+<li>阅读官方文档：<a class="link" href="https://opencode.ai/docs"  target="_blank" rel="noopener"
+    >opencode.ai/docs</a></li>
+<li>通过 <code>opencode.jsonc</code> 文件进行配置</li>
+<li>学习三种 Agent（build/plan）的使用场景和切换方法</li>
+<li>掌握核心工具的使用：<code>shell</code>、<code>edit</code>、<code>read</code>、<code>write</code>、<code>glob</code>、<code>grep</code></li>
+<li>了解 MCP 集成和插件安装</li>
+<li>加入 Discord 社区获取帮助和分享经验</li>
+</ol>
+<h3 id="92-贡献者进阶">9.2 贡献者进阶
+</h3><ol>
+<li>阅读根目录和 <code>packages/opencode/AGENTS.md</code>，了解代码风格约定和 Effect 规范</li>
+<li>阅读 CONTRIBUTING.md，了解贡献流程</li>
+<li>学习 LLM 架构：<code>packages/llm/AGENTS.md</code></li>
+<li>理解 Effect v4 范式，特别是 <code>packages/opencode/AGENTS.md</code> 中的 Effect 规则部分</li>
+<li>追踪 Agent 核心循环：<code>prompt.ts</code> → <code>processor.ts</code> → 工具注册表</li>
+<li>克隆仓库并运行：<code>bun dev</code>（从仓库根目录）</li>
+<li>运行测试：<code>bun --cwd packages/opencode test</code></li>
+</ol>
+<p>推荐优先阅读的关键文件：</p>
+<ol>
+<li><code>packages/opencode/AGENTS.md</code> — Effect 约定、模块规范、数据库指南</li>
+<li><code>packages/llm/AGENTS.md</code> — LLM 架构深度解析</li>
+<li><code>packages/opencode/src/session/prompt.ts</code>（2,168 行）— 核心代理循环</li>
+<li><code>packages/opencode/src/session/processor.ts</code>（838 行）— 流式事件处理</li>
+<li><code>packages/opencode/src/tool/registry.ts</code>（431 行）— 工具注册</li>
+<li><code>packages/opencode/src/agent/agent.ts</code>（463 行）— 代理定义</li>
+<li><code>specs/v2/</code> — V2 设计文档（迁移中）</li>
+</ol>
+<h2 id="十总结与展望">十、总结与展望
+</h2><p>OpenCode 在短短一年内从一个个人项目成长为 AI 编程工具领域最受关注的开源项目之一，其发展轨迹反映了多个值得关注的趋势：</p>
+<p>第一，<strong>终端 AI 工具的兴起</strong>。OpenCode 的成功证明，在 IDE 插件生态之外，纯终端 AI 编程工具有着明确的需求空间。对于 DevOps、SRE、以及偏好终端工作流的开发者而言，终端工具天然具有更好的自动化能力和更低的环境依赖。</p>
+<p>第二，<strong>供应商无关架构的价值</strong>。在一个快速变化的 AI 模型市场中，绑定单一供应商意味着巨大的迁移风险。OpenCode 的 Route 抽象层设计为这一行业问题提供了可复用的解决方案。</p>
+<p>第三，<strong>Effect 框架的工业化验证</strong>。OpenCode 是 Effect v4 在大型项目中的关键参考案例，证明了类型化 Effect 系统在复杂 AI 应用中的可行性。</p>
+<p>展望未来，OpenCode 面临的主要挑战包括：v2 架构迁移的平稳落地、插件生态的去中心化治理、以及如何在快速增长的同时维持代码质量和社区健康。如果这些挑战能够妥善解决，OpenCode 有望成为 AI 辅助开发领域的基础设施级项目。</p>
+<h2 id="参考资料">参考资料
+</h2><p>[1] Y Combinator, &ldquo;SST / Anomaly Innovations&rdquo;. <a class="link" href="https://www.ycombinator.com/companies/sst"  target="_blank" rel="noopener"
+    >https://www.ycombinator.com/companies/sst</a></p>
+<p>[2] Frank Wang LinkedIn. <a class="link" href="https://www.linkedin.com/in/frank-a-wang/"  target="_blank" rel="noopener"
+    >https://www.linkedin.com/in/frank-a-wang/</a></p>
+<p>[3] Dax Raad, &ldquo;Building in Public with Terminal.shop&rdquo;. <a class="link" href="https://thdxr.com"  target="_blank" rel="noopener"
+    >https://thdxr.com</a></p>
+<p>[4] Adam Elmore LinkedIn. <a class="link" href="https://www.linkedin.com/in/adamdotdev/"  target="_blank" rel="noopener"
+    >https://www.linkedin.com/in/adamdotdev/</a></p>
+<p>[5] SST About Page. <a class="link" href="https://sst.dev/about/"  target="_blank" rel="noopener"
+    >https://sst.dev/about/</a></p>
+<p>[6] Hacker News discussion, &ldquo;OpenCode Fork and Controversy&rdquo;. <a class="link" href="https://news.ycombinator.com/item?id=42484706"  target="_blank" rel="noopener"
+    >https://news.ycombinator.com/item?id=42484706</a></p>
+<p>[7] Charm CEO Christian Rocha (@meowgorithm), Statement on X (formerly Twitter), 2025.</p>
+<p>[8] BigGo News, &ldquo;OpenCode Crush 事件分析&rdquo;. <a class="link" href="https://biggo.news/"  target="_blank" rel="noopener"
+    >https://biggo.news/</a></p>
+<p>[9] Hacker News, &ldquo;Anthropic blocks OpenCode OAuth — DHH responds&rdquo;. <a class="link" href="https://news.ycombinator.com/item?id=42623719"  target="_blank" rel="noopener"
+    >https://news.ycombinator.com/item?id=42623719</a></p>
+<p>[10] GitHub Blog, &ldquo;GitHub Copilot now supports OpenCode&rdquo;. <a class="link" href="https://github.blog/changelog/2026-01-16-github-copilot-now-supports-opencode/"  target="_blank" rel="noopener"
+    >https://github.blog/changelog/2026-01-16-github-copilot-now-supports-opencode/</a></p>
+<p>[11] OpenCode Repository, &ldquo;v2 Specs&rdquo;. <a class="link" href="https://github.com/anomalyco/opencode/tree/dev/specs/v2"  target="_blank" rel="noopener"
+    >https://github.com/anomalyco/opencode/tree/dev/specs/v2</a></p>
+<p>[12] OpenCode Repository, AGENTS.md — Effect Coding Standards. <a class="link" href="https://github.com/anomalyco/opencode/blob/dev/packages/opencode/AGENTS.md"  target="_blank" rel="noopener"
+    >https://github.com/anomalyco/opencode/blob/dev/packages/opencode/AGENTS.md</a></p>
+<p>[13] awesome-opencode. <a class="link" href="https://github.com/awesome-opencode/awesome-opencode"  target="_blank" rel="noopener"
+    >https://github.com/awesome-opencode/awesome-opencode</a></p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/opencode/">OpenCode</a>
+        
+            <a href="/tags/ai/">AI</a>
+        
+            <a href="/tags/coding-agent/">Coding Agent</a>
+        
+            <a href="/tags/%E5%BC%80%E6%BA%90/">开源</a>
+        
+            <a href="/tags/%E7%BB%88%E7%AB%AF/">终端</a>
+        
+            <a href="/tags/%E6%9E%B6%E6%9E%84/">架构</a>
+        
+            <a href="/tags/llm/">LLM</a>
+        
+            <a href="/tags/effect/">Effect</a>
+        
+            <a href="/tags/typescript/">TypeScript</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="zhumengzhu/zhumengzhu.github.io"
+        issue-term="pathname"
+        
+        label="💬"
+        
+        crossorigin="anonymous"
+        async
+        >
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    let utterancesLoaded = false;
+
+    function setUtterancesTheme(theme) {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${theme}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
+    })
+</script>
+
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2022 -
+        
+        2026 All Rights Reserved
+    </section>
+
+    
+    <section>
+        <script defer pjax data-style="short" src="https://busuanzi.9420.ltd/js"></script>
+        本文总阅读量 <span id="busuanzi_page_pv"></span> 次
+        本文总访客量 <span id="busuanzi_page_uv"></span> 人
+        本站总访问量 <span id="busuanzi_site_pv"></span> 次
+        本站总访客数 <span id="busuanzi_site_uv"></span> 人
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了22篇文章 ·
+        总计44.53k字
+
+    </section>
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.29.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdmirror.com/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdmirror.com/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/ribbon.min.js"
+    integrity="sha384-UEK8ZiP3VgFNP8KnKMKDmd4pAUAOJ59Y2Jo3ED2Z5qKQf6HLHovMxq7Beb9CLPUe"
+    crossorigin="anonymous"
+    size="300"
+    alpha="0.6"
+    zindex="-1"
+    defer
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/js/nprogress.min.js"
+    integrity="sha384-bHDlAEUFxsRI7JfULv3DTpL2IXbbgn4JHQJibgo5iiXSK6Iu8muwqHANhun74Cqg"
+    crossorigin="anonymous"
+></script>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/zhixuan2333/gh-blog@v0.1.0/css/nprogress.css"
+    integrity="sha384-KJyhr2syt5+4M9Pz5dipCvTrtvOmLk/olWVdfhAp858UCa64Ia5GFpTN7+G4BWpE"
+    crossorigin="anonymous"
+/>
+<script>
+    NProgress.start();
+    document.addEventListener("readystatechange", () => {
+        if (document.readyState === "interactive") NProgress.inc(0.8);
+        if (document.readyState === "complete") NProgress.done();
+    });
+</script>
+
+
+
+<script>
+    let s1 = '2022-10-16'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+    </body>
+</html>

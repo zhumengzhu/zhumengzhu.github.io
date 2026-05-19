@@ -7,7 +7,79 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>All Rights Reserved</copyright>
-        <lastBuildDate>Mon, 02 Mar 2026 00:15:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Tue, 19 May 2026 22:00:00 +0800</lastBuildDate><atom:link href="https://zhumengzhu.github.io/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>AI</title>
+        <link>https://zhumengzhu.github.io/tags/ai/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/ai/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Coding Agent</title>
+        <link>https://zhumengzhu.github.io/tags/coding-agent/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/coding-agent/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>Effect</title>
+        <link>https://zhumengzhu.github.io/tags/effect/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/effect/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>LLM</title>
+        <link>https://zhumengzhu.github.io/tags/llm/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/llm/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>OpenCode</title>
+        <link>https://zhumengzhu.github.io/tags/opencode/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/opencode/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>TypeScript</title>
+        <link>https://zhumengzhu.github.io/tags/typescript/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/typescript/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>架构</title>
+        <link>https://zhumengzhu.github.io/tags/%E6%9E%B6%E6%9E%84/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E6%9E%B6%E6%9E%84/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>开源</title>
+        <link>https://zhumengzhu.github.io/tags/%E5%BC%80%E6%BA%90/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E5%BC%80%E6%BA%90/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>终端</title>
+        <link>https://zhumengzhu.github.io/tags/%E7%BB%88%E7%AB%AF/</link>
+        <pubDate>Tue, 19 May 2026 22:00:00 +0800</pubDate>
+        
+        <guid>https://zhumengzhu.github.io/tags/%E7%BB%88%E7%AB%AF/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>AI 辅助</title>
         <link>https://zhumengzhu.github.io/tags/ai-%E8%BE%85%E5%8A%A9/</link>
         <pubDate>Sun, 01 Mar 2026 10:00:00 +0800</pubDate>
